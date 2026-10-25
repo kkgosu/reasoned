@@ -6,10 +6,12 @@ junit = "4.13.2"
 testCore = "1.6.1"
 testRunner = "1.6.2"
 testJunit = "1.2.1"
+coroutines = "1.10.2"
 
 [libraries]
 appkit = { module = "me.grishka.appkit:appkit", version.ref = "appkit" }
 litex-recyclerview = { module = "me.grishka.litex:recyclerview", version.ref = "litexRecyclerView" }
+coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "testCore" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "testRunner" }

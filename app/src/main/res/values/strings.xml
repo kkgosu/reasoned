@@ -3,7 +3,7 @@
     <string name="knowledge_graph_label">KNOWLEDGE GRAPH</string>
     <string name="home_title">Understanding, connected.</string>
     <string name="home_empty">No knowledge yet. Future lessons will connect propositions, reasoning, and the evidence behind them here.</string>
-    <string name="foundation_status">Phase 1 · Native foundation\nLearning sessions are not enabled yet.</string>
+    <string name="foundation_status">Phase 2 · Local preview\nAuthored lessons, no AI connection.</string>
     <string name="style_reference">Style reference</string>
     <string name="type_title_label">CMU SERIF BOLD · TITLES</string>
     <string name="type_title_sample">One step at a time.</string>
@@ -23,4 +23,51 @@
     <string name="type_scale_32">32 · Prominent title</string>
     <string name="draft_hint">A sample draft. Type here to check restoration.</string>
     <string name="return_home">Return home</string>
+    <string name="sample_lesson_label">SAMPLE LESSON</string>
+    <string name="sample_lesson_title">Gradient descent</string>
+    <string name="sample_lesson_description">Connect the slope of a function to a step toward its minimum.</string>
+    <string name="open_sample_lesson">Explore gradient descent</string>
+    <string name="lesson_preview">TEACHING · LOCAL PREVIEW</string>
+    <string name="lesson_writing">WRITING · MOCK TEACHER</string>
+    <string name="lesson_paused">PAUSED · LOCAL PREVIEW</string>
+    <string name="lesson_waiting">WAITING FOR YOUR ANSWER</string>
+    <string name="lesson_heading">Follow the slope.</string>
+    <string name="lesson_intro">How can a local slope guide us toward a minimum? Start with a simple bowl-shaped function.</string>
+    <string name="lesson_function">f(x) = x²     f′(x) = 2x</string>
+    <string name="lesson_function_spoken">f of x equals x squared. Its derivative is two times x.</string>
+    <string name="lesson_step">The derivative tells us which way the function rises. Gradient descent takes a small step in the opposite direction. The learning rate η sets the step size.</string>
+    <string name="lesson_update">xₙ₊₁ = xₙ − η · f′(xₙ)</string>
+    <string name="lesson_update_spoken">The next x equals the current x minus the learning rate times the derivative at the current x.</string>
+    <string name="lesson_stream">At x = 3, the derivative is 6. With η = 0.1, the next x is 2.4: a step left, toward zero. The slope gives the direction; the learning rate controls how far we move.</string>
+    <string name="prediction_label">PREDICTION</string>
+    <string name="reveal_question">Check your understanding</string>
+    <string name="resume_question">Resume your answer</string>
+    <string name="read_lesson">Read lesson</string>
+    <string name="lesson_question">At x = 3, which direction reduces f(x) = x² for a small step?</string>
+    <string-array name="lesson_options">
+        <item>Left, toward zero.</item>
+        <item>Right, away from zero.</item>
+        <item>Stay at x = 3.</item>
+        <item>I don’t know</item>
+    </string-array>
+    <string name="confidence_label">CONFIDENCE · %1$d%%</string>
+    <string name="confidence_unavailable">CONFIDENCE · NOT GIVEN</string>
+    <string name="confidence_accessibility">Confidence in your answer</string>
+    <string name="thinking_label">YOUR THINKING</string>
+    <string name="thinking_hint">Why this answer? Whatever comes to mind. (Optional)</string>
+    <string name="submit_answer">Submit answer</string>
+    <string name="your_answer">YOUR ANSWER</string>
+    <string name="your_answer_confidence">YOUR ANSWER · %1$d%% CONFIDENCE</string>
+    <string name="your_note">YOUR NOTE</string>
+    <string name="lesson_correct">Yes: a positive derivative means the function rises to the right. A small step left lowers f(x). Subtracting a positive gradient makes exactly that move. Try explaining why a very large step could still overshoot the minimum.</string>
+    <string name="lesson_repair">Look again at the sign: f′(3) = 6 is positive. Going right raises the function, while a small step left lowers it. Subtracting η · 6 from 3 moves left. Read the example, then try the prediction again.</string>
+    <string name="lesson_uncertain">Start with the slope: f′(3) = 6. A positive slope means the function rises as x increases. To lower it, take a small step in the other direction. Read the example, then try the prediction again.</string>
+    <string name="lesson_reveal">The direction is left: f′(3) = 6, so subtracting a small positive multiple moves x toward zero. This preview ends the check after three attempts. A real teacher would use your reasoning to decide what to revisit; this authored mock does not assess it.</string>
+    <string name="composer_hint">Ask a question or share your thinking…</string>
+    <string name="composer_preview_hint">Send a note for an authored reply. No AI is connected.</string>
+    <string name="send_note">Send</string>
+    <string name="stop_stream">Stop</string>
+    <string name="resume_stream">Resume</string>
+    <string name="mock_limit">Preview complete · up to eight notes</string>
+    <string name="lesson_mock_reply">This is an authored preview, not an AI response to your note. To explore the idea further, compare x = 3 with x = −3. The derivative changes sign, but subtracting a small multiple still moves toward zero. A real learning session will respond to your own explanation.</string>
 </resources>

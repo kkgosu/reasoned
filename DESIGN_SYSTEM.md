@@ -1,6 +1,6 @@
 # Native design reference
 
-Scope: extracted reference rules and the phase-1 Android style specimen, not a complete lesson or graph prototype. Product/appearance comes from LearnHarness; Android engineering comes from AppKit/LiteX. Repository revisions and license boundaries are in [REFERENCES.md](REFERENCES.md).
+Scope: extracted reference rules, the phase-1 style specimen and the phase-2 mock classroom. The graph prototype remains phase 3. Product/appearance comes from LearnHarness; Android engineering comes from AppKit/LiteX. Repository revisions and license boundaries are in [REFERENCES.md](REFERENCES.md).
 
 ## 1. Authoritative sources
 
@@ -76,11 +76,11 @@ Some ladder tokens are intentionally unused in the small specimen; they are the 
 
 | Component | Reference anatomy | Native adaptation / phase |
 |---|---|---|
-| Home | Graph fills available space; bottom goal input and teach/practice switch; navigation secondary | Phase 1 has only a quiet graph-oriented empty state and style-reference link. Actual graph/goal controls belong to phases 2–3. |
+| Home | Graph fills available space; bottom goal input and teach/practice switch; navigation secondary | Quiet graph empty state with one bottom sample-session entry. No fake custom-goal generation; actual graph/goal execution comes later. |
 | Navigation | Narrow left session column; serif/prose names, mono filters/search/metadata | AppKit stack and platform Toolbar now; dedicated session/navigation surface later instead of shrinking the desktop sidebar onto phones. |
-| Session | Serif title; status/plan actions; document-like prose spine; integrated formulas/diagrams | `LearningSessionFragment` and typed RecyclerView rows in phase 2. No mirrored messenger bubbles. |
-| Composer | One rounded bottom shell, growing Source Sans input, trailing send/stop; ancillary controls below | Native multiline EditText, touch-visible submit/stop and IME-aware safe area in phase 2. |
-| Question dock | Same shell replaces composer; label → question → options → confidence → “Your thinking” → submit | One persistent native dock; preserve drafts/selection by question identity. Probe opens immediately; teaching checks offer reveal. Collapse is presentation, not reset. |
+| Session | Serif title; status/plan actions; document-like prose spine; integrated formulas/diagrams | Implemented `LearningSessionFragment`: typed native text/formula/answer rows, quiet status and no messenger bubbles. Plan/diagram actions wait for those features. |
+| Composer | One rounded bottom shell, growing Source Sans input, trailing send/stop; ancillary controls below | Implemented native 1–4-line EditText, Send/Stop/Resume, visible local-preview notice and AppKit IME-safe area. A stopped stream is resumed before sending the retained note. |
+| Question dock | Same shell replaces composer; label → question → options → confidence → “Your thinking” → submit | One persistent native shell. The authored teaching check offers reveal; controls scroll while header/submit remain reachable. Selection, confidence and thinking survive collapse, recreation and Home navigation. Probe/open-response/practice variants wait for their features. |
 | Practice | Task-specific exercise/answer/feedback in the persistent interaction area | Reuse the dock/state identity principles in phase 7, not a new modal per exercise. |
 | Plan/diagram overlay | Detailed inspection independent of the lesson spine | Phone fullscreen AppKit screen; restore position/draft on return. No tiny desktop popover. |
 | Graph | Fine edges, small light nodes, quiet labels; muted cluster regions behind topology | Custom Kotlin Canvas view in phase 3. Separate layout from drawing; zoom gates domain/node labels; touch selection opens readable details. |
@@ -97,15 +97,33 @@ Use Android focus, touch feedback, TalkBack labels and heading semantics; do **n
 
 ## 7. Style reference and visual verification
 
-Open **Style reference** from Home. It demonstrates three font roles, the complete size ladder, a minimal outlined surface, primary/secondary actions and a multiline restoration draft. It deliberately uses a static ScrollView: building a RecyclerView adapter for a fixed typography specimen would add no value. LiteX/AppKit RecyclerView is installed for phase 2.
+Open **Style reference** from Home. It demonstrates three font roles, the complete size ladder, a minimal outlined surface, primary/secondary actions and a multiline restoration draft. It deliberately uses a static ScrollView: building a RecyclerView adapter for a fixed typography specimen would add no value. LiteX/AppKit RecyclerView now renders the phase-2 lesson.
 
-Captured Android screens: [home](docs/screenshots/phase1-home.png), [style reference](docs/screenshots/phase1-style-reference.png). They are our own emulator captures, not copied reference assets. Environment and checks are recorded in IMPLEMENTATION_PLAN.
+Current Android captures: [home](docs/screenshots/phase2-home.png), [reading](docs/screenshots/phase2-reading.png), [question](docs/screenshots/phase2-question.png), [thinking](docs/screenshots/phase2-thinking.png), [feedback](docs/screenshots/phase2-feedback.png). They are our own full-device captures, including system bars, not copied reference assets; keyboard-free review states are selected. Environment and checks are recorded in IMPLEMENTATION_PLAN.
 
 Comparison against the original screenshots:
 
 - Matched: exact base colors; serif title / sans reading / mono chrome separation; thin quiet separator; restrained outlined functional surfaces; no chat bubbles, colorful cards or heavy shadows.
 - Corrected during verification: a global theme font was overriding text-appearance fonts, rendering prose and prominent titles in mono. It was replaced with a default TextView appearance; font assertions and screenshots now confirm separate roles.
 - Intentional adaptation: 24 dp phone margins, 48 dp controls, platform system bars/back arrow, wrapping text, no desktop sidebar/window controls. The home copy and specimen are original explanatory placeholders, not a reproduction of a full learning session.
-- Not yet comparable: real lesson rows, formulas, dock expansion, graph density/clusters and tablet composition. Those screens do not exist in phase 1. No approved Android-sized pixel-diff goldens have been prepared; captures are for manual inspection, not a false claim of screenshot-regression coverage.
+- Phase-1 limitations were lesson rows, formulas, dock expansion, graph density and tablet composition. Phase 2 now covers the first three; graph/tablet visual verification remains outstanding.
 
-Phase 2 must prepare reviewed Android-sized lesson/dock baselines and correct substantial visual mismatches before connecting real models. Pixel equality against a desktop screenshot is not the acceptance criterion.
+## 8. Phase-2 phone adaptation and comparison
+
+[Manually laid-out phone reference](docs/design/phase2-phone-reference.svg), prepared before implementing the session, adapts the original teaching-session screenshot to a 412 × 915 logical phone frame. It is an independent design target, not an app-generated golden; controls/system bars are schematic and font display depends on installed families. Actual captures above use Pixel 7, 1080 × 2400, Android 16/API 36, default font scale 1.0.
+
+Manual comparison of the source screenshot, phone target and native captures:
+
+| Aspect | Result / deliberate adaptation |
+|---|---|
+| Colors and surfaces | Same exact page/ink/surface/border tokens; only the functional dock/controls are outlined. No card per teacher turn, shadows, gradients or new branding. |
+| Type hierarchy | CMU screen/content titles, Source Sans reading/question/thinking, JetBrains Mono status/actions. Native text scales in sp; no fixed-height prose. |
+| Reading layout | 24 dp margins; unboxed explanations and integrated equations. The sample is independently authored, simpler one-variable calculus rather than copied stochastic-gradient teaching text. |
+| Math | Native serif Unicode equations, horizontal overflow and spoken descriptions. No claim of KaTeX-quality arbitrary LaTeX; missing rich math/Markdown remains a later renderer task. |
+| Question anatomy | Prediction → question → 48 dp choices → confidence → optional thinking → submit. Native monochrome slider/radio indicators replace desktop controls. “I don’t know” disables/omits confidence without deleting the retained slider value. |
+| Phone height | Desktop can show the entire dock; phone uses a bounded scrollable form with pinned header/submit. 60% dock / 40% reading split when expanded, minimal bar when collapsed. The design SVG is schematic; its all-at-once overview is not a promise that every control fits without scrolling. |
+| Keyboard / large type | Testing exposed a nearly zero-height editor at 200% type plus the IME. The dock now temporarily takes the reading pane’s height while entering an answer, then restores reading when the keyboard closes. Real-IME instrumentation asserts a visible text line and submit above the keyboard at both scales. |
+| Interaction/motion | Explicit teaching-check reveal, non-destructive collapse, 150 ms native bounds transitions targeted only at the dock (zero with disabled animators), Stop/Resume and honest authored-note replies. Busy mock streams do not implement real-model steering. |
+| Navigation | Platform back/stack replaces the desktop sidebar; no fabricated plan, model selector, microphone, usage accounting or background-agent controls. |
+
+These captures were manually inspected and are review baselines, **not owner-approved pixel-diff goldens**. No automated image-difference/fidelity score is claimed. User visual review is still the gate before real AI; phase 3 may proceed independently with mock graph data.

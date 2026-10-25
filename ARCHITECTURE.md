@@ -2,7 +2,7 @@
 
 ## Scope and current implementation
 
-This document separates **implemented phase-1 foundations** from **future feature design**. Only phases 0–1 are requested now. The fuller “first task” examples in the product specification (lesson streaming, question dock and graph) map to phases 2–3 and are intentionally not implemented yet.
+This document separates **implemented phases 0–2** from **future feature design**. The foundation now includes the requested phase-2 mock classroom: native lesson rows, a persistent question/composer dock and local incremental streaming. The graph remains phase 3; real model execution and durable sessions remain phase 4.
 
 The app is standalone, Kotlin-first, traditional Views. It is not a web wrapper, LearnHarness client, Mastodon skin, or Pi host. It will eventually execute its own Kotlin learning runtime locally and call cloud model APIs directly. No custom backend, Node.js or remote agent runtime is part of the design.
 
@@ -11,7 +11,11 @@ Current single Gradle application module:
 ```text
 app/src/main/java/com/kkgosu/learnharness/
   MainActivity.kt             AppKit FragmentStackActivity, root and transitions
-  HomeFragment.kt             Honest graph-oriented foundation empty state
+  HomeFragment.kt             Quiet graph empty state and sample-session entry
+  LearningSessionFragment.kt  Native transcript/dock, visible-only mock collection
+  LessonDisplayItem.kt        Typed text/formula/answered-question blocks
+  LessonAdapter.kt            Stable-ID holders and targeted append/text updates
+  MockLesson.kt               Bounded authored fixture, StateFlow and saved state
   StyleReferenceFragment.kt   Static native type/surface/input specimen
 app/src/main/res/
   values/                     Dark palette, dimensions, text/widget styles, strings
@@ -25,14 +29,14 @@ app/src/androidTest/           Kotlin navigation/restoration/font checks and cap
 - Minimum API **26**, selected for native XML font-family resources; compile/target API **36**, available locally and validated on Android 16.
 - Java 17 compile compatibility; **all first-party application and test source is Kotlin**. AGP 9.3.3 supplies built-in Kotlin support; no redundant Kotlin Android plugin is added.
 - AppKit **1.5.3**, LiteX RecyclerView **1.2.1.1**, platform widgets. No Compose, AppCompat, AndroidX Navigation, Hilt or Material Components. `Theme.AppKit` inherits Android's platform Material-era widget theme; that is not the Material Components dependency or a Material 3 visual design.
-- No database, model client, agent prompts, fake lesson engine, generated-code renderer or placeholder screens for unimplemented features.
+- Coroutines **1.10.2** now support the mock stream and `StateFlow`; native AGP View Binding is enabled for the session's controls. No database, model client, agent prompts or generated-code renderer.
 - No INTERNET permission or credentials. Cleartext is prohibited and backup disabled. Dependency networking capability alone does not enable a product network path.
 
 ## Navigation and lifecycle: implemented
 
-`MainActivity` extends the actual AppKit `FragmentStackActivity`. It installs `HomeFragment` only when `savedInstanceState == null`; otherwise AppKit/platform fragment restoration owns the stack. Fragments have public no-argument construction. `Nav.go` opens the style reference; toolbar/system back and `Nav.finish` return.
+`MainActivity` extends the actual AppKit `FragmentStackActivity`. It installs `HomeFragment` only when `savedInstanceState == null`; otherwise AppKit/platform fragment restoration owns the stack. Fragments have public no-argument construction. `Nav.go` opens the style reference or sample session; toolbar/system back and `Nav.finish` return.
 
-Both screens use `ToolbarFragment` with a small shared XML shell that supplies AppKit's required `toolbar` and `appkit_content` IDs. The root is `FragmentRootLinearLayout`, leaving inset handling with the library instead of duplicating system-bar-height calculations. No custom back dispatcher or parallel navigation state exists. The manifest opts into modern back callbacks; AppKit handles API-specific predictive back. The short entry fade is customized; exit reuses AppKit's cleanup so predictive-back transforms are not left behind.
+All screens use `ToolbarFragment` with a small shared XML shell that supplies AppKit's required `toolbar` and `appkit_content` IDs. The root is `FragmentRootLinearLayout`, leaving inset handling with the library instead of duplicating system-bar-height calculations. No custom back dispatcher or parallel navigation state exists. The manifest opts into modern back callbacks; AppKit handles API-specific predictive back. The short entry fade is customized; exit reuses AppKit's cleanup so predictive-back transforms are not left behind.
 
 Normal activity recreation is **not** suppressed with `configChanges`. XML views have stable IDs; the platform preserves the sample EditText draft and ScrollView state. AppKit saves container IDs and restores its stack, including hidden previous screens. Tests exercise recreation with two entries and returning to one. Actual process-death recovery must be checked by backgrounding, killing the background process and restoring the existing task—not force-stop/data clearing, and not a new explicit standard-activity instance.
 
@@ -54,15 +58,23 @@ Provider HTTP adapter / approved local tools
 
 - **UI:** renders state and sends learner actions. No provider calls, tool execution or graph merging in holders or Canvas drawing.
 - **Educational domain:** learning phases, question/answer contracts, dependency-plan validation, evidence and deterministic graph validation. Keep these Kotlin rules free of Views and network I/O.
-- **Session execution:** one owner coordinates a session's turns, cancellation, pending questions, usage, tool results and persistence. It publishes `StateFlow` snapshots/`Flow` events when introduced in phase 4.
+- **Session execution:** the phase-2 fixture already publishes `StateFlow` snapshots, without providers/tools. In phase 4, one real owner coordinates turns, cancellation, pending questions, usage, tool results and persistence.
 - **Providers/tools:** narrow boundaries where substitution is real (fake provider versus network provider). Prefer a concrete store/controller and constructor parameters; no generic repository, plugin registry or DI container for one implementation.
 - **Persistence:** SQLite transactions for related structured changes, app-private files for documents/artifacts. Each entity has one owning writer; derivation never silently overwrites evidence.
 
 Do not reproduce the reference's HTTP routes, six-system framework, barrels or synchronous Node filesystem stores. Preserve their useful separation of rendering, execution and evidence ownership.
 
-## Lesson rendering: phase 2
+## Lesson rendering: phase 2 implemented
 
-Mastodon's typed `StatusDisplayItem`/holder pattern is the engineering reference, not code to translate. Implement a small Kotlin lesson-item representation and a `UsableRecyclerView.Adapter` over LiteX RecyclerView. Start with mock text, formula and question/activity rows; add image, diagram, demo, PDF excerpt, thinking and progress types when their renderers exist.
+Mastodon's typed `StatusDisplayItem`/holder pattern is the engineering reference, not code to translate. `LessonDisplayItem` has concrete text, formula and answered-question types; `LessonAdapter` binds specialized holders using AppKit `UsableRecyclerView.Adapter` over LiteX RecyclerView. More row types arrive with actual renderers, not empty scaffolding.
+
+`MockLesson` owns one authored gradient-descent checkpoint. It never interprets arbitrary text as a model request or claims to assess reasoning. Question selection, optional reasoning, confidence, composer draft, transcript IDs and exact partial-response text live in a single activity-owned snapshot, saved before AppKit restores fragments. The fixture has a stable revision/question identity, at most three checkpoint attempts and eight 2,000-character notes, keeping saved state bounded; real transcripts must move to SQLite. Returning Home and reopening the sample retains its state within the task. No force-stop/fresh-task durability is promised.
+
+The fragment uses AppKit `onShown`/`onHidden` to collect/render and run a cancellable coroutine. Hiding/backgrounding cancels view work; an active mock continues from its existing offset on return. Explicit Stop remains paused through recreation. Twelve-character chunks arrive at most once per 60 ms; existing block instances/IDs are reused, only the final text block is replaced, and only that holder receives a payload update. Append-only fixture updates deliberately do not need a generic diff engine. The reader is followed only at the tail; recreation restores RecyclerView state before subsequent updates.
+
+The dock is a transcript sibling. Teaching checks are explicitly revealed; collapse preserves the mounted controls and model state. A native scroll form occupies 60% of available content height when expanded, with header/submit outside the scroll region. While editing an answer with the IME, the reading pane/status are temporarily hidden to leave a usable editor even at 200% type; dismissing the keyboard restores them. This uses AppKit-delivered native IME insets, without applying padding a second time. Controls use stable resource IDs, including `labelFor` labels: anonymous labels generate small IDs that can collide with AppKit 1.5.3's fragment containers.
+
+Basic authored equations use native Unicode math with spoken descriptions and horizontal overflow. This is not a general Markdown/LaTeX engine. General rich-content renderers remain deferred. Visual targets, comparisons and captures are in DESIGN_SYSTEM.
 
 - Stable IDs derive from persistent block/tool identities, never list positions or collision-prone string hashes alone.
 - Project session events into display items separately from agent execution.
@@ -117,7 +129,7 @@ Optional ChatGPT sign-in requires a separate investigation of **official OpenAI 
 
 ## Validation and independence
 
-Kotlin instrumentation already checks the shell's real navigation, font role binding and restored draft/stack; it also captures app-window images. Manual device captures and documented visual differences are linked from DESIGN_SYSTEM. Foundation tests do not imply an implemented agent, graph, PDF parser or secure demo runtime.
+Kotlin instrumentation checks the shell and mock classroom: navigation, font roles, drafts/choices/confidence, parcelled partial-stream recovery, stable IDs/payloads, retry limits, reading position and real keyboard geometry. It also captures actual device frames. Manual device captures and documented visual differences are linked from DESIGN_SYSTEM. Foundation tests do not imply an implemented agent, graph, PDF parser or secure demo runtime.
 
 Later milestones add fake-provider/domain tests, streaming-row checks, gesture mathematics, graph integrity, parsing and security fixtures at the point their code exists. Real-model smoke tests remain opt-in and separate. Measure scrolling/layout/rendering before performance abstractions; use Profiler/Perfetto when warranted.
 

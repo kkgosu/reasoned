@@ -1,6 +1,6 @@
 # Reference and licensing ledger
 
-Research baseline: 2026-10-25. Scope: phases 0–1 only. **Reasoned** is an independent prototype name, not an official LearnHarness client. References were inspected outside this repository; their source trees are not vendored or built into the app.
+Research baseline: 2026-10-25. Scope: phases 0–2. **Reasoned** is an independent prototype name, not an official LearnHarness client. References were inspected outside this repository; their source trees are not vendored or built into the app.
 
 ## Pinned repositories
 
@@ -43,9 +43,9 @@ Original screenshots: [teaching session](https://github.com/amosblomqvist/learnh
 
 ## Shipped libraries
 
-Direct runtime dependencies: `me.grishka.appkit:appkit:1.5.3` and `me.grishka.litex:recyclerview:1.2.1.1`.
+Declared runtime dependencies: `me.grishka.appkit:appkit:1.5.3`, `me.grishka.litex:recyclerview:1.2.1.1` and `org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2` (introduced for the actual phase-2 mock stream). AGP adds `androidx.databinding:viewbinding:9.3.3` for native generated view bindings; this does not introduce AppCompat/Material/Compose.
 
-The [published AppKit POM](https://repo.maven.apache.org/maven2/me/grishka/appkit/appkit/1.5.3/appkit-1.5.3.pom) explicitly identifies **The Unlicense**. The repository README does not substitute for those published redistribution terms. Its transitive runtime includes LiteX collection 1.1.0, SwipeRefreshLayout 1.1.0.1, ViewPager 1.0.0, AndroidX annotations 1.3.0, OkHttp 3.14.9 and Okio 1.17.2. Kotlin stdlib 2.2.10 is supplied by AGP's built-in Kotlin support. Apache-2.0 applies to these transitive libraries; JetBrains annotations 13.0 is also present. AndroidX test dependencies are test-only, not an application framework.
+The [published AppKit POM](https://repo.maven.apache.org/maven2/me/grishka/appkit/appkit/1.5.3/appkit-1.5.3.pom) explicitly identifies **The Unlicense**. The repository README does not substitute for those published redistribution terms. Its transitive runtime includes LiteX collection 1.1.0, SwipeRefreshLayout 1.1.0.1, ViewPager 1.0.0, AndroidX annotations 1.3.0, OkHttp 3.14.9 and Okio 1.17.2. Kotlin stdlib 2.2.10 is supplied by AGP's built-in Kotlin support. Apache-2.0 applies to these transitive libraries. Coroutines adds its core/JVM 1.10.2 artifacts and BOM; JetBrains annotations now resolves to 23.0.0. AndroidX test dependencies are test-only, not an application framework.
 
 Reproduce the resolved inventory with:
 
@@ -53,7 +53,9 @@ Reproduce the resolved inventory with:
 ./gradlew :app:dependencies --configuration debugRuntimeClasspath
 ```
 
-AppKit's old transitive HTTP client is unused by this offline foundation. Before model connectivity, select a maintained compatible OkHttp version, validate AppKit compatibility, and review dependencies for vulnerabilities. Do not mistake a transitive library's presence for implemented model communication.
+Coroutines uses Apache-2.0; its pinned [upstream license](https://github.com/Kotlin/kotlinx.coroutines/blob/1.10.2/LICENSE.txt) attribution is retained in `assets/licenses/kotlinx_coroutines.txt`, with the full Apache license alongside it in `litex.txt`. View Binding is also Apache-2.0 and its generated source is build output, not hand-authored Java application code.
+
+AppKit's old transitive HTTP client is unused by this offline prototype. Before model connectivity, select a maintained compatible OkHttp version, validate AppKit compatibility, and review dependencies for vulnerabilities. Do not mistake a transitive library's presence for implemented model communication.
 
 ## Redistributed fonts
 
@@ -67,7 +69,7 @@ Fonts are unmodified upstream binaries, obtained separately from LearnHarness. A
 
 Font download branches/mirrors can move; the exact checked-in binaries are the reproducible assets. CMU's reserved font family name is “Computer Modern Unicode fonts”; retain the license and do not rename a modified family in violation of OFL. Android resource filenames are not modifications to font internals. No runtime font downloads are needed.
 
-AppKit, LiteX and OkHttp license texts are also bundled in `assets/licenses/`. Preserve applicable dependency notices when packaging a release and audit the final artifact's transitive notices. The project has not selected a license for its own first-party source; that is an owner decision before public distribution. This ledger is not legal advice.
+AppKit, LiteX and OkHttp license texts and the coroutines notice are also bundled in `assets/licenses/`. Preserve applicable dependency notices when packaging a release and audit the final artifact's transitive notices. The project has not selected a license for its own first-party source; that is an owner decision before public distribution. This ledger is not legal advice.
 
 ## Independence boundaries
 

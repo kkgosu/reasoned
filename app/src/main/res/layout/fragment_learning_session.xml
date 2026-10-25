@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/session_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:descendantFocusability="beforeDescendants"
+    android:focusableInTouchMode="true">
+
+    <TextView
+        android:id="@+id/lesson_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="@dimen/space_24"
+        android:paddingEnd="@dimen/space_24"
+        android:paddingTop="@dimen/space_12"
+        android:paddingBottom="@dimen/space_12"
+        android:textAppearance="@style/TextAppearance.Harness.Label" />
+
+    <me.grishka.appkit.views.UsableRecyclerView
+        android:id="@+id/lesson_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="2"
+        android:paddingStart="@dimen/space_24"
+        android:paddingEnd="@dimen/space_24"
+        android:paddingTop="@dimen/space_8"
+        android:paddingBottom="@dimen/space_8"
+        android:clipToPadding="false"
+        android:scrollbars="vertical" />
+
+    <LinearLayout
+        android:id="@+id/dock_shell"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/space_16"
+        android:padding="@dimen/space_12"
+        android:orientation="vertical"
+        android:background="@drawable/surface_outline">
+
+        <Button
+            android:id="@+id/reveal_question"
+            style="@style/Widget.Harness.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/reveal_question"
+            android:visibility="gone" />
+
+        <LinearLayout
+            android:id="@+id/question_panel"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:accessibilityHeading="true"
+                    android:textAppearance="@style/TextAppearance.Harness.Label"
+                    android:text="@string/prediction_label" />
+                <Button
+                    android:id="@+id/collapse_question"
+                    style="@style/Widget.Harness.Button.Secondary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/read_lesson" />
+            </LinearLayout>
+
+            <ScrollView
+                android:id="@+id/question_scroll"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:layout_marginTop="@dimen/space_8">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+                    <TextView
+                        android:id="@+id/question_text"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/TextAppearance.Harness.Prose"
+                        android:lineSpacingMultiplier="1.5"
+                        android:text="@string/lesson_question" />
+                    <RadioGroup
+                        android:id="@+id/question_options"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_12"
+                        android:orientation="vertical">
+                        <RadioButton
+                            android:id="@+id/option_left"
+                            style="@style/Widget.Harness.Choice"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content" />
+                        <RadioButton
+                            android:id="@+id/option_right"
+                            style="@style/Widget.Harness.Choice"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_8" />
+                        <RadioButton
+                            android:id="@+id/option_stay"
+                            style="@style/Widget.Harness.Choice"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_8" />
+                        <RadioButton
+                            android:id="@+id/option_unknown"
+                            style="@style/Widget.Harness.Choice"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/space_8" />
+                    </RadioGroup>
+                    <TextView
+                        android:id="@+id/confidence_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_16"
+                        android:labelFor="@id/question_confidence"
+                        android:textAppearance="@style/TextAppearance.Harness.Label" />
+                    <SeekBar
+                        android:id="@+id/question_confidence"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="@dimen/touch_target"
+                        android:max="100"
+                        android:progressTint="@color/foreground"
+                        android:thumbTint="@color/foreground"
+                        android:contentDescription="@string/confidence_accessibility" />
+                    <!-- A stable ID also avoids labelFor auto-generated IDs colliding with AppKit containers. -->
+                    <TextView
+                        android:id="@+id/thinking_label"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:labelFor="@id/question_thinking"
+                        android:textAppearance="@style/TextAppearance.Harness.Label"
+                        android:text="@string/thinking_label" />
+                    <EditText
+                        android:id="@+id/question_thinking"
+                        style="@style/Widget.Harness.Input"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="@dimen/space_8"
+                        android:minLines="2"
+                        android:hint="@string/thinking_hint" />
+                </LinearLayout>
+            </ScrollView>
+
+            <Button
+                android:id="@+id/submit_answer"
+                style="@style/Widget.Harness.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:text="@string/submit_answer" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/composer_panel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="bottom">
+                <EditText
+                    android:id="@+id/lesson_composer"
+                    style="@style/Widget.Harness.Input"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:minLines="1"
+                    android:maxLines="4"
+                    android:hint="@string/composer_hint" />
+                <Button
+                    android:id="@+id/composer_action"
+                    style="@style/Widget.Harness.Button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/send_note" />
+            </LinearLayout>
+            <TextView
+                android:id="@+id/composer_notice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="@dimen/space_8"
+                android:textAppearance="@style/TextAppearance.Harness.Meta"
+                android:text="@string/composer_preview_hint" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

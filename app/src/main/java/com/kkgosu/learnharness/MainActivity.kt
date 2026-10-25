@@ -8,9 +8,19 @@ import android.view.View
 import me.grishka.appkit.FragmentStackActivity
 
 class MainActivity : FragmentStackActivity() {
+    lateinit var mockLesson: MockLesson
+        private set
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        // AppKit may restore fragments inside super.onCreate; their state owner must exist first.
+        mockLesson = MockLesson(resources, savedInstanceState?.getBundle("mockLesson"))
         super.onCreate(savedInstanceState)
         if (savedInstanceState == null) showFragmentClearingBackStack(HomeFragment())
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putBundle("mockLesson", mockLesson.save())
+        super.onSaveInstanceState(outState)
     }
 
     override fun createFragmentEnterTransition(prev: View, container: View): Animator =

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="412" height="915" viewBox="0 0 412 915">
+  <title>Phase 2 — manually laid-out phone adaptation of LearnHarness</title>
+  <desc>Design target, not an app capture or pixel golden. Serif title, sans teaching text, mono controls; document above a persistent scrollable question dock. System bars and native radio/slider controls are schematic. Fonts require the corresponding bundled families to be installed when viewing this SVG.</desc>
+  <rect width="412" height="915" fill="#141414"/>
+  <g fill="#E6E6E6">
+    <text x="24" y="24" font-family="monospace" font-size="12.5">9:41</text>
+    <text x="24" y="67" font-family="sans-serif" font-size="25">‹</text>
+    <text x="64" y="66" font-family="CMU Serif,serif" font-weight="bold" font-size="25">Gradient descent</text>
+  </g>
+  <path d="M0 80H412" stroke="#434343"/>
+  <text x="24" y="106" fill="#8D8D8D" font-family="JetBrains Mono,monospace" font-size="11" letter-spacing=".88">TEACHING · LOCAL PREVIEW</text>
+  <g fill="#E6E6E6" font-family="Source Sans 3,sans-serif" font-size="16">
+    <text x="24" y="144">Take a small step against the slope.</text>
+    <text x="24" y="168">For a simple bowl-shaped function:</text>
+    <text x="24" y="212" font-family="CMU Serif,serif" font-size="25">f(x) = x²     f′(x) = 2x</text>
+    <text x="24" y="256">At x = 3 the derivative is positive.</text>
+    <text x="24" y="280">Subtracting it moves us left, toward</text>
+    <text x="24" y="304">the minimum at zero.</text>
+    <text x="24" y="348" font-family="CMU Serif,serif" font-size="25">xₙ₊₁ = xₙ − η · f′(xₙ)</text>
+  </g>
+  <rect x="16" y="390" width="380" height="477" rx="16" fill="#1C1C1C" stroke="#434343"/>
+  <text x="32" y="419" fill="#8D8D8D" font-family="JetBrains Mono,monospace" font-size="11" letter-spacing=".88">PREDICTION</text>
+  <text x="272" y="419" fill="#E6E6E6" font-family="JetBrains Mono,monospace" font-size="12.5">Read lesson</text>
+  <g fill="#E6E6E6" font-family="Source Sans 3,sans-serif" font-size="16">
+    <text x="32" y="458">At x = 3, which direction reduces f(x)?</text>
+    <rect x="28" y="477" width="356" height="48" rx="8" fill="none" stroke="#434343"/>
+    <circle cx="48" cy="501" r="8" fill="none" stroke="#8D8D8D"/>
+    <text x="68" y="506">Left, toward zero.</text>
+    <rect x="28" y="533" width="356" height="48" rx="8" fill="none" stroke="#434343"/>
+    <circle cx="48" cy="557" r="8" fill="none" stroke="#8D8D8D"/>
+    <text x="68" y="562">Right, away from zero.</text>
+    <rect x="28" y="589" width="356" height="48" rx="8" fill="none" stroke="#434343"/>
+    <circle cx="48" cy="613" r="8" fill="none" stroke="#8D8D8D"/>
+    <text x="68" y="618">Stay at x = 3.</text>
+    <text x="32" y="666" fill="#8D8D8D">○   I don’t know</text>
+  </g>
+  <text x="32" y="704" fill="#8D8D8D" font-family="JetBrains Mono,monospace" font-size="11">CONFIDENCE · 50%</text>
+  <path d="M32 725H372" stroke="#434343" stroke-width="2"/>
+  <path d="M32 725H202" stroke="#E6E6E6" stroke-width="2"/>
+  <circle cx="202" cy="725" r="8" fill="#E6E6E6"/>
+  <text x="32" y="764" fill="#8D8D8D" font-family="JetBrains Mono,monospace" font-size="11">YOUR THINKING</text>
+  <text x="32" y="790" fill="#8D8D8D" font-family="Source Sans 3,sans-serif" font-size="16">Why this answer? Whatever comes to mind.</text>
+  <rect x="28" y="807" width="356" height="48" rx="8" fill="#E6E6E6"/>
+  <text x="206" y="837" text-anchor="middle" fill="#141414" font-family="JetBrains Mono,monospace" font-size="12.5">Submit answer</text>
+  <path d="M171 895H241" stroke="#E6E6E6" stroke-width="3" stroke-linecap="round"/>
+</svg>

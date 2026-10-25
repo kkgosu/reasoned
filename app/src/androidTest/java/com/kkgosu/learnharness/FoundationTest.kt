@@ -1,7 +1,6 @@
 package com.kkgosu.learnharness
 
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -52,22 +51,25 @@ class FoundationTest {
     @Test
     fun captureFoundationScreens() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.onActivity { capture(it, "home") }
+            capture("home")
             scenario.onActivity { it.findViewById<Button>(R.id.style_reference).performClick() }
             InstrumentationRegistry.getInstrumentation().waitForIdleSync()
             scenario.recreate() // Ensure the enter animation has finished before capturing.
-            scenario.onActivity { capture(it, "style-reference") }
+            capture("style-reference")
         }
     }
 
-    private fun capture(activity: MainActivity, name: String) {
-        val view = activity.window.decorView
-        val bitmap = Bitmap.createBitmap(view.width, view.height, Bitmap.Config.ARGB_8888)
-        view.draw(Canvas(bitmap))
-        val output = InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")
-        val directory = (output?.let { File(it) }
-            ?: File(activity.getExternalFilesDir(null), "screenshots")).apply { mkdirs() }
-        File(directory, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        bitmap.recycle()
-    }
+}
+
+// Capture the composed device frame, including system UI and native view layers.
+internal fun capture(name: String) {
+    val instrumentation = InstrumentationRegistry.getInstrumentation()
+    // Let native dock/fragment animations finish, not just the current UI queue.
+    instrumentation.uiAutomation.waitForIdle(500, 5000)
+    val bitmap = requireNotNull(instrumentation.uiAutomation.takeScreenshot())
+    val output = InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")
+    val directory = (output?.let { File(it) }
+        ?: File(instrumentation.targetContext.getExternalFilesDir(null), "screenshots")).apply { mkdirs() }
+    File(directory, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    bitmap.recycle()
 }
