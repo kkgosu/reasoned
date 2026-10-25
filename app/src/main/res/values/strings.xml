@@ -1,3 +1,26 @@
 <resources>
-    <string name="app_name">learnharness</string>
+    <string name="app_name">Reasoned</string>
+    <string name="knowledge_graph_label">KNOWLEDGE GRAPH</string>
+    <string name="home_title">Understanding, connected.</string>
+    <string name="home_empty">No knowledge yet. Future lessons will connect propositions, reasoning, and the evidence behind them here.</string>
+    <string name="foundation_status">Phase 1 · Native foundation\nLearning sessions are not enabled yet.</string>
+    <string name="style_reference">Style reference</string>
+    <string name="type_title_label">CMU SERIF BOLD · TITLES</string>
+    <string name="type_title_sample">One step at a time.</string>
+    <string name="type_prose_label">SOURCE SANS 3 · PROSE</string>
+    <string name="type_prose_sample">An explanation should connect a new idea to something you already understand. <b>Reasoning</b> gives the connection meaning.</string>
+    <string name="type_ui_label">JETBRAINS MONO · CONTROLS</string>
+    <string name="type_ui_sample">PROBE → PLAN → TEACH → PRACTICE</string>
+    <string name="surface_label">SURFACES · QUIET, NOT DECORATIVE</string>
+    <string name="surface_sample">Surface #1C1C1C\nBorder #434343 · radius 16 dp</string>
+    <string name="type_scale_label">TYPE LADDER · SCALES WITH ANDROID</string>
+    <string name="type_scale_11">11 · LABEL</string>
+    <string name="type_scale_12_5">12.5 · Metadata</string>
+    <string name="type_scale_14">14 · Controls</string>
+    <string name="type_scale_16">16 · Reading</string>
+    <string name="type_scale_20">20 · Subheading</string>
+    <string name="type_scale_25">25 · Screen title</string>
+    <string name="type_scale_32">32 · Prominent title</string>
+    <string name="draft_hint">A sample draft. Type here to check restoration.</string>
+    <string name="return_home">Return home</string>
 </resources>

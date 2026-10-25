@@ -1,20 +1,27 @@
 package com.kkgosu.learnharness
 
+import android.animation.Animator
+import android.animation.ObjectAnimator
+import android.animation.ValueAnimator
 import android.os.Bundle
-import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import android.view.View
+import me.grishka.appkit.FragmentStackActivity
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : FragmentStackActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        setContentView(R.layout.activity_main)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+        if (savedInstanceState == null) showFragmentClearingBackStack(HomeFragment())
     }
+
+    override fun createFragmentEnterTransition(prev: View, container: View): Animator =
+        ObjectAnimator.ofFloat(container, View.ALPHA, 0f, 1f).apply {
+            duration = motionDuration()
+        }
+
+    // Keep AppKit's predictive-back transform cleanup instead of replacing its exit path.
+    override fun createFragmentExitTransition(prev: View, container: View): Animator =
+        super.createFragmentExitTransition(prev, container).apply { duration = motionDuration() }
+
+    private fun motionDuration(): Long =
+        if (ValueAnimator.areAnimatorsEnabled()) resources.getInteger(R.integer.motion_short_ms).toLong() else 0L
 }

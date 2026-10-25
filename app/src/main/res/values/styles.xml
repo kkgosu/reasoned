@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="TextAppearance.Harness" parent="android:TextAppearance.Material.Body1">
+        <item name="android:fontFamily">@font/ui</item>
+        <item name="android:textSize">@dimen/text_14</item>
+        <item name="android:textColor">@color/foreground</item>
+        <item name="android:fontFeatureSettings">liga</item>
+    </style>
+    <style name="TextAppearance.Harness.Label">
+        <item name="android:textSize">@dimen/text_11</item>
+        <item name="android:textColor">@color/muted_foreground</item>
+        <item name="android:letterSpacing">0.08</item>
+    </style>
+    <style name="TextAppearance.Harness.Meta">
+        <item name="android:textSize">@dimen/text_12_5</item>
+        <item name="android:textColor">@color/muted_foreground</item>
+    </style>
+    <style name="TextAppearance.Harness.Prose">
+        <item name="android:fontFamily">@font/prose</item>
+        <item name="android:textSize">@dimen/text_16</item>
+    </style>
+    <style name="TextAppearance.Harness.Title">
+        <item name="android:fontFamily">@font/title</item>
+        <item name="android:textSize">@dimen/text_32</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="TextAppearance.Harness.Toolbar">
+        <item name="android:fontFamily">@font/title</item>
+        <item name="android:textSize">@dimen/text_25</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    <style name="Widget.Harness.TextView" parent="android:Widget.TextView">
+        <item name="android:textAppearance">@style/TextAppearance.Harness</item>
+    </style>
+    <style name="Widget.Harness.Button" parent="android:Widget.Material.Button.Borderless">
+        <item name="android:fontFamily">@font/ui</item>
+        <item name="android:textSize">@dimen/text_12_5</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textColor">@color/primary_foreground</item>
+        <item name="android:background">@drawable/button_primary</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:minHeight">@dimen/touch_target</item>
+        <item name="android:paddingStart">@dimen/space_16</item>
+        <item name="android:paddingEnd">@dimen/space_16</item>
+    </style>
+    <style name="Widget.Harness.Button.Secondary">
+        <item name="android:textColor">@color/foreground</item>
+        <item name="android:background">@drawable/button_secondary</item>
+    </style>
+</resources>

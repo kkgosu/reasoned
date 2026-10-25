@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/reference_scroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/space_24">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Harness.Label"
+            android:text="@string/type_title_label" />
+
+        <TextView
+            android:id="@+id/title_sample"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_8"
+            android:textAppearance="@style/TextAppearance.Harness.Title"
+            android:text="@string/type_title_sample" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_24"
+            android:textAppearance="@style/TextAppearance.Harness.Label"
+            android:text="@string/type_prose_label" />
+
+        <TextView
+            android:id="@+id/prose_sample"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_8"
+            android:textAppearance="@style/TextAppearance.Harness.Prose"
+            android:lineSpacingMultiplier="1.5"
+            android:textIsSelectable="true"
+            android:text="@string/type_prose_sample" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_24"
+            android:textAppearance="@style/TextAppearance.Harness.Label"
+            android:text="@string/type_ui_label" />
+
+        <TextView
+            android:id="@+id/ui_sample"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_8"
+            android:textAppearance="@style/TextAppearance.Harness"
+            android:text="@string/type_ui_sample" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_24"
+            android:textAppearance="@style/TextAppearance.Harness.Label"
+            android:text="@string/surface_label" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_8"
+            android:background="@drawable/surface_outline"
+            android:padding="@dimen/space_16"
+            android:textAppearance="@style/TextAppearance.Harness.Meta"
+            android:text="@string/surface_sample" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_24"
+            android:textAppearance="@style/TextAppearance.Harness.Label"
+            android:text="@string/type_scale_label" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_8"
+            android:textAppearance="@style/TextAppearance.Harness.Label"
+            android:text="@string/type_scale_11" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_8"
+            android:textAppearance="@style/TextAppearance.Harness.Meta"
+            android:text="@string/type_scale_12_5" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_8"
+            android:textAppearance="@style/TextAppearance.Harness"
+            android:text="@string/type_scale_14" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_8"
+            android:textAppearance="@style/TextAppearance.Harness.Prose"
+            android:text="@string/type_scale_16" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_8"
+            android:fontFamily="@font/prose"
+            android:textColor="@color/foreground"
+            android:textSize="@dimen/text_20"
+            android:text="@string/type_scale_20" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_8"
+            android:textAppearance="@style/TextAppearance.Harness.Toolbar"
+            android:text="@string/type_scale_25" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_8"
+            android:textAppearance="@style/TextAppearance.Harness.Title"
+            android:text="@string/type_scale_32" />
+
+        <EditText
+            android:id="@+id/draft_sample"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_24"
+            android:background="@drawable/surface_outline"
+            android:fontFamily="@font/prose"
+            android:textSize="@dimen/text_16"
+            android:lineSpacingMultiplier="1.25"
+            android:padding="@dimen/space_16"
+            android:minHeight="@dimen/touch_target"
+            android:gravity="top|start"
+            android:inputType="textCapSentences|textMultiLine"
+            android:hint="@string/draft_hint"
+            android:importantForAutofill="no" />
+
+        <Button
+            android:id="@+id/return_home"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_16"
+            android:text="@string/return_home" />
+    </LinearLayout>
+</ScrollView>

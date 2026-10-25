@@ -1,9 +1,25 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.Learnharness" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AppKit uses platform widgets, not the Material Components library. -->
+    <style name="Theme.Learnharness" parent="Theme.AppKit">
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:colorBackground">@color/background</item>
+        <item name="android:colorForeground">@color/foreground</item>
+        <item name="android:colorPrimary">@color/background</item>
+        <item name="android:colorPrimaryDark">@color/background</item>
+        <item name="android:colorAccent">@color/foreground</item>
+        <item name="android:textColorPrimary">@color/foreground</item>
+        <item name="android:textColorSecondary">@color/muted_foreground</item>
+        <item name="android:textColorHint">@color/muted_foreground</item>
+        <item name="android:colorControlNormal">@color/muted_foreground</item>
+        <item name="android:textViewStyle">@style/Widget.Harness.TextView</item>
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:navigationBarColor">@color/background</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:titleTextAppearance">@style/TextAppearance.Harness.Toolbar</item>
+        <item name="android:buttonStyle">@style/Widget.Harness.Button</item>
+        <item name="appkitToolbarBackground">@color/background</item>
+        <item name="appkitToolbarElevation">0dp</item>
+        <item name="actionBarIconTint">@color/muted_foreground</item>
     </style>
-
-    <style name="Theme.Learnharness" parent="Base.Theme.Learnharness" />
 </resources>
