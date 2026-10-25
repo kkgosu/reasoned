@@ -1,6 +1,6 @@
 # Native design reference
 
-Scope: extracted reference rules, the phase-1 style specimen and the phase-2 mock classroom. The graph prototype remains phase 3. Product/appearance comes from LearnHarness; Android engineering comes from AppKit/LiteX. Repository revisions and license boundaries are in [REFERENCES.md](REFERENCES.md).
+Scope: extracted reference rules, the phase-1 style specimen, phase-2 mock classroom and phase-3 Canvas graph prototype. Product/appearance comes from LearnHarness; Android engineering comes from AppKit/LiteX. Repository revisions and license boundaries are in [REFERENCES.md](REFERENCES.md).
 
 ## 1. Authoritative sources
 
@@ -76,14 +76,14 @@ Some ladder tokens are intentionally unused in the small specimen; they are the 
 
 | Component | Reference anatomy | Native adaptation / phase |
 |---|---|---|
-| Home | Graph fills available space; bottom goal input and teach/practice switch; navigation secondary | Quiet graph empty state with one bottom sample-session entry. No fake custom-goal generation; actual graph/goal execution comes later. |
+| Home | Graph fills available space; bottom goal input and teach/practice switch; navigation secondary | Phase 3 displays an explicitly illustrative graph with native search/Browse, zoom/Fit/Inspect and sample-session entry. No fake custom-goal generation. |
 | Navigation | Narrow left session column; serif/prose names, mono filters/search/metadata | AppKit stack and platform Toolbar now; dedicated session/navigation surface later instead of shrinking the desktop sidebar onto phones. |
 | Session | Serif title; status/plan actions; document-like prose spine; integrated formulas/diagrams | Implemented `LearningSessionFragment`: typed native text/formula/answer rows, quiet status and no messenger bubbles. Plan/diagram actions wait for those features. |
 | Composer | One rounded bottom shell, growing Source Sans input, trailing send/stop; ancillary controls below | Implemented native 1–4-line EditText, Send/Stop/Resume, visible local-preview notice and AppKit IME-safe area. A stopped stream is resumed before sending the retained note. |
 | Question dock | Same shell replaces composer; label → question → options → confidence → “Your thinking” → submit | One persistent native shell. The authored teaching check offers reveal; controls scroll while header/submit remain reachable. Selection, confidence and thinking survive collapse, recreation and Home navigation. Probe/open-response/practice variants wait for their features. |
 | Practice | Task-specific exercise/answer/feedback in the persistent interaction area | Reuse the dock/state identity principles in phase 7, not a new modal per exercise. |
 | Plan/diagram overlay | Detailed inspection independent of the lesson spine | Phone fullscreen AppKit screen; restore position/draft on return. No tiny desktop popover. |
-| Graph | Fine edges, small light nodes, quiet labels; muted cluster regions behind topology | Custom Kotlin Canvas view in phase 3. Separate layout from drawing; zoom gates domain/node labels; touch selection opens readable details. |
+| Graph | Fine edges, small light nodes, quiet labels; muted cluster regions behind topology | Implemented Kotlin Canvas with off-main layout snapshot, pan/pinch, zoom-gated/collision-suppressed labels and native searchable/readable proposition details. |
 
 Desktop screenshots contain window traffic lights, hover controls and wide columns. These are not Android UI requirements. Preserve hierarchy, content organization and behavior, not desktop window furniture.
 
@@ -99,14 +99,14 @@ Use Android focus, touch feedback, TalkBack labels and heading semantics; do **n
 
 Open **Style reference** from Home. It demonstrates three font roles, the complete size ladder, a minimal outlined surface, primary/secondary actions and a multiline restoration draft. It deliberately uses a static ScrollView: building a RecyclerView adapter for a fixed typography specimen would add no value. LiteX/AppKit RecyclerView now renders the phase-2 lesson.
 
-Current Android captures: [home](docs/screenshots/phase2-home.png), [reading](docs/screenshots/phase2-reading.png), [question](docs/screenshots/phase2-question.png), [thinking](docs/screenshots/phase2-thinking.png), [feedback](docs/screenshots/phase2-feedback.png). They are our own full-device captures, including system bars, not copied reference assets; keyboard-free review states are selected. Environment and checks are recorded in IMPLEMENTATION_PLAN.
+Phase-2 Android captures (historical home): [home](docs/screenshots/phase2-home.png), [reading](docs/screenshots/phase2-reading.png), [question](docs/screenshots/phase2-question.png), [thinking](docs/screenshots/phase2-thinking.png), [feedback](docs/screenshots/phase2-feedback.png). They are our own full-device captures, including system bars, not copied reference assets; keyboard-free review states are selected. Environment and checks are recorded in IMPLEMENTATION_PLAN.
 
 Comparison against the original screenshots:
 
 - Matched: exact base colors; serif title / sans reading / mono chrome separation; thin quiet separator; restrained outlined functional surfaces; no chat bubbles, colorful cards or heavy shadows.
 - Corrected during verification: a global theme font was overriding text-appearance fonts, rendering prose and prominent titles in mono. It was replaced with a default TextView appearance; font assertions and screenshots now confirm separate roles.
 - Intentional adaptation: 24 dp phone margins, 48 dp controls, platform system bars/back arrow, wrapping text, no desktop sidebar/window controls. The home copy and specimen are original explanatory placeholders, not a reproduction of a full learning session.
-- Phase-1 limitations were lesson rows, formulas, dock expansion, graph density and tablet composition. Phase 2 now covers the first three; graph/tablet visual verification remains outstanding.
+- Phase-1 limitations were lesson rows, formulas, dock expansion, graph density and tablet composition. Phase 2 covers the first three; phase 3 adds the graph comparison below. Tablet composition remains unverified.
 
 ## 8. Phase-2 phone adaptation and comparison
 
@@ -126,4 +126,22 @@ Manual comparison of the source screenshot, phone target and native captures:
 | Interaction/motion | Explicit teaching-check reveal, non-destructive collapse, 150 ms native bounds transitions targeted only at the dock (zero with disabled animators), Stop/Resume and honest authored-note replies. Busy mock streams do not implement real-model steering. |
 | Navigation | Platform back/stack replaces the desktop sidebar; no fabricated plan, model selector, microphone, usage accounting or background-agent controls. |
 
-These captures were manually inspected and are review baselines, **not owner-approved pixel-diff goldens**. No automated image-difference/fidelity score is claimed. User visual review is still the gate before real AI; phase 3 may proceed independently with mock graph data.
+These captures were manually inspected and are review baselines, **not owner-approved pixel-diff goldens**. No automated image-difference/fidelity score is claimed. User visual review is still the gate before real AI; phase 3 uses independent mock graph data.
+
+## 9. Phase-3 graph comparison
+
+Native Pixel 7/API-36 review frames: [fit graph](docs/screenshots/phase3-graph.png), [search results/highlight](docs/screenshots/phase3-search.png), [selected proposition](docs/screenshots/phase3-selection.png), [readable detail](docs/screenshots/phase3-proposition.png). These are full-device captures at default type size, not approved image-diff goldens.
+
+Compared visually against the pinned original `knowledge-graph.png` and graph renderer:
+
+| Aspect | Match / deliberate phone adaptation |
+|---|---|
+| Topology and density | Small light dots, fine 0.65-dp lines, no node cards, sparse overview labels. Thirty authored propositions rather than the reference’s hundreds; no implication that the sample is the learner’s knowledge. |
+| Regions | Six subdued semantic tints, using native radial shaders behind topology. Added `graph_region_0…5` tokens have center alpha `0x30` and fade to transparent. These are independently selected approximate tints, not exact upstream hues. Fixed circular regions replace the reference’s organic rasterized neighborhoods; no decorative chrome gradients. |
+| Type | Source Sans 3 node labels at 12.5 sp, mono cluster captions/controls and serif proposition title. Zoom reveals node labels; collision checks prioritize selection and suppress overlaps, including cluster captions in short viewports. Full statements remain available natively. |
+| Camera and touch | Fit, drag, two-finger focus-preserving zoom and double-tap. Fixed-size dots/rings remain visible while world geometry scales. Nearest picking within 24 dp is a phone adaptation, not a promise that overlapping targets are distinguishable; zoom or Browse resolves dense areas. |
+| Search and accessibility | Native case-insensitive word-prefix results, bright match rings/dimmed other dots, explicit no matches, Browse-all and native Inspect/details. Results wrap full propositions rather than forcing horizontal dropdown text. Canvas itself is not an accessibility-focus destination; the full native route is the alternative, pending actual TalkBack verification. |
+| Details and provenance | Fullscreen scrollable native statement, reasoning and authored-source disclosure; incoming/outgoing links distinguish relationship direction. Relevant nodes link to the existing sample classroom. No hover-only panel, fake learner confidence, fabricated citations or graph edits. |
+| Home chrome | Android toolbar/system bars and 48-dp controls replace desktop traffic lights/hover actions. Sample lesson/style reference remain at the bottom; no pretend model picker, dictation, goal generation or usage accounting. |
+
+Graph tests pass at normal and 200% text size with animations disabled. Recreated camera/selection and native pan/pinch/search/detail flows are checked; actual TalkBack, large real graphs, tablets/foldables/RTL and formal pixel differences remain unverified.

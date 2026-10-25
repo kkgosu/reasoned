@@ -1,6 +1,6 @@
 # Reference and licensing ledger
 
-Research baseline: 2026-10-25. Scope: phases 0–2. **Reasoned** is an independent prototype name, not an official LearnHarness client. References were inspected outside this repository; their source trees are not vendored or built into the app.
+Research baseline: 2026-10-25. Scope: phases 0–3. **Reasoned** is an independent prototype name, not an official LearnHarness client. References were inspected outside this repository; their source trees are not vendored or built into the app.
 
 ## Pinned repositories
 
@@ -27,7 +27,7 @@ All paths in this table are relative to the pinned LearnHarness repository above
 | `components/composer.tsx`, `components/question-dock.tsx` | One persistent shell changes task; retain question selection and reasoning through collapse; explicit submit, accessible stop. |
 | `components/ai-elements/message.tsx`, `components/md-blocks.tsx` | Integrated teaching prose, Markdown, math, code, tables and diagrams; no repeated decorative message cards. |
 | `components/session-overlay.tsx`, `components/practice-dock.tsx` | Plan/diagram inspection and task-specific practice interactions. Phone overlays must become usable fullscreen surfaces. |
-| `components/graph-view.tsx`, `components/graph-canvas.ts` | Canvas rendering, camera transforms, picking, theme-resolved colors, zoom-gated labels, cluster regions and selected-node details. |
+| `components/graph-view.tsx`, `components/graph-canvas.ts`, `components/cluster-geometry.ts` | Canvas rendering, camera transforms, picking, theme-resolved colors, zoom-gated labels, stable cluster hues/soft regions and selected-node details. The Android phase-3 fixture uses its own deterministic layout, native radial regions and independently authored propositions, not a TypeScript port. |
 | `docs/assets/teaching-session.png`, `docs/assets/knowledge-graph.png` | Visually inspected: serif session title, restrained mono chrome, broad prose column, bottom question/reasoning dock; fine graph connections and muted cluster regions. Linked below, not copied into the APK or this repository. |
 
 Original screenshots: [teaching session](https://github.com/amosblomqvist/learnharness/blob/0795ef197cca04f6a8e7d50d10ed4dc71bd1a0cc/docs/assets/teaching-session.png), [knowledge graph](https://github.com/amosblomqvist/learnharness/blob/0795ef197cca04f6a8e7d50d10ed4dc71bd1a0cc/docs/assets/knowledge-graph.png).
@@ -40,6 +40,12 @@ Original screenshots: [teaching session](https://github.com/amosblomqvist/learnh
 - AppKit `README.md`, `appkit/build.gradle`, and `appkit/src/main/java/me/grishka/appkit/{FragmentStackActivity,Nav}.java`: activity-owned stack, `Nav.go` / `Nav.finish`, bundle/container restoration, predictive back callbacks and transitions. Use the actual library, not a Kotlin rewrite of its internals.
 - AppKit `fragments/{AppKitFragment,ToolbarFragment}.java`, `views/{UsableRecyclerView,FragmentRootLinearLayout}.java`, `res/values/styles.xml`: platform Toolbar, expected `toolbar` / `appkit_content` IDs, inset-aware fragment root and clickable holders. `Theme.AppKit` is based on the platform theme, not the Material Components library.
 - Mastodon `mastodon/src/main/java/org/joinmastodon/android/MainActivity.java`, `fragments/HomeFragment.java`, `ui/displayitems/{StatusDisplayItem,TextStatusDisplayItem}.java`: split rich content into typed rows, choose specialized holders, bind existing views, keep item identity and callbacks separate from the runtime. No social-feed visuals or Java source were imported.
+
+## Phase-3 platform implementation
+
+No additional dependency or upstream graph source/assets were imported. Drawing uses Android Canvas/Paint/RadialGradient; interaction uses GestureDetector/ScaleGestureDetector. Native AutoCompleteTextView/ArrayAdapter/ListPopupWindow provide the searchable all-node alternative. Android API-36 SDK sources for autocomplete/dropdown behavior were inspected: empty-query filtering can dismiss a popup, and DropDownListView forces a root TextView to scroll horizontally. The implementation uses native filter completion and a container-based XML result row rather than replacing the platform filter/list.
+
+The original graph screenshot and pinned Canvas/cluster sources guided the visual comparison recorded in DESIGN_SYSTEM. Circular radial regions, fixed fixture geometry and smaller phone data density are explicit differences; no exact upstream-force-layout or pixel-fidelity claim is made.
 
 ## Shipped libraries
 

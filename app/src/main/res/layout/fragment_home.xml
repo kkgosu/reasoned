@@ -1,89 +1,127 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/home_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical">
-    <ScrollView
-        android:id="@+id/home_scroll"
+    android:orientation="vertical"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="@dimen/space_16"
+        android:paddingEnd="@dimen/space_16"
+        android:paddingTop="@dimen/space_8"
+        android:textAppearance="@style/TextAppearance.Harness.Label"
+        android:text="@string/graph_preview" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/space_16"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+        <AutoCompleteTextView
+            android:id="@+id/graph_search"
+            style="@style/Widget.Harness.Input"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@drawable/button_secondary"
+            android:hint="@string/graph_search"
+            android:inputType="text"
+            android:singleLine="true"
+            android:imeOptions="actionDone"
+            android:maxLength="100"
+            android:completionThreshold="1"
+            android:dropDownWidth="match_parent"
+            android:popupBackground="@color/surface" />
+        <Button
+            android:id="@+id/graph_browse"
+            style="@style/Widget.Harness.Button.Secondary"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/space_8"
+            android:text="@string/graph_browse" />
+    </LinearLayout>
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:fillViewport="true">
-        <LinearLayout
+        android:layout_weight="1">
+        <com.kkgosu.learnharness.KnowledgeGraphView
+            android:id="@+id/knowledge_graph"
             android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+        <TextView
+            android:id="@+id/graph_loading"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="@dimen/space_24"
-            android:gravity="center_vertical">
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textAppearance="@style/TextAppearance.Harness.Label"
-                android:text="@string/knowledge_graph_label" />
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_12"
-                android:accessibilityHeading="true"
-                android:textAppearance="@style/TextAppearance.Harness.Title"
-                android:text="@string/home_title" />
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_16"
-                android:textAppearance="@style/TextAppearance.Harness.Prose"
-                android:lineSpacingMultiplier="1.5"
-                android:text="@string/home_empty" />
-        </LinearLayout>
-    </ScrollView>
-
+            android:layout_gravity="center"
+            android:textAppearance="@style/TextAppearance.Harness.Meta"
+            android:text="@string/graph_loading" />
+    </FrameLayout>
     <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="@dimen/space_16"
+        android:paddingEnd="@dimen/space_16"
+        android:orientation="horizontal">
+        <Button
+            android:id="@+id/graph_zoom_out"
+            style="@style/Widget.Harness.Button.Secondary"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:contentDescription="@string/graph_zoom_out"
+            android:text="−" />
+        <Button
+            android:id="@+id/graph_zoom_in"
+            style="@style/Widget.Harness.Button.Secondary"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="@dimen/space_8"
+            android:contentDescription="@string/graph_zoom_in"
+            android:text="+" />
+        <Button
+            android:id="@+id/graph_fit"
+            style="@style/Widget.Harness.Button.Secondary"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="@dimen/space_8"
+            android:text="@string/graph_fit" />
+    </LinearLayout>
+    <Button
+        android:id="@+id/graph_details"
+        style="@style/Widget.Harness.Button.Secondary"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/space_16"
         android:layout_marginEnd="@dimen/space_16"
-        android:padding="@dimen/space_16"
-        android:orientation="vertical"
-        android:background="@drawable/surface_outline">
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.Harness.Label"
-            android:text="@string/sample_lesson_label" />
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_8"
-            android:textAppearance="@style/TextAppearance.Harness.Toolbar"
-            android:text="@string/sample_lesson_title" />
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_8"
-            android:textAppearance="@style/TextAppearance.Harness.Prose"
-            android:lineSpacingMultiplier="1.5"
-            android:text="@string/sample_lesson_description" />
-        <Button
-            android:id="@+id/open_sample_lesson"
-            style="@style/Widget.Harness.Button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_16"
-            android:text="@string/open_sample_lesson" />
-    </LinearLayout>
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingStart="@dimen/space_24"
-        android:paddingEnd="@dimen/space_24"
-        android:paddingTop="@dimen/space_12"
-        android:textAppearance="@style/TextAppearance.Harness.Meta"
-        android:text="@string/foundation_status" />
-    <Button
-        android:id="@+id/style_reference"
-        style="@style/Widget.Harness.Button.Secondary"
+        android:layout_marginTop="@dimen/space_8"
+        android:fontFamily="@font/prose"
+        android:textSize="@dimen/text_14"
+        android:enabled="false"
+        android:text="@string/graph_select" />
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/space_16"
-        android:text="@string/style_reference" />
+        android:orientation="horizontal">
+        <Button
+            android:id="@+id/open_sample_lesson"
+            style="@style/Widget.Harness.Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/graph_sample_lesson" />
+        <Button
+            android:id="@+id/style_reference"
+            style="@style/Widget.Harness.Button.Secondary"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="@dimen/space_8"
+            android:text="@string/style_reference" />
+    </LinearLayout>
 </LinearLayout>

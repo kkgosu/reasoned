@@ -9,4 +9,11 @@
     <color name="accent_surface">#2A2A2A</color>
     <color name="primary">@color/foreground</color>
     <color name="primary_foreground">@color/background</color>
+    <!-- Semantic cluster tints only; low-alpha, soft regions on the unchanged dark canvas. -->
+    <color name="graph_region_0">#3096B58F</color>
+    <color name="graph_region_1">#3094BEC5</color>
+    <color name="graph_region_2">#30BC96CF</color>
+    <color name="graph_region_3">#30C7B479</color>
+    <color name="graph_region_4">#3096BABA</color>
+    <color name="graph_region_5">#30BF929E</color>
 </resources>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A container avoids DropDownListView forcing horizontal scrolling on a root TextView. -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="@dimen/space_8">
+    <TextView
+        android:id="@+id/graph_result_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:minHeight="@dimen/touch_target"
+        android:gravity="center_vertical"
+        android:textAppearance="@style/TextAppearance.Harness.Prose" />
+</FrameLayout>

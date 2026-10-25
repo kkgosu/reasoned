@@ -1,0 +1,97 @@
+<resources>
+    <string name="graph_preview">SAMPLE KNOWLEDGE · 30 PROPOSITIONS · NOT YOUR RECORD</string>
+    <string name="graph_search">Search propositions…</string>
+    <string name="graph_browse">Browse</string>
+    <string name="graph_loading">Arranging sample knowledge…</string>
+    <string name="graph_zoom_out">Zoom out</string>
+    <string name="graph_zoom_in">Zoom in</string>
+    <string name="graph_fit">Fit</string>
+    <string name="graph_select">Pan or pinch. Select a node, or Browse to read any proposition.</string>
+    <string name="graph_inspect">Inspect: %1$s →</string>
+    <string name="graph_no_matches">No matching propositions. Browse shows all sample nodes.</string>
+    <string name="graph_sample_lesson">Sample lesson</string>
+    <string name="graph_proposition">Proposition</string>
+    <string name="graph_missing">This sample proposition is no longer available.</string>
+    <string name="graph_reasoning">REASONING</string>
+    <string name="graph_provenance">SOURCE · AUTHORED ILLUSTRATION</string>
+    <string name="graph_fixture_source">This proposition and its relationships were written for the local graph preview. They were not extracted from your lessons or verified against learner answers. No learner evidence or confidence is recorded. Where relevant, the sample lesson below illustrates the idea; it is not proof of your understanding.</string>
+    <string name="graph_relationships">RELATED PROPOSITIONS · AUTHORED LINKS</string>
+    <string name="graph_premise">Premise: %1$s →</string>
+    <string name="graph_conclusion">Leads to: %1$s →</string>
+    <string-array name="graph_clusters">
+        <item>Functions</item><item>Differentiation</item><item>Optimization</item>
+        <item>Probability</item><item>Statistics</item><item>Learning</item>
+    </string-array>
+    <string-array name="graph_node_labels">
+        <item>One input, one output</item><item>Nonnegative square</item><item>A minimum at zero</item><item>Slope gives direction</item><item>Local information</item>
+        <item>Derivative as a limit</item><item>The square’s derivative</item><item>Positive derivative</item><item>Negative derivative</item><item>Stationary point</item>
+        <item>Follow the negative slope</item><item>Learning rate</item><item>A step toward zero</item><item>Overshooting</item><item>Convergence of a quadratic</item>
+        <item>An event</item><item>Probability bounds</item><item>Complement rule</item><item>Independent events</item><item>Expected value</item>
+        <item>A sample</item><item>Sample mean</item><item>Variance</item><item>Averaging reduces variance</item><item>Uncertainty of the mean</item>
+        <item>Loss measures mismatch</item><item>Model parameters</item><item>The gradient</item><item>A mini-batch</item><item>Generalization</item>
+    </string-array>
+    <string-array name="graph_node_statements">
+        <item>A function assigns exactly one output to each allowed input.</item>
+        <item>For every real x, x² is nonnegative.</item>
+        <item>The function f(x) = x² has its global minimum at x = 0.</item>
+        <item>The sign of a local slope indicates which direction raises the function.</item>
+        <item>A local slope does not describe the entire function.</item>
+        <item>A derivative is the limit of a difference quotient, when that limit exists.</item>
+        <item>The derivative of x² is 2x.</item>
+        <item>At a point with a positive derivative, sufficiently small moves right raise the function.</item>
+        <item>At a point with a negative derivative, sufficiently small moves right lower the function.</item>
+        <item>A differentiable function has derivative zero at an interior local minimum.</item>
+        <item>A sufficiently small step opposite a nonzero gradient decreases a differentiable function.</item>
+        <item>The learning rate controls the size of a gradient-descent step.</item>
+        <item>For f(x) = x², x = 3 and η = 0.1 give the next x = 2.4.</item>
+        <item>A step that is too large can increase the loss.</item>
+        <item>For f(x) = x², a fixed learning rate between zero and one makes gradient descent converge to zero.</item>
+        <item>An event is a set of possible outcomes.</item>
+        <item>The probability of an event lies between zero and one.</item>
+        <item>The probability of an event’s complement is one minus the event’s probability.</item>
+        <item>For independent events A and B, P(A and B) = P(A) · P(B).</item>
+        <item>The expectation of a finite-valued random variable is its probability-weighted mean.</item>
+        <item>A sample is a collection of observations, not the entire population.</item>
+        <item>The sample mean is the sum of observed values divided by their count.</item>
+        <item>Variance measures expected squared distance from the mean.</item>
+        <item>The mean of n independent observations with common variance σ² has variance σ² / n.</item>
+        <item>For independent observations with common finite variance, the standard error of the mean decreases as 1 / √n.</item>
+        <item>A loss function quantifies a model’s mismatch with a learning objective.</item>
+        <item>Model parameters are adjustable values that determine predictions.</item>
+        <item>The gradient collects partial derivatives of a scalar function with respect to its parameters.</item>
+        <item>A mini-batch uses a subset of training examples to estimate a training gradient.</item>
+        <item>Low training loss alone does not guarantee low loss on new data.</item>
+    </string-array>
+    <string-array name="graph_node_reasons">
+        <item>If one input could have two outputs, the output would not be determined by that input alone.</item>
+        <item>Positive and negative real numbers both have nonnegative squares, and zero squared is zero.</item>
+        <item>Every square is at least zero, and the value zero is attained at x = 0.</item>
+        <item>A positive change in output over a positive change in input gives a positive slope.</item>
+        <item>A tangent approximates behavior near one point. Curvature and distant minima can change what happens farther away.</item>
+        <item>The quotient (f(x + h) − f(x)) / h measures an average slope; taking h toward zero gives the derivative if both sides agree.</item>
+        <item>Expanding ((x + h)² − x²) / h gives 2x + h. Its limit as h tends to zero is 2x.</item>
+        <item>A positive derivative makes the difference quotient positive for sufficiently small positive h.</item>
+        <item>A negative derivative makes the difference quotient negative for sufficiently small positive h.</item>
+        <item>At an interior differentiable minimum, one-sided difference quotients have opposite weak signs, so their shared limit is zero. Zero derivative alone is not sufficient: x³ has one at zero.</item>
+        <item>The first-order change along the negative gradient is −η times the squared gradient magnitude. For small positive η, this negative term dominates the remainder.</item>
+        <item>Multiplying the gradient by η scales the update without changing its direction when η is positive.</item>
+        <item>The derivative at three is six. Subtracting 0.1 · 6 from three gives 2.4, whose square is smaller than nine.</item>
+        <item>For the square at x = 3, η = 1.1 jumps to −3.6. Its square is 12.96, larger than nine.</item>
+        <item>The update is x_next = (1 − 2η) · x. When 0 &lt; η &lt; 1, the multiplier has absolute value less than one.</item>
+        <item>On a six-sided die, the event “even” contains the outcomes two, four and six.</item>
+        <item>Probability is nonnegative, and an event is contained in the entire outcome space, whose probability is one.</item>
+        <item>An event and its complement are disjoint and together cover the entire outcome space.</item>
+        <item>Independence means conditioning on either event does not change the other event’s probability, yielding the product rule.</item>
+        <item>Multiply each possible value by its probability and add the products. Values that occur more often receive greater weight.</item>
+        <item>Measurements contain information about a population, but unobserved values need not match those measured.</item>
+        <item>Dividing the sum by the count gives the equally weighted arithmetic average of the observations.</item>
+        <item>Squaring deviations prevents positive and negative differences from cancelling and emphasizes large deviations.</item>
+        <item>Independence makes covariance terms vanish. Summing n variances and dividing by n² leaves σ² / n.</item>
+        <item>Standard error is the square root of the mean’s variance: √(σ² / n) = σ / √n. More data does not automatically remove bias.</item>
+        <item>For squared-error loss, larger prediction errors contribute larger squared penalties. Other objectives use different loss functions.</item>
+        <item>Changing a coefficient changes the prediction rule; training searches for parameters that lower the chosen objective.</item>
+        <item>Each component measures how the function changes when one parameter changes while the others are held fixed.</item>
+        <item>Evaluating a subset costs less than evaluating all training data, but its gradient may differ from the full-data gradient.</item>
+        <item>A model can fit noise or peculiarities of its training sample. Evaluation on held-out data helps estimate performance beyond that sample.</item>
+    </string-array>
+</resources>

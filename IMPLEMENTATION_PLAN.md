@@ -1,8 +1,8 @@
-# Implementation plan and phase 0–2 handoff
+# Implementation plan and phase 0–3 handoff
 
 ## Scope decision
 
-Phases **0–1** are complete; the subsequent request adds **phase 2 — visual classroom**. This is still a local mock, not the complete product. Phase-3 Canvas graph and phase-4 model runtime remain deferred. Do not introduce real AI before visual review.
+Phases **0–3** are implemented: research, Kotlin foundation, mock classroom and the requested **knowledge-graph prototype**. This is still local mock data, not the complete product. Phase-4 model runtime and phase-5 persistent knowledge remain deferred. Do not introduce real AI before owner visual review.
 
 ## Delivered
 
@@ -42,6 +42,16 @@ The style specimen remains static XML in a ScrollView; actual DisplayItems now r
 - [x] Seven emulator tests pass at both normal settings and 200% type/disabled animations; build and lint pass. Added coroutine redistribution notice.
 
 The mock is deliberately bounded to three answer attempts and eight notes (2,000 characters per input), so transient saved state stays small. Real sessions need SQLite/checkpoints; full Markdown/LaTeX, general open-response questions, practice, arbitrary goals, plans and actual assessment remain feature work, not simulated capabilities.
+
+### Phase 3 — knowledge-graph prototype
+
+- [x] Kotlin `KnowledgeGraphView`: 30 authored proposition nodes, 32 relationships, six muted sample clusters and zoom-gated, collision-suppressed labels.
+- [x] Separate deterministic layout snapshot, computed off the main thread; cached Canvas drawing objects and no idle redraw loop.
+- [x] Native pan/pinch/double-tap, inverse-transform picking, selection, accessible native zoom controls and fit-to-content.
+- [x] Native word-prefix search with graph highlights, no-match feedback and Browse-all results; choosing a result centers/selects its node.
+- [x] Native readable proposition/reasoning/source details, labeled incoming/outgoing relationships and relevant sample-lesson navigation. Clear illustrative-data/no-learner-evidence disclosure.
+- [x] Parcelled camera center/relative zoom/selection, recreation checks and visibility-owned layout cancellation; no new dependencies or real knowledge store.
+- [x] Camera/gesture/picking/search/detail checks and inspected review captures. See the phase-3 verification record below.
 
 ## Reproduce locally
 
@@ -107,12 +117,22 @@ Validation caught two concrete issues: anonymous accessibility `labelFor` genera
 
 Not claimed: API-26 device testing, tablet/foldable/RTL/TalkBack journeys, gesture predictive-back testing, actual AI, broad Markdown/LaTeX support, durable database persistence or automated pixel-diff fidelity. Owner review of the Android-sized captures is still required before real models.
 
+## Phase-3 verification — 2026-10-25
+
+Pixel_7/API 36. Build/lint and all **ten** connected instrumentation tests pass; the three new `GraphTest` checks also pass at **200% font scale with animations disabled**, with original device settings restored. Graph checks cover deterministic snapshots, invalid-edge rejection, fit bounds, inverse transforms/nearest picking, focus-preserving zoom/clamping, native one-/two-pointer gestures, a usable graph height, parcel round trips, recreation, empty-query Browse, no results, native accessibility-action result selection, related details and lesson navigation. Selection uses the real accessible dropdown row rather than a coordinate guessed from popup geometry; this is not a full TalkBack journey. No test-only dependency was added.
+
+Review frames: [graph](docs/screenshots/phase3-graph.png), [search](docs/screenshots/phase3-search.png), [selection](docs/screenshots/phase3-selection.png), [proposition](docs/screenshots/phase3-proposition.png). Phase-2 screenshots remain historical classroom baselines; the current home now displays the explicitly illustrative sample graph. These are inspected device captures, not approved pixel-diff goldens.
+
+Validation found and fixed native dropdown behaviors: filtering an empty query dismissed Browse after it was opened, and a root dropdown TextView was forced into horizontal scrolling. Browse now opens after native filtering/observer completion; a native container row allows full proposition wrapping. Label collision suppression also covers cluster captions when the viewport shrinks. Source inspection confirms no recurring invalidation, physics or per-frame layout work. Manual idle check: after resetting `dumpsys gfxinfo` with the selected graph visible and editor unfocused, zero app frames were rendered over approximately 25 seconds. This is an idle-redraw check, not a gesture-jank benchmark. Real process-death check also passed: select/focus Positive derivative, background the app, `am kill` and confirm no PID, then restore its existing launcher task. Native hierarchy and captured-frame pixel checks confirm the selected detail action and graph viewport remain. A fresh explicit activity intent is not a restoration test; use the same MAIN/LAUNCHER task identity (`-f 0x10200000`) as its original launch.
+
+Limitations: fixed small-fixture geometry and circular soft regions, not the reference’s force-layout/organic cluster geometry; linear picking/O(n²) label decluttering are intentionally bounded to 30 nodes. No graph extraction, audited identity, database, actual learner evidence or assessed confidence. The native browse/detail alternative is implemented, but a full TalkBack journey, API-26 device, tablet/foldable/RTL/rotation matrix, large-graph benchmarks and formal visual diffs are not claimed. Android Studio’s previously stale generated-binding index remains a separate IDE sync limitation; CLI build/lint/device checks are authoritative here.
+
 ## Remaining milestones and acceptance gates
 
 | Phase | Minimum implementation | Gate before advancing |
 |---|---|---|
 | **2 — visual classroom (implemented)** | Home/session navigation, typed DisplayItems, text/basic formulas/choice rows, persistent dock and incremental mock streaming | Technical checks pass; independent phone target and inspected captures are available. Owner visual review remains before real AI. |
-| **3 — graph prototype** | Kotlin `KnowledgeGraphView`, sample nodes/edges/clusters, separate layout snapshot, pan/pinch/selection/search/fit | Test camera/inverse picking math and gesture focus; compare density/labels/regions with the original graph; verify no idle redraw loop and usable detail navigation. |
+| **3 — graph prototype (implemented)** | Kotlin Canvas, 30 sample propositions/six clusters, off-main snapshot, pan/pinch/selection/search/browse/fit and native details | Technical camera/picking/gesture/restoration/navigation checks pass; reference comparison/captures recorded. Owner visual review remains before real AI. |
 | **4 — local runtime** | Maintained provider HTTP client, Keystore-backed BYOK, cancellable streaming/tool loop, Prober/Teacher, first session tables/checkpoints, original prompt assets | Deterministic fake-provider loop/tool/cancellation/error tests; malformed outputs rejected; interrupted state recoverable; no keys in APK/logs/exports/backups. Real-model smoke tests opt-in. |
 | **5 — plans and knowledge** | Dependency validation, Extractor/Auditor/deterministic merger, SQLite graph/evidence/provenance, session continuity | Reject broken references/cycles where forbidden; transactional replay-safe merges; conservative identity resolution; precise source links; plan and persistent graph remain independent. |
 | **6 — educational content** | Bounded PDF import/render/search, Mermaid, SVG Visual Maker with render/vision/revision workflow | Page-citation, cache/memory and malformed-file tests; unsafe markup denied; artifacts store truthful verification status; specialized WebViews have explicit capability limits. |
@@ -123,7 +143,7 @@ Not claimed: API-26 device testing, tablet/foldable/RTL/TalkBack journeys, gestu
 ## Explicitly deferred / release decisions
 
 - No real runtime, cloud calls, credentials UI, database schema or Markdown prompt scaffolding. Coroutines/StateFlow now serve the actual phase-2 mock feature.
-- No general formula/Markdown engine, graph view, PDF renderer or WebView. The local prototype renders only its authored native blocks.
+- No general formula/Markdown engine, persistent/extracted graph, PDF renderer or WebView. The prototype renders authored native lesson blocks and an explicitly illustrative Canvas graph.
 - No independent agent swarm, DI framework, generic repository layer, multi-module split or new navigation abstraction.
 - First-party licensing is an owner decision. Before public release, audit the final dependency notices/security inventory and provide an appropriate licenses surface. Fonts and existing third-party notices already ship as assets.
 - Phase-2 Android-sized targets/captures are recorded; neither the foundation specimen nor the classroom mock is declared a complete LearnHarness reproduction.

@@ -2,7 +2,7 @@
 
 ## Scope and current implementation
 
-This document separates **implemented phases 0–2** from **future feature design**. The foundation now includes the requested phase-2 mock classroom: native lesson rows, a persistent question/composer dock and local incremental streaming. The graph remains phase 3; real model execution and durable sessions remain phase 4.
+This document separates **implemented phases 0–3** from **future feature design**. The native foundation includes a mock classroom and a Canvas knowledge-graph prototype. Both use independently authored local fixtures. Real model execution and durable sessions remain phase 4; real knowledge extraction/storage remain phase 5.
 
 The app is standalone, Kotlin-first, traditional Views. It is not a web wrapper, LearnHarness client, Mastodon skin, or Pi host. It will eventually execute its own Kotlin learning runtime locally and call cloud model APIs directly. No custom backend, Node.js or remote agent runtime is part of the design.
 
@@ -11,7 +11,11 @@ Current single Gradle application module:
 ```text
 app/src/main/java/com/kkgosu/learnharness/
   MainActivity.kt             AppKit FragmentStackActivity, root and transitions
-  HomeFragment.kt             Quiet graph empty state and sample-session entry
+  HomeFragment.kt             Sample graph, native search/browse and lesson entry
+  KnowledgeGraphView.kt       Canvas drawing, gestures, picking and saved camera
+  GraphLayout.kt              Immutable geometry and camera mathematics
+  SampleGraph.kt              Authored propositions and illustrative relationships
+  GraphNodeFragment.kt        Native proposition/reasoning/source/related details
   LearningSessionFragment.kt  Native transcript/dock, visible-only mock collection
   LessonDisplayItem.kt        Typed text/formula/answered-question blocks
   LessonAdapter.kt            Stable-ID holders and targeted append/text updates
@@ -34,7 +38,7 @@ app/src/androidTest/           Kotlin navigation/restoration/font checks and cap
 
 ## Navigation and lifecycle: implemented
 
-`MainActivity` extends the actual AppKit `FragmentStackActivity`. It installs `HomeFragment` only when `savedInstanceState == null`; otherwise AppKit/platform fragment restoration owns the stack. Fragments have public no-argument construction. `Nav.go` opens the style reference or sample session; toolbar/system back and `Nav.finish` return.
+`MainActivity` extends the actual AppKit `FragmentStackActivity`. It installs `HomeFragment` only when `savedInstanceState == null`; otherwise AppKit/platform fragment restoration owns the stack. Fragments have public no-argument construction. `Nav.go` opens the style reference, sample session or proposition details; toolbar/system back and `Nav.finish` return.
 
 All screens use `ToolbarFragment` with a small shared XML shell that supplies AppKit's required `toolbar` and `appkit_content` IDs. The root is `FragmentRootLinearLayout`, leaving inset handling with the library instead of duplicating system-bar-height calculations. No custom back dispatcher or parallel navigation state exists. The manifest opts into modern back callbacks; AppKit handles API-specific predictive back. The short entry fade is customized; exit reuses AppKit's cleanup so predictive-back transforms are not left behind.
 
@@ -116,10 +120,19 @@ Create SQLite tables/migrations with their features, not now: goals/sessions/mes
 
 Optional ChatGPT sign-in requires a separate investigation of **official OpenAI documentation and Android eligibility**. No undocumented ChatGPT endpoints, borrowed session cookies or assumed authorization flow. The app must work with provider API keys regardless of sign-in availability.
 
-## Graph and rich content: phases 3, 6, 8
+## Graph: phase 3 implemented
 
-- `KnowledgeGraphView`: Kotlin Canvas, immutable layout snapshot, separate off-main-thread layout computation, cached drawing objects, pan/pinch around gesture focus, inverse-transform hit testing and fit-to-content. Invalidate only for data/camera/selection changes and finite transitions; no idle physics/redraw loop. Large Canvas datasets require accessible search/detail alternatives and virtual-node accessibility as appropriate.
-- Graph appearance: light nodes, fine edges and modest density, quiet labels, stable muted cluster regions. Selection/details must remain touch-readable. Zoom and saved camera are presentation state, not knowledge evidence.
+`SampleGraph` supplies 30 stable-ID propositions, 32 illustrative directed relationships and six named clusters. Text lives in resources. These are not extracted facts, assessed mastery or a session plan. Detail screens show authored reasoning, an explicit no-learner-evidence notice, labeled incoming/outgoing links and relevant sample-lesson navigation. No source citation, confidence or learning history is fabricated.
+
+`HomeFragment` computes a deterministic cluster layout on `Dispatchers.Default` while shown, cancels view work when hidden/destroyed, and binds a separate read-only `GraphSnapshot` on the main thread. Layout is not simulated inside drawing. `KnowledgeGraphView` caches paints, radial region shaders, shortened labels and reusable collision rectangles. It draws light dots/fine lines/soft semantic regions, hides overlapping labels, and invalidates only on layout/data, camera, selection or search changes. There is no physics timer, animation coroutine or idle redraw loop.
+
+A single `GraphCamera` handles fit, pan, inverse picking and clamped focus-preserving zoom. Platform `GestureDetector`/`ScaleGestureDetector` handle taps, dragging, double-tap and two-pointer scaling; moving the pinch centroid pans the camera. Picking uses the nearest node within a 24-dp screen radius; dense areas remain ambiguous until zoomed or browsed. Native zoom/Fit buttons provide non-pinch controls. The view parcels only camera center, relative fit zoom and selected ID. Resizing preserves relative zoom/world center; the fixture is regenerated, not serialized into saved state.
+
+Native `AutoCompleteTextView`/`ArrayAdapter` provide case-insensitive word-prefix search over labels/statements, highlighted graph matches, explicit no-match feedback and an all-node Browse dropdown. Choosing a result focuses/selects the node; a native Inspect button opens its readable ScrollView details. Dropdown rows wrap full propositions. The visual Canvas is omitted from accessibility focus in favor of this complete native search/browse/detail route; virtual Canvas nodes and a full TalkBack journey remain future validation/work, not claimed capabilities.
+
+The fixture deliberately uses a fixed six-cluster arrangement, radial tints, linear picking and O(n²) label decluttering. Large real graphs need bounded incremental layout, spatial indexing and an appropriate accessible representation. Saved camera/selection are presentation state, never knowledge evidence. See DESIGN_SYSTEM for the visual comparison and IMPLEMENTATION_PLAN for checks/limitations.
+
+## Rich content: phases 6, 8
 - Formulas/Markdown: evaluate small native span/rendering solutions at the renderer milestone, retaining horizontal overflow for genuinely wide math/tables. Do not choose a whole-screen WebView to avoid implementing native lesson rows.
 - Mermaid: a specialized local WebView surface with controlled assets, no credential bridge, bounded content and fullscreen inspection/zoom. It is not the generated-demo sandbox.
 - PDF: Storage Access Framework import to app-private storage; evaluate `PdfRenderer` for bounded page bitmaps and PDFBox-Android for searchable text/license/dependency cost. Search/extract selected pages, cite page indices explicitly and cap bitmap/cache memory. Avoid loading an entire large document by default.
@@ -129,8 +142,8 @@ Optional ChatGPT sign-in requires a separate investigation of **official OpenAI 
 
 ## Validation and independence
 
-Kotlin instrumentation checks the shell and mock classroom: navigation, font roles, drafts/choices/confidence, parcelled partial-stream recovery, stable IDs/payloads, retry limits, reading position and real keyboard geometry. It also captures actual device frames. Manual device captures and documented visual differences are linked from DESIGN_SYSTEM. Foundation tests do not imply an implemented agent, graph, PDF parser or secure demo runtime.
+Kotlin instrumentation checks the shell, mock classroom and graph: navigation, font roles, drafts/choices/confidence, parcelled partial-stream recovery, stable IDs/payloads, retry limits, reading position, real keyboard geometry, deterministic graph layout, camera/inverse-picking math, actual native pan/pinch events, parcelled camera/selection, search/browse and detail navigation. It also captures actual device frames. Manual captures and documented visual differences are linked from DESIGN_SYSTEM. These tests do not imply an implemented agent, persistent knowledge store, PDF parser or secure demo runtime.
 
-Later milestones add fake-provider/domain tests, streaming-row checks, gesture mathematics, graph integrity, parsing and security fixtures at the point their code exists. Real-model smoke tests remain opt-in and separate. Measure scrolling/layout/rendering before performance abstractions; use Profiler/Perfetto when warranted.
+Later milestones add fake-provider/domain tests, persistent graph integrity, parsing and security fixtures at the point their code exists. Real-model smoke tests remain opt-in and separate. Measure scrolling/layout/rendering before performance abstractions; use Profiler/Perfetto when warranted.
 
 No substantial reference source/prompts/assets were imported. Reference licenses, font notices and the distinction between architectural inspiration and code reuse are recorded in REFERENCES. Choose a first-party distribution license and complete the release notice/security audit before publishing.
