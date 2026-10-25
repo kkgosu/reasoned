@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/graph_fit" android:title="@string/graph_fit" />
+    <item android:id="@+id/graph_zoom_in" android:title="@string/graph_zoom_in" />
+    <item android:id="@+id/graph_zoom_out" android:title="@string/graph_zoom_out" />
+    <item android:id="@+id/open_sample_lesson" android:title="@string/graph_sample_lesson" />
+    <item android:id="@+id/style_reference" android:title="@string/style_reference" />
+</menu>

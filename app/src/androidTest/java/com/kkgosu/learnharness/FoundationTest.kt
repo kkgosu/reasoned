@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import android.widget.Toolbar
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -20,8 +21,7 @@ class FoundationTest {
     fun navigationFontsAndDraftSurviveRecreation() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
-                assertNotNull(activity.findViewById<Button>(R.id.style_reference))
-                activity.findViewById<Button>(R.id.style_reference).performClick()
+                activity.openHomeAction(R.id.style_reference)
             }
             InstrumentationRegistry.getInstrumentation().waitForIdleSync()
             scenario.onActivity { activity ->
@@ -41,7 +41,7 @@ class FoundationTest {
             }
             scenario.recreate() // AppKit finishes pending transitions when saving the stack.
             scenario.onActivity { activity ->
-                assertNotNull(activity.findViewById<Button>(R.id.style_reference))
+                assertNotNull(activity.findViewById<Toolbar>(me.grishka.appkit.R.id.toolbar).menu.findItem(R.id.style_reference))
                 assertEquals(1, activity.fragmentManager.fragments.size)
             }
         }
@@ -52,13 +52,17 @@ class FoundationTest {
     fun captureFoundationScreens() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             capture("home")
-            scenario.onActivity { it.findViewById<Button>(R.id.style_reference).performClick() }
+            scenario.onActivity { it.openHomeAction(R.id.style_reference) }
             InstrumentationRegistry.getInstrumentation().waitForIdleSync()
             scenario.recreate() // Ensure the enter animation has finished before capturing.
             capture("style-reference")
         }
     }
 
+}
+
+internal fun MainActivity.openHomeAction(id: Int) {
+    check(findViewById<Toolbar>(me.grishka.appkit.R.id.toolbar).menu.performIdentifierAction(id, 0))
 }
 
 // Capture the composed device frame, including system UI and native view layers.

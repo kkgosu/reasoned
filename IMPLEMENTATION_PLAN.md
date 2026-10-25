@@ -127,6 +127,14 @@ Validation found and fixed native dropdown behaviors: filtering an empty query d
 
 Limitations: fixed small-fixture geometry and circular soft regions, not the reference’s force-layout/organic cluster geometry; linear picking/O(n²) label decluttering are intentionally bounded to 30 nodes. No graph extraction, audited identity, database, actual learner evidence or assessed confidence. The native browse/detail alternative is implemented, but a full TalkBack journey, API-26 device, tablet/foldable/RTL/rotation matrix, large-graph benchmarks and formal visual diffs are not claimed. Android Studio’s previously stale generated-binding index remains a separate IDE sync limitation; CLI build/lint/device checks are authoritative here.
 
+### Visual refinement after owner feedback
+
+Graph labels/captions now scale with zoom. Bottom button rows are replaced by a compact, fading above-node tooltip whose chevron opens proposition details; zoom/Fit, sample lesson and style reference move to the toolbar overflow. Search text/hint are vertically centered. Native selection fades respect disabled animations; tooltip placement follows the camera and stays inside the viewport.
+
+Build/lint and IDE error inspections of both changed Kotlin files pass. All **11** Pixel_7/API-36 instrumentation tests pass in scoped runs (seven foundation/classroom plus four graph checks). All four graph checks also pass at 200% text with animations disabled; original emulator settings are restored. The additional check records actual Canvas text sizes across zoom, exercises rapid selection/fade completion, checks tooltip placement/clearing, search gravity and menu actions. Existing navigation/recreation checks now use toolbar actions. Updated review captures include [scaled text](docs/screenshots/phase3-scaled-text.png); owner approval remains pending.
+
+The initial unfiltered `./gradlew :app:connectedDebugAndroidTest --console=plain` exceeded the 30-second shell limit and reported an animation-timing assertion failure; it is not counted as a pass. Final scoped runs completed successfully after waiting on native animation completion and using a short, unellipsized label in the scaling check at 200% text. Reproduce with `ANDROID_SERIAL=emulator-5554` and `-Pandroid.testInstrumentationRunnerArguments.class=com.kkgosu.learnharness.GraphTest` or `com.kkgosu.learnharness.FoundationTest,com.kkgosu.learnharness.LessonTest`.
+
 ## Remaining milestones and acceptance gates
 
 | Phase | Minimum implementation | Gate before advancing |

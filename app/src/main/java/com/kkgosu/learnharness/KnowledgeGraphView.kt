@@ -1,5 +1,8 @@
 package com.kkgosu.learnharness
 
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
@@ -27,6 +30,10 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
     var onSelection: ((GraphNode?) -> Unit)? = null
     private val density = resources.displayMetrics.density
     private var fitScale = 1f
+    private val labelSize = resources.getDimension(R.dimen.text_12_5)
+    private var fadingSelectionId: String? = null
+    private var selectionProgress = 1f
+    private var selectionAnimator: ValueAnimator? = null
     private var initialized = false
     private var restored: SavedState? = null
     private var matches: Set<String> = emptySet()
@@ -70,7 +77,7 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
         override fun onScroll(e1: MotionEvent?, e2: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
             if (!scaleDetector.isInProgress && e2.pointerCount == 1) {
                 camera = camera.pan(-distanceX, -distanceY)
-                invalidate()
+                updateSelection()
             }
             return true
         }
@@ -102,12 +109,12 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
                     context.getColor(colors[index % colors.size]), Color.TRANSPARENT, Shader.TileMode.CLAMP)
             }
         }
+        labelPaint.textSize = labelSize
         labels = value.nodes.map { TextUtils.ellipsize(it.node.label, labelPaint, 132 * density, TextUtils.TruncateAt.END).toString() }
         labelWidths = labels.map(labelPaint::measureText)
         labelBounds = List(value.nodes.size + value.regions.size) { RectF() }
         initializeCamera()
-        onSelection?.invoke(value.nodes.firstOrNull { it.node.id == selectedId }?.node)
-        invalidate()
+        updateSelection()
     }
 
     fun highlight(ids: Set<String>) {
@@ -118,10 +125,29 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
 
     fun select(id: String?, focus: Boolean = false) {
         val point = snapshot?.nodes?.firstOrNull { it.node.id == id }
-        selectedId = point?.node?.id
+        if (selectedId != point?.node?.id) {
+            selectionAnimator?.cancel()
+            fadingSelectionId = selectedId
+            selectedId = point?.node?.id
+            selectionProgress = 1f
+            if (isShown && ValueAnimator.areAnimatorsEnabled()) {
+                selectionProgress = 0f
+                selectionAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+                    duration = resources.getInteger(R.integer.motion_short_ms).toLong()
+                    addUpdateListener { selectionProgress = it.animatedValue as Float; invalidate() }
+                    addListener(object : AnimatorListenerAdapter() {
+                        override fun onAnimationEnd(animation: Animator) {
+                            fadingSelectionId = null
+                            selectionProgress = 1f
+                            invalidate()
+                        }
+                    })
+                    start()
+                }
+            } else fadingSelectionId = null
+        }
         if (focus && point != null) camera = GraphCamera(point.x, point.y, fitScale * 3f)
-        onSelection?.invoke(point?.node)
-        invalidate()
+        updateSelection()
     }
 
     fun fit() {
@@ -130,19 +156,34 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
         camera = GraphCamera.fit(bounds, width, height, 24 * density)
         fitScale = camera.scale
         initialized = true
-        invalidate()
+        updateSelection()
     }
 
     fun zoomBy(factor: Float, focusX: Float = width / 2f, focusY: Float = height / 2f) {
         if (!initialized) return
         camera = camera.zoom(factor, focusX, focusY, width, height, fitScale * 0.5f, fitScale * 12f)
-        invalidate()
+        updateSelection()
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         initializeCamera()
+        updateSelection()
+    }
+
+    private fun updateSelection() {
         onSelection?.invoke(snapshot?.nodes?.firstOrNull { it.node.id == selectedId }?.node)
+        invalidate()
+    }
+
+    override fun jumpDrawablesToCurrentState() {
+        super.jumpDrawablesToCurrentState()
+        selectionAnimator?.end()
+    }
+
+    override fun onDetachedFromWindow() {
+        selectionAnimator?.cancel()
+        super.onDetachedFromWindow()
     }
 
     private fun initializeCamera() {
@@ -189,29 +230,41 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
         data.edges.forEach { (from, to) -> canvas.drawLine(from.x, from.y, to.x, to.y, paint) }
         canvas.restore()
         val zoom = camera.scale / fitScale
+        labelPaint.textSize = labelSize * zoom
+        regionLabelPaint.textSize = labelSize * zoom
         data.nodes.forEach { point ->
             val x = camera.screenX(point.x, width)
             val y = camera.screenY(point.y, height)
-            val active = point.node.id == selectedId || point.node.id in matches
+            val selected = when (point.node.id) {
+                selectedId -> selectionProgress
+                fadingSelectionId -> 1f - selectionProgress
+                else -> 0f
+            }
+            val emphasis = if (point.node.id in matches) 1f else selected
             paint.color = ink
-            paint.alpha = if (matches.isEmpty() || active) 230 else 80
-            if (active) {
+            if (emphasis > 0f) {
+                paint.alpha = (230 * emphasis).toInt()
                 paint.style = Paint.Style.STROKE
                 paint.strokeWidth = density
                 canvas.drawCircle(x, y, 9 * density, paint)
                 paint.style = Paint.Style.FILL
             }
-            canvas.drawCircle(x, y, (if (active) 3.5f else 2.5f) * density, paint)
+            paint.alpha = if (matches.isEmpty()) 230 else (80 + 150 * emphasis).toInt()
+            canvas.drawCircle(x, y, (2.5f + emphasis) * density, paint)
         }
         drawnLabels = 0
         // Selected labels take precedence; suppress colliding labels, never enlarge the dots into cards.
-        data.nodes.forEachIndexed { index, point -> if (point.node.id == selectedId) drawLabel(canvas, point, index) }
+        data.nodes.forEachIndexed { index, point -> if (point.node.id == selectedId) drawLabel(canvas, point, index, zoom, selectionProgress) }
         data.nodes.forEachIndexed { index, point ->
-            if (point.node.id != selectedId && (point.node.id in matches || zoom >= 1.8f)) drawLabel(canvas, point, index)
+            if (point.node.id != selectedId) {
+                val opacity = if (point.node.id in matches || zoom >= 1.8f) 1f else
+                    if (point.node.id == fadingSelectionId) 1f - selectionProgress else 0f
+                if (opacity > 0f) drawLabel(canvas, point, index, zoom, opacity)
+            }
         }
         if (zoom < 1.8f) data.regions.forEach { region ->
             val x = camera.screenX(region.x, width)
-            val y = camera.screenY(region.y, height) + 38 * density
+            val y = camera.screenY(region.y, height) + 38 * density * zoom
             val halfWidth = regionLabelPaint.measureText(region.label) / 2
             if (reserveLabel(x - halfWidth, y + regionLabelPaint.ascent(), x + halfWidth, y + regionLabelPaint.descent())) {
                 canvas.drawText(region.label, x, y, regionLabelPaint)
@@ -219,21 +272,24 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
         }
     }
 
-    private fun drawLabel(canvas: Canvas, point: GraphPoint, index: Int) {
+    private fun drawLabel(canvas: Canvas, point: GraphPoint, index: Int, zoom: Float, opacity: Float) {
+        if (opacity <= 0f) return
         val x = camera.screenX(point.x, width)
-        val y = camera.screenY(point.y, height) + 14 * density
-        val labelWidth = labelWidths[index]
+        val y = camera.screenY(point.y, height) + 14 * density * zoom
+        val labelWidth = labelWidths[index] * zoom
         if (x < 0 || x > width || y < 0 || y > height) return
-        val left = (x - labelWidth / 2).coerceIn(0f, (width - labelWidth).coerceAtLeast(0f))
+        val remaining = width - labelWidth
+        val left = (x - labelWidth / 2).coerceIn(remaining.coerceAtMost(0f), remaining.coerceAtLeast(0f))
         if (!reserveLabel(left, y + labelPaint.ascent(), left + labelWidth, y + labelPaint.descent())) return
         labelPaint.color = if (point.node.id == selectedId || point.node.id in matches) ink else muted
+        labelPaint.alpha = (255 * opacity).toInt()
         canvas.drawText(labels[index], left, y, labelPaint)
     }
 
     // ponytail: O(n²) label decluttering and linear picking suit 30 nodes; use a spatial index for large graphs.
     private fun reserveLabel(left: Float, top: Float, right: Float, bottom: Float): Boolean {
-        if (left < 0 || top < 0 || right > width || bottom > height) return false
         scratch.set(left - 4 * density, top, right + 4 * density, bottom)
+        if (!scratch.intersect(0f, 0f, width.toFloat(), height.toFloat())) return false
         if ((0 until drawnLabels).any { RectF.intersects(scratch, labelBounds[it]) }) return false
         labelBounds[drawnLabels++].set(scratch)
         return true
@@ -249,8 +305,7 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
         super.onRestoreInstanceState(state.superState)
         restored = state
         initializeCamera()
-        onSelection?.invoke(snapshot?.nodes?.firstOrNull { it.node.id == selectedId }?.node)
-        invalidate()
+        updateSelection()
     }
 
     class SavedState : BaseSavedState {

@@ -1,6 +1,11 @@
 package com.kkgosu.learnharness
 
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.os.Parcel
 import android.os.Parcelable
 import android.os.SystemClock
@@ -19,6 +24,8 @@ import me.grishka.appkit.Nav
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 @RunWith(AndroidJUnit4::class)
 class GraphTest {
@@ -109,7 +116,7 @@ class GraphTest {
                 one(MotionEvent.ACTION_DOWN, cx, cy, 500)
                 one(MotionEvent.ACTION_UP, cx, cy, 550)
                 assertEquals(point.node.id, graph.selectedId)
-                assertTrue(activity.findViewById<Button>(R.id.graph_details).isEnabled)
+                assertEquals(point.node.id, activity.findViewById<Button>(R.id.graph_details).tag)
                 val camera = graph.camera
                 val parcel = Parcel.obtain()
                 try {
@@ -130,6 +137,77 @@ class GraphTest {
                 assertEquals(start, graph.camera)
             }
             capture("phase3-graph")
+        }
+    }
+
+    @Test
+    fun scaledLabelsAndAnchoredFadingTooltip() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            settle()
+            fun watchFade(alpha: Float): CountDownLatch {
+                val latch = CountDownLatch(1)
+                scenario.onActivity { activity ->
+                    val tooltip = activity.findViewById<Button>(R.id.graph_details)
+                    tooltip.animate().setListener(object : AnimatorListenerAdapter() {
+                        override fun onAnimationEnd(animation: Animator) {
+                            if (tooltip.alpha == alpha) latch.countDown()
+                        }
+                    })
+                }
+                return latch
+            }
+            val shown = watchFade(1f)
+            scenario.onActivity { activity ->
+                val graph = activity.findViewById<KnowledgeGraphView>(R.id.knowledge_graph)
+                graph.select("square", focus = true)
+                graph.select("event", focus = true) // Latest selection wins; this short label also fits at 200% text.
+                graph.jumpDrawablesToCurrentState()
+                val bitmap = Bitmap.createBitmap(graph.width, graph.height, Bitmap.Config.ARGB_8888)
+                val sizes = mutableMapOf<String, Float>()
+                val canvas = object : Canvas(bitmap) {
+                    override fun drawText(text: String, x: Float, y: Float, paint: Paint) {
+                        sizes[text] = paint.textSize
+                        super.drawText(text, x, y, paint)
+                    }
+                }
+                try {
+                    graph.draw(canvas)
+                    val label = graph.snapshot!!.nodes.first { it.node.id == "event" }.node.label
+                    val before = sizes.getValue(label)
+                    graph.zoomBy(2f)
+                    sizes.clear()
+                    graph.draw(canvas)
+                    assertEquals(before * 2, sizes.getValue(label), 0.01f)
+                } finally { bitmap.recycle() }
+                val search = activity.findViewById<AutoCompleteTextView>(R.id.graph_search)
+                assertEquals(android.view.Gravity.CENTER_VERTICAL, search.gravity and android.view.Gravity.VERTICAL_GRAVITY_MASK)
+            }
+            assertTrue("Tooltip must finish fading in", shown.await(5, TimeUnit.SECONDS))
+            settle()
+            scenario.onActivity { activity ->
+                val graph = activity.findViewById<KnowledgeGraphView>(R.id.knowledge_graph)
+                val tooltip = activity.findViewById<Button>(R.id.graph_details)
+                assertTrue(tooltip.isEnabled && tooltip.isShown)
+                assertEquals(1f, tooltip.alpha, 0f)
+                assertEquals("An event", tooltip.text.toString())
+                assertTrue(tooltip.x >= 0 && tooltip.x + tooltip.width <= graph.width + 1)
+                assertTrue(tooltip.y >= 0 && tooltip.y + tooltip.height < graph.height / 2f)
+                activity.openHomeAction(R.id.graph_zoom_out)
+            }
+            settle()
+            capture("phase3-scaled-text")
+            val hidden = watchFade(0f)
+            scenario.onActivity { activity -> activity.findViewById<KnowledgeGraphView>(R.id.knowledge_graph).select(null) }
+            assertTrue("Tooltip must finish fading out", hidden.await(5, TimeUnit.SECONDS))
+            settle()
+            scenario.onActivity { activity ->
+                val tooltip = activity.findViewById<Button>(R.id.graph_details)
+                assertFalse(tooltip.isEnabled)
+                assertEquals(View.INVISIBLE, tooltip.visibility)
+                assertEquals(0f, tooltip.alpha, 0f)
+                tooltip.animate().setListener(null)
+                activity.openHomeAction(R.id.graph_fit)
+            }
         }
     }
 

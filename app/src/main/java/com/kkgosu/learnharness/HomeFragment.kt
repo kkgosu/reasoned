@@ -1,8 +1,12 @@
 package com.kkgosu.learnharness
 
+import android.animation.ValueAnimator
 import android.database.DataSetObserver
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
@@ -20,6 +24,28 @@ import me.grishka.appkit.fragments.ToolbarFragment
 class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
     private var binding: FragmentHomeBinding? = null
     private var visibleScope: CoroutineScope? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.home, menu)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        val views = binding ?: return super.onOptionsItemSelected(item)
+        when (item.itemId) {
+            R.id.graph_fit -> views.knowledgeGraph.fit()
+            R.id.graph_zoom_in -> views.knowledgeGraph.zoomBy(1.5f)
+            R.id.graph_zoom_out -> views.knowledgeGraph.zoomBy(1 / 1.5f)
+            R.id.open_sample_lesson -> Nav.go(activity, LearningSessionFragment::class.java, null)
+            R.id.style_reference -> Nav.go(activity, StyleReferenceFragment::class.java, null)
+            else -> return super.onOptionsItemSelected(item)
+        }
+        return true
+    }
 
     override fun onCreateContentView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         setTitle(R.string.app_name)
@@ -56,26 +82,65 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
             views.knowledgeGraph.highlight(emptySet())
             views.knowledgeGraph.select(node.id, focus = true)
         }
-        views.knowledgeGraph.onSelection = { node ->
-            views.graphDetails.isEnabled = node != null
-            views.graphDetails.text = node?.let { getString(R.string.graph_inspect, it.label) } ?: getString(R.string.graph_select)
-        }
+        views.knowledgeGraph.onSelection = ::renderSelection
+        views.graphDetails.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> positionTooltip() }
         views.graphDetails.setOnClickListener {
             views.knowledgeGraph.selectedId?.let { id ->
                 Nav.go(activity, GraphNodeFragment::class.java, Bundle().apply { putString("node", id) })
             }
         }
-        views.graphZoomIn.setOnClickListener { views.knowledgeGraph.zoomBy(1.5f) }
-        views.graphZoomOut.setOnClickListener { views.knowledgeGraph.zoomBy(1 / 1.5f) }
-        views.graphFit.setOnClickListener { views.knowledgeGraph.fit() }
-        views.openSampleLesson.setOnClickListener { Nav.go(activity, LearningSessionFragment::class.java, null) }
-        views.styleReference.setOnClickListener { Nav.go(activity, StyleReferenceFragment::class.java, null) }
         return views.root
+    }
+
+    private fun renderSelection(node: GraphNode?) {
+        val views = binding ?: return
+        val tooltip = views.graphDetails
+        if (tooltip.tag != node?.id) {
+            tooltip.tag = node?.id
+            tooltip.isEnabled = false
+            tooltip.animate().cancel()
+            val duration = if (ValueAnimator.areAnimatorsEnabled())
+                resources.getInteger(R.integer.motion_short_ms).toLong() else 0L
+            tooltip.animate().alpha(0f).setDuration(if (tooltip.alpha > 0f) duration else 0L).withEndAction {
+                if (binding !== views) return@withEndAction
+                if (node == null) {
+                    tooltip.visibility = View.INVISIBLE
+                } else {
+                    tooltip.text = node.label
+                    tooltip.contentDescription = getString(R.string.graph_inspect, node.label)
+                    tooltip.visibility = View.VISIBLE
+                    tooltip.isEnabled = true
+                    positionTooltip()
+                    tooltip.animate().alpha(1f).setDuration(duration).start()
+                }
+            }.start()
+        }
+        positionTooltip()
+    }
+
+    private fun positionTooltip() {
+        val views = binding ?: return
+        val tooltip = views.graphDetails
+        if (!tooltip.isEnabled) return
+        val graph = views.knowledgeGraph
+        val point = graph.snapshot?.nodes?.firstOrNull { it.node.id == graph.selectedId } ?: return
+        val x = graph.camera.screenX(point.x, graph.width)
+        val y = graph.camera.screenY(point.y, graph.height)
+        if (x !in 0f..graph.width.toFloat() || y !in 0f..graph.height.toFloat()) {
+            tooltip.visibility = View.INVISIBLE
+            return
+        }
+        tooltip.visibility = View.VISIBLE
+        tooltip.translationX = (graph.left + x - tooltip.width / 2f)
+            .coerceIn(0f, (graph.width - tooltip.width).coerceAtLeast(0).toFloat()) - tooltip.left
+        tooltip.translationY = (graph.top + y - tooltip.height - resources.getDimension(R.dimen.space_12))
+            .coerceIn(0f, (graph.height - tooltip.height).coerceAtLeast(0).toFloat()) - tooltip.top
     }
 
     override fun onShown() {
         super.onShown()
         val views = binding ?: return
+        renderSelection(views.knowledgeGraph.snapshot?.nodes?.firstOrNull { it.node.id == views.knowledgeGraph.selectedId }?.node)
         visibleScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).also { scope ->
             if (views.knowledgeGraph.snapshot == null) scope.launch {
                 val data = SampleGraph.create(views.root.resources)
@@ -89,7 +154,15 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
     override fun onHidden() {
         visibleScope?.cancel()
         visibleScope = null
-        binding?.graphSearch?.dismissDropDown()
+        binding?.apply {
+            graphSearch.dismissDropDown()
+            knowledgeGraph.jumpDrawablesToCurrentState()
+            graphDetails.animate().cancel()
+            graphDetails.tag = null
+            graphDetails.alpha = 0f
+            graphDetails.isEnabled = false
+            graphDetails.visibility = View.INVISIBLE
+        }
         super.onHidden()
     }
 
@@ -97,6 +170,8 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
         visibleScope?.cancel()
         visibleScope = null
         binding?.graphSearch?.dismissDropDown()
+        binding?.graphDetails?.animate()?.cancel()
+        binding?.knowledgeGraph?.onSelection = null
         binding = null
         super.onDestroyView()
     }

@@ -76,7 +76,7 @@ Some ladder tokens are intentionally unused in the small specimen; they are the 
 
 | Component | Reference anatomy | Native adaptation / phase |
 |---|---|---|
-| Home | Graph fills available space; bottom goal input and teach/practice switch; navigation secondary | Phase 3 displays an explicitly illustrative graph with native search/Browse, zoom/Fit/Inspect and sample-session entry. No fake custom-goal generation. |
+| Home | Graph fills available space; bottom goal input and teach/practice switch; navigation secondary | Phase 3 displays an explicitly illustrative graph with native search/Browse, an above-node details tooltip and toolbar-overflow zoom/Fit/sample-session actions. No fake custom-goal generation. |
 | Navigation | Narrow left session column; serif/prose names, mono filters/search/metadata | AppKit stack and platform Toolbar now; dedicated session/navigation surface later instead of shrinking the desktop sidebar onto phones. |
 | Session | Serif title; status/plan actions; document-like prose spine; integrated formulas/diagrams | Implemented `LearningSessionFragment`: typed native text/formula/answer rows, quiet status and no messenger bubbles. Plan/diagram actions wait for those features. |
 | Composer | One rounded bottom shell, growing Source Sans input, trailing send/stop; ancillary controls below | Implemented native 1–4-line EditText, Send/Stop/Resume, visible local-preview notice and AppKit IME-safe area. A stopped stream is resumed before sending the retained note. |
@@ -130,7 +130,7 @@ These captures were manually inspected and are review baselines, **not owner-app
 
 ## 9. Phase-3 graph comparison
 
-Native Pixel 7/API-36 review frames: [fit graph](docs/screenshots/phase3-graph.png), [search results/highlight](docs/screenshots/phase3-search.png), [selected proposition](docs/screenshots/phase3-selection.png), [readable detail](docs/screenshots/phase3-proposition.png). These are full-device captures at default type size, not approved image-diff goldens.
+Native Pixel 7/API-36 review frames: [fit graph](docs/screenshots/phase3-graph.png), [search results/highlight](docs/screenshots/phase3-search.png), [selected proposition](docs/screenshots/phase3-selection.png), [readable detail](docs/screenshots/phase3-proposition.png), [zoom-scaled text](docs/screenshots/phase3-scaled-text.png). These are full-device captures at default type size, not approved image-diff goldens.
 
 Compared visually against the pinned original `knowledge-graph.png` and graph renderer:
 
@@ -138,10 +138,10 @@ Compared visually against the pinned original `knowledge-graph.png` and graph re
 |---|---|
 | Topology and density | Small light dots, fine 0.65-dp lines, no node cards, sparse overview labels. Thirty authored propositions rather than the reference’s hundreds; no implication that the sample is the learner’s knowledge. |
 | Regions | Six subdued semantic tints, using native radial shaders behind topology. Added `graph_region_0…5` tokens have center alpha `0x30` and fade to transparent. These are independently selected approximate tints, not exact upstream hues. Fixed circular regions replace the reference’s organic rasterized neighborhoods; no decorative chrome gradients. |
-| Type | Source Sans 3 node labels at 12.5 sp, mono cluster captions/controls and serif proposition title. Zoom reveals node labels; collision checks prioritize selection and suppress overlaps, including cluster captions in short viewports. Full statements remain available natively. |
+| Type | Source Sans 3 node labels and mono cluster captions start at 12.5 sp at fit zoom and scale proportionally with graph zoom; controls and the compact tooltip retain native text sizing. Zoom reveals node labels; collision checks prioritize selection and suppress overlaps, including cluster captions in short viewports. Enlarged labels clip naturally at viewport edges. Full statements remain available natively. |
 | Camera and touch | Fit, drag, two-finger focus-preserving zoom and double-tap. Fixed-size dots/rings remain visible while world geometry scales. Nearest picking within 24 dp is a phone adaptation, not a promise that overlapping targets are distinguishable; zoom or Browse resolves dense areas. |
-| Search and accessibility | Native case-insensitive word-prefix results, bright match rings/dimmed other dots, explicit no matches, Browse-all and native Inspect/details. Results wrap full propositions rather than forcing horizontal dropdown text. Canvas itself is not an accessibility-focus destination; the full native route is the alternative, pending actual TalkBack verification. |
+| Search and accessibility | Native case-insensitive word-prefix results, bright match rings/dimmed other dots, explicit no matches, Browse-all and a native chevron tooltip opening details. Search hint/text are vertically centered. Results wrap full propositions rather than forcing horizontal dropdown text. Canvas itself is not an accessibility-focus destination; the full native route is the alternative, pending actual TalkBack verification. |
 | Details and provenance | Fullscreen scrollable native statement, reasoning and authored-source disclosure; incoming/outgoing links distinguish relationship direction. Relevant nodes link to the existing sample classroom. No hover-only panel, fake learner confidence, fabricated citations or graph edits. |
-| Home chrome | Android toolbar/system bars and 48-dp controls replace desktop traffic lights/hover actions. Sample lesson/style reference remain at the bottom; no pretend model picker, dictation, goal generation or usage accounting. |
+| Home chrome | Android toolbar/system bars and 48-dp controls replace desktop traffic lights/hover actions. Bottom button rows are removed. Zoom/Fit, sample lesson and style reference remain available in the toolbar overflow; a compact above-node tooltip follows selection, pans and zooms, with system-animation-aware fades. Selected node rings/labels also fade; no pretend model picker, dictation, goal generation or usage accounting. |
 
 Graph tests pass at normal and 200% text size with animations disabled. Recreated camera/selection and native pan/pinch/search/detail flows are checked; actual TalkBack, large real graphs, tablets/foldables/RTL and formal pixel differences remain unverified.

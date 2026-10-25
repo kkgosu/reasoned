@@ -166,7 +166,7 @@ class LessonTest {
                 activity.onBackPressed()
             }
             scenario.recreate() // Finish AppKit's pending return transition.
-            scenario.onActivity { it.findViewById<Button>(R.id.open_sample_lesson).performClick() }
+            scenario.onActivity { it.openHomeAction(R.id.open_sample_lesson) }
             idle()
             scenario.recreate()
             scenario.onActivity { activity ->
@@ -296,7 +296,7 @@ class LessonTest {
     }
 
     private fun openLesson(scenario: ActivityScenario<MainActivity>) {
-        scenario.onActivity { it.findViewById<Button>(R.id.open_sample_lesson).performClick() }
+        scenario.onActivity { it.openHomeAction(R.id.open_sample_lesson) }
         idle()
         scenario.recreate() // Also finishes the entry transition before inspection.
     }
