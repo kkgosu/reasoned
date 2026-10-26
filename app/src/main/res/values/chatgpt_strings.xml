@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="chatgpt_use_plan">ChatGPT plan</string>
+    <string name="chatgpt_use_api">API key · separate billing</string>
+    <string name="chatgpt_continue">Continue with ChatGPT</string>
+    <string name="chatgpt_cancel">Cancel sign-in</string>
+    <string name="chatgpt_add_account">Add account</string>
+    <string name="chatgpt_accounts">Choose account</string>
+    <string name="chatgpt_reset">Reset local ChatGPT connections</string>
+    <string name="chatgpt_reset_summary">Removes saved ChatGPT sign-ins from this device to fix broken credentials. Lessons remain; remote ChatGPT access is not revoked.</string>
+    <string name="chatgpt_reset_warning">Remove all local ChatGPT registrations and tokens on this device? Saved lessons remain, but cannot generate through these connections afterward. Use this to recover unreadable credentials. Remote grants are not revoked; disconnect this app in ChatGPT settings. A later sign-in creates a new registration.</string>
+    <string name="chatgpt_sign_out">Sign out</string>
+    <string name="chatgpt_manage_usage">Manage usage</string>
+    <string name="chatgpt_models">Choose model</string>
+    <string name="chatgpt_refresh_models">Refresh models</string>
+    <string name="chatgpt_models_loading">Loading models for this account…</string>
+    <string name="chatgpt_models_loaded">%1$d models available. Tap a model to select it.</string>
+    <string name="chatgpt_models_failed">Could not load this account’s models. Check your connection and tap Refresh models.</string>
+    <string name="chatgpt_no_models">No models are available for this ChatGPT connection. Check plan eligibility and permissions.</string>
+    <string name="chatgpt_browser_pending">Finish sign-in in your browser, then return here. If the app closes or five minutes pass, try again.</string>
+    <string name="chatgpt_disconnected">Connect an eligible ChatGPT plan. Requests use your plan allowance or credits; account limits apply.</string>
+    <string name="chatgpt_connected">%1$s\nConnected · uses your plan allowance or credits.</string>
+    <string name="chatgpt_permission_missing">%1$s\nPlan access isn’t authorized. Continue with ChatGPT to review permissions.</string>
+    <string name="chatgpt_signed_out">Signed out. This registration is retained for later sign-in; its local tokens were removed.</string>
+    <string name="chatgpt_revocation_unconfirmed">Local tokens were removed, but remote revocation could not be confirmed. Disconnect this app in ChatGPT settings via Manage usage.</string>
+    <string name="chatgpt_welcome_title">You’re using your ChatGPT plan</string>
+    <string name="chatgpt_welcome">Eligible requests in this app use your ChatGPT plan allowance or available credits. Review app access and limits with Manage usage. API billing remains a separate, explicit choice.</string>
+    <string name="chatgpt_got_it">Got it</string>
+    <string name="chatgpt_error_limit">ChatGPT app usage limit reached. Pause generation and use Manage usage to check app access and limits. No switch to API billing was made.</string>
+    <string name="chatgpt_error_eligibility">ChatGPT plan usage is unavailable for this account, workspace, or policy. Check eligibility in ChatGPT settings; signing in repeatedly will not fix this restriction.</string>
+    <string name="chatgpt_error_unavailable">ChatGPT plan usage is temporarily unavailable. Your connection is retained. Wait before retrying; no switch to API billing was made.</string>
+    <string name="chatgpt_error_unsupported">This request is not supported by ChatGPT plan usage. Do not retry the same request; the app integration needs updating.</string>
+    <string name="chatgpt_error_permission">ChatGPT plan permission is missing or invalid. Open Settings → Providers &amp; models and Continue with ChatGPT for this saved connection to review permissions.</string>
+    <string name="chatgpt_error_sign_in">This ChatGPT connection needs sign-in. Open Settings → Providers &amp; models, choose the saved connection, and Continue with ChatGPT. This session will not switch to API billing.</string>
+    <string name="chatgpt_error_timeout">Browser sign-in expired. Continue with ChatGPT to start a fresh attempt.</string>
+    <string name="chatgpt_error_response_limit">ChatGPT’s account response exceeded this app’s safety size limit, not your plan usage limit. Saved connections were kept. Check for an app update before trying again.</string>
+</resources>

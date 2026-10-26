@@ -12,6 +12,7 @@
         android:minHeight="?android:attr/actionBarSize"
         android:titleTextAppearance="@style/TextAppearance.Harness.Toolbar"
         android:titleTextColor="@color/foreground"
+        android:navigationContentDescription="@string/navigation_back"
         android:background="@color/background" />
 
     <View

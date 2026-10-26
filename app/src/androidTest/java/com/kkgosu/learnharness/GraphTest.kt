@@ -1,10 +1,11 @@
 package com.kkgosu.learnharness
 
-import android.accessibilityservice.AccessibilityServiceInfo
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Color
 import android.graphics.Paint
 import android.os.Parcel
 import android.os.Parcelable
@@ -14,7 +15,9 @@ import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
-import android.widget.AutoCompleteTextView
+import android.widget.EditText
+import android.widget.ImageButton
+import android.widget.ListView
 import android.widget.Button
 import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
@@ -136,7 +139,6 @@ class GraphTest {
                 graph.select(null)
                 assertEquals(start, graph.camera)
             }
-            capture("phase3-graph")
         }
     }
 
@@ -164,9 +166,11 @@ class GraphTest {
                 graph.jumpDrawablesToCurrentState()
                 val bitmap = Bitmap.createBitmap(graph.width, graph.height, Bitmap.Config.ARGB_8888)
                 val sizes = mutableMapOf<String, Float>()
+                val colors = mutableMapOf<String, Int>()
                 val canvas = object : Canvas(bitmap) {
                     override fun drawText(text: String, x: Float, y: Float, paint: Paint) {
                         sizes[text] = paint.textSize
+                        colors[text] = paint.color
                         super.drawText(text, x, y, paint)
                     }
                 }
@@ -178,8 +182,22 @@ class GraphTest {
                     sizes.clear()
                     graph.draw(canvas)
                     assertEquals(before * 2, sizes.getValue(label), 0.01f)
+                    graph.select(null)
+                    graph.jumpDrawablesToCurrentState()
+                    colors.clear()
+                    graph.draw(canvas)
+                    val visibleColor = colors.getValue(label)
+                    graph.select("event")
+                    colors.clear()
+                    graph.draw(canvas)
+                    assertTrue("Selecting a visible label must not hide it", colors.containsKey(label))
+                    assertEquals(255, Color.alpha(colors.getValue(label)))
+                    if (ValueAnimator.areAnimatorsEnabled()) {
+                        assertEquals("Fade starts from the visible label's color", visibleColor, colors.getValue(label))
+                    }
+                    graph.jumpDrawablesToCurrentState()
                 } finally { bitmap.recycle() }
-                val search = activity.findViewById<AutoCompleteTextView>(R.id.graph_search)
+                val search = activity.findViewById<Button>(R.id.graph_search_open)
                 assertEquals(android.view.Gravity.CENTER_VERTICAL, search.gravity and android.view.Gravity.VERTICAL_GRAVITY_MASK)
             }
             assertTrue("Tooltip must finish fading in", shown.await(5, TimeUnit.SECONDS))
@@ -195,7 +213,6 @@ class GraphTest {
                 activity.openHomeAction(R.id.graph_zoom_out)
             }
             settle()
-            capture("phase3-scaled-text")
             val hidden = watchFade(0f)
             scenario.onActivity { activity -> activity.findViewById<KnowledgeGraphView>(R.id.knowledge_graph).select(null) }
             assertTrue("Tooltip must finish fading out", hidden.await(5, TimeUnit.SECONDS))
@@ -212,58 +229,62 @@ class GraphTest {
     }
 
     @Test
+    @androidx.test.filters.SdkSuppress(minSdkVersion = 30)
     fun searchDetailsRelatedNavigationAndRecreation() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             settle()
-            scenario.onActivity { it.findViewById<Button>(R.id.graph_browse).performClick() }
+            scenario.onActivity { it.findViewById<Button>(R.id.graph_search_open).performClick() }
             settle()
+            val imeShown = CountDownLatch(1)
+            lateinit var imeListener: android.view.ViewTreeObserver.OnGlobalLayoutListener
             scenario.onActivity { activity ->
-                val search = activity.findViewById<AutoCompleteTextView>(R.id.graph_search)
-                assertEquals(30, search.adapter.count)
-                assertTrue("Browse must expose every node without typing", search.isPopupShowing)
-                search.setText("zzznomatch")
-            }
-            settle()
-            scenario.onActivity { activity ->
-                val search = activity.findViewById<AutoCompleteTextView>(R.id.graph_search)
-                assertEquals(0, search.adapter.count)
-                assertNotNull(search.error)
-                activity.findViewById<Button>(R.id.graph_browse).performClick()
-            }
-            settle()
-            scenario.onActivity { activity ->
-                assertEquals(30, activity.findViewById<AutoCompleteTextView>(R.id.graph_search).adapter.count)
-                assertTrue(activity.findViewById<AutoCompleteTextView>(R.id.graph_search).isPopupShowing)
-                activity.findViewById<AutoCompleteTextView>(R.id.graph_search).apply {
-                    requestFocus()
-                    setText("positive")
+                val decor = activity.window.decorView
+                imeListener = android.view.ViewTreeObserver.OnGlobalLayoutListener {
+                    if (decor.rootWindowInsets?.isVisible(android.view.WindowInsets.Type.ime()) == true) imeShown.countDown()
                 }
+                decor.viewTreeObserver.addOnGlobalLayoutListener(imeListener)
+                if (decor.rootWindowInsets?.isVisible(android.view.WindowInsets.Type.ime()) == true) imeShown.countDown()
+                assertEquals(30, activity.findViewById<ListView>(R.id.graph_search_results).count)
+                val search = activity.findViewById<EditText>(R.id.graph_search)
+                assertTrue(search.hasFocus())
+                assertEquals(android.view.Gravity.CENTER_VERTICAL, search.gravity and android.view.Gravity.VERTICAL_GRAVITY_MASK)
+            }
+            assertTrue("Search must open the IME", imeShown.await(5, TimeUnit.SECONDS))
+            settle()
+            scenario.onActivity { activity ->
+                val decor = activity.window.decorView
+                decor.viewTreeObserver.removeOnGlobalLayoutListener(imeListener)
+                val fragment = activity.fragmentManager.fragments.filterIsInstance<GraphSearchFragment>().single()
+                val bottom = decor.rootWindowInsets.getInsets(android.view.WindowInsets.Type.ime() or android.view.WindowInsets.Type.systemBars()).bottom
+                assertEquals("Search follows the visible IME", bottom, fragment.view!!.paddingBottom)
+                activity.findViewById<EditText>(R.id.graph_search).setText("zzznomatch")
             }
             settle()
-            capture("phase3-search")
+            scenario.onActivity { activity ->
+                assertEquals(0, activity.findViewById<ListView>(R.id.graph_search_results).count)
+                assertTrue(activity.findViewById<View>(R.id.graph_search_empty).isShown)
+                activity.findViewById<ImageButton>(R.id.graph_search_clear).performClick()
+            }
+            settle()
+            scenario.onActivity { activity ->
+                assertEquals(30, activity.findViewById<ListView>(R.id.graph_search_results).count)
+                activity.findViewById<EditText>(R.id.graph_search).setText("positive")
+            }
+            settle()
+            scenario.recreate()
+            settle()
             var camera: GraphCamera? = null
             var selected: String? = null
             scenario.onActivity { activity ->
-                val search = activity.findViewById<AutoCompleteTextView>(R.id.graph_search)
-                assertTrue(search.adapter.count > 0)
-                val node = search.adapter.getItem(0) as GraphNode
-                assertTrue(node.toString().contains("positive", ignoreCase = true))
+                assertEquals("positive", activity.findViewById<EditText>(R.id.graph_search).text.toString())
+                val results = activity.findViewById<ListView>(R.id.graph_search_results)
+                assertTrue(results.count > 0)
+                assertTrue((results.getItemAtPosition(0) as GraphNode).toString().contains("positive", ignoreCase = true))
             }
-            val automation = instrumentation.uiAutomation
-            val serviceInfo = automation.serviceInfo
-            val oldFlags = serviceInfo.flags
-            serviceInfo.flags = oldFlags or AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
-            automation.serviceInfo = serviceInfo
-            try {
-                var result = automation.windows.asSequence().mapNotNull { it.root }
-                    .flatMap { it.findAccessibilityNodeInfosByText("Positive derivative").asSequence() }
-                    .first { it.text?.startsWith("Positive derivative.") == true }
-                while (!result.isClickable && result.parent != null) result = result.parent
-                assertTrue("Native dropdown result must be clickable", result.performAction(AccessibilityNodeInfo.ACTION_CLICK))
-            } finally {
-                serviceInfo.flags = oldFlags
-                automation.serviceInfo = serviceInfo
-            }
+            var result = instrumentation.uiAutomation.rootInActiveWindow.findAccessibilityNodeInfosByText("Positive derivative")
+                .first { it.text?.startsWith("Positive derivative.") == true }
+            while (!result.isClickable && result.parent != null) result = result.parent
+            assertTrue("Native search result must be clickable", result.performAction(AccessibilityNodeInfo.ACTION_CLICK))
             settle()
             scenario.onActivity { activity ->
                 val node = SampleGraph.create(activity.resources).nodes.first { it.id == "positive" }
@@ -279,10 +300,8 @@ class GraphTest {
                 assertEquals(selected, graph.selectedId)
                 assertEquals(camera, graph.camera)
             }
-            capture("phase3-selection")
             scenario.onActivity { it.findViewById<Button>(R.id.graph_details).performClick() }
             settle()
-            capture("phase3-proposition")
             scenario.onActivity { activity ->
                 assertTrue(activity.findViewById<TextView>(R.id.graph_statement).text.contains("positive derivative"))
                 activity.findViewById<View>(R.id.graph_related).let { view ->

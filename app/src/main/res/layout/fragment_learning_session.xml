@@ -171,6 +171,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:baselineAligned="false"
                 android:gravity="bottom">
                 <EditText
                     android:id="@+id/lesson_composer"
@@ -180,10 +181,12 @@
                     android:layout_weight="1"
                     android:minLines="1"
                     android:maxLines="4"
+                    android:gravity="center_vertical|start"
                     android:hint="@string/composer_hint" />
                 <Button
                     android:id="@+id/composer_action"
                     style="@style/Widget.Harness.Button"
+                    android:layout_marginStart="@dimen/space_8"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/send_note" />

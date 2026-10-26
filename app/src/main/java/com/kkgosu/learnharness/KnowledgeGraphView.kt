@@ -2,6 +2,7 @@ package com.kkgosu.learnharness
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
+import android.animation.ArgbEvaluator
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Canvas
@@ -39,6 +40,7 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
     private var matches: Set<String> = emptySet()
     private val ink = context.getColor(R.color.foreground)
     private val muted = context.getColor(R.color.muted_foreground)
+    private val labelColorEvaluator = ArgbEvaluator()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val labelPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
         typeface = resources.getFont(R.font.prose)
@@ -95,7 +97,7 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
 
     init {
         isClickable = true
-        // Every proposition is available via the adjacent native, searchable Browse dropdown.
+        // Every proposition is available in the native, accessible full-screen search list.
         importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO
     }
 
@@ -254,7 +256,12 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
         }
         drawnLabels = 0
         // Selected labels take precedence; suppress colliding labels, never enlarge the dots into cards.
-        data.nodes.forEachIndexed { index, point -> if (point.node.id == selectedId) drawLabel(canvas, point, index, zoom, selectionProgress) }
+        data.nodes.forEachIndexed { index, point ->
+            if (point.node.id == selectedId) {
+                val opacity = if (point.node.id in matches || zoom >= 1.8f) 1f else selectionProgress
+                drawLabel(canvas, point, index, zoom, opacity)
+            }
+        }
         data.nodes.forEachIndexed { index, point ->
             if (point.node.id != selectedId) {
                 val opacity = if (point.node.id in matches || zoom >= 1.8f) 1f else
@@ -281,7 +288,11 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
         val remaining = width - labelWidth
         val left = (x - labelWidth / 2).coerceIn(remaining.coerceAtMost(0f), remaining.coerceAtLeast(0f))
         if (!reserveLabel(left, y + labelPaint.ascent(), left + labelWidth, y + labelPaint.descent())) return
-        labelPaint.color = if (point.node.id == selectedId || point.node.id in matches) ink else muted
+        labelPaint.color = when {
+            point.node.id in matches -> ink
+            point.node.id == selectedId -> labelColorEvaluator.evaluate(selectionProgress, muted, ink) as Int
+            else -> muted
+        }
         labelPaint.alpha = (255 * opacity).toInt()
         canvas.drawText(labels[index], left, y, labelPaint)
     }

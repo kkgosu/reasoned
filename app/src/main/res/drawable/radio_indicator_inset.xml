@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- CompoundButton ignores view padding when positioning its indicator. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:start="@dimen/space_24" android:end="@dimen/space_8"
+        android:drawable="?android:attr/listChoiceIndicatorSingle" />
+</layer-list>

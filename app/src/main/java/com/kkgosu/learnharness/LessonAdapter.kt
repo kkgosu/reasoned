@@ -12,27 +12,32 @@ import com.kkgosu.learnharness.LessonDisplayItem.Role
 import com.kkgosu.learnharness.LessonDisplayItem.TextDisplayItem
 import me.grishka.appkit.views.UsableRecyclerView
 
-class LessonAdapter : UsableRecyclerView.Adapter<RecyclerView.ViewHolder>(null) {
+class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) : UsableRecyclerView.Adapter<RecyclerView.ViewHolder>(null) {
     private var items: List<LessonDisplayItem> = emptyList()
+    private var generating = false
 
     init { setHasStableIds(true) }
 
     // ponytail: the mock is append-only; use DiffUtil when real sessions support edits/removals.
-    fun submit(next: List<LessonDisplayItem>): Boolean {
-        if (items === next) return false
+    fun submit(next: List<LessonDisplayItem>, running: Boolean = false): Boolean {
+        if (items === next && generating == running) return false
         val previous = items
+        val wasGenerating = generating
         require(next.size >= previous.size && previous.indices.all { previous[it].id == next[it].id })
         items = next
+        generating = running
+        if (wasGenerating && !running) notifyItemRemoved(previous.size)
         previous.indices.forEach { index ->
             if (previous[index] != next[index]) notifyItemChanged(index, TEXT_CHANGED)
         }
         if (next.size > previous.size) notifyItemRangeInserted(previous.size, next.size - previous.size)
+        if (!wasGenerating && running) notifyItemInserted(next.size)
         return true
     }
 
-    override fun getItemCount() = items.size
-    override fun getItemId(position: Int) = items[position].id
-    override fun getItemViewType(position: Int) = when (items[position]) {
+    override fun getItemCount() = items.size + if (generating) 1 else 0
+    override fun getItemId(position: Int) = if (position == items.size) Long.MIN_VALUE else items[position].id
+    override fun getItemViewType(position: Int) = if (position == items.size) R.layout.item_lesson_generating else when (items[position]) {
         is TextDisplayItem -> R.layout.item_lesson_text
         is FormulaDisplayItem -> R.layout.item_lesson_formula
         is QuestionDisplayItem -> R.layout.item_lesson_question
@@ -43,6 +48,7 @@ class LessonAdapter : UsableRecyclerView.Adapter<RecyclerView.ViewHolder>(null) 
         return when (viewType) {
             R.layout.item_lesson_formula -> FormulaHolder(view)
             R.layout.item_lesson_question -> QuestionHolder(view)
+            R.layout.item_lesson_generating -> object : RecyclerView.ViewHolder(view) {}
             else -> TextHolder(view)
         }
     }
@@ -57,18 +63,19 @@ class LessonAdapter : UsableRecyclerView.Adapter<RecyclerView.ViewHolder>(null) 
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
         if (holder is TextHolder && TEXT_CHANGED in payloads) {
-            holder.text.text = (items[position] as TextDisplayItem).text
+            holder.bind(items[position] as TextDisplayItem)
         } else onBindViewHolder(holder, position)
     }
 
-    private class TextHolder(view: View) : RecyclerView.ViewHolder(view) {
+    private inner class TextHolder(view: View) : RecyclerView.ViewHolder(view) {
         val text: TextView = view.findViewById(R.id.item_text)
         private val label: TextView = view.findViewById(R.id.item_label)
         fun bind(item: TextDisplayItem) {
             text.setTextAppearance(if (item.role == Role.TITLE) R.style.TextAppearance_Harness_Title else R.style.TextAppearance_Harness_Prose)
             if (Build.VERSION.SDK_INT >= 28) text.isAccessibilityHeading = item.role == Role.TITLE
-            label.visibility = if (item.role == Role.LEARNER) View.VISIBLE else View.GONE
-            text.text = item.text
+            label.visibility = if (item.role == Role.LEARNER || item.role == Role.QUESTION) View.VISIBLE else View.GONE
+            label.setText(if (item.role == Role.QUESTION) R.string.runtime_question else R.string.your_note)
+            if (markdown != null && item.role != Role.TITLE) markdown.setMarkdown(text, item.text) else text.text = item.text
         }
     }
 

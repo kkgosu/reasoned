@@ -18,9 +18,6 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    buildFeatures {
-        viewBinding true
-    }
 
     buildTypes {
         release {
@@ -39,6 +36,15 @@ dependencies {
     implementation libs.appkit
     implementation libs.litex.recyclerview
     implementation libs.coroutines.android
+    implementation libs.okhttp
+    implementation libs.nimbus
+    implementation libs.markwon.core
+    implementation libs.markwon.inline
+    implementation libs.markwon.latex
+    implementation(libs.drawer) {
+        // LiteX already supplies the same androidx.collection classes.
+        exclude group: 'androidx.collection', module: 'collection'
+    }
     androidTestImplementation libs.junit
     androidTestImplementation libs.androidx.test.core
     androidTestImplementation libs.androidx.test.runner

@@ -16,8 +16,11 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.SeekBar
+import android.widget.Button
+import android.widget.RadioGroup
+import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.kkgosu.learnharness.databinding.FragmentLearningSessionBinding
+import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -29,7 +32,7 @@ import kotlinx.coroutines.launch
 import me.grishka.appkit.fragments.ToolbarFragment
 
 class LearningSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
-    private var binding: FragmentLearningSessionBinding? = null
+    private var pageView: View? = null
     private val adapter = LessonAdapter()
     private var visibleScope: CoroutineScope? = null
     private var imeVisible = false
@@ -37,38 +40,40 @@ class LearningSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
 
     override fun onCreateContentView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         setTitle(R.string.sample_lesson_title)
-        val views = FragmentLearningSessionBinding.inflate(inflater, container, false)
-        binding = views
+        val views = inflater.inflate(R.layout.fragment_learning_session, container, false)
+        pageView = views
         val model = lesson
-        views.lessonList.layoutManager = LinearLayoutManager(inflater.context)
-        views.lessonList.itemAnimator = null
+        val list = views.findViewById<RecyclerView>(R.id.lesson_list)
+        val options = views.findViewById<RadioGroup>(R.id.question_options)
+        list.layoutManager = LinearLayoutManager(inflater.context)
+        list.itemAnimator = null
         adapter.submit(model.state.value.items)
-        views.lessonList.adapter = adapter
+        list.adapter = adapter
         resources.getStringArray(R.array.lesson_options).forEachIndexed { index, text ->
-            (views.questionOptions.getChildAt(index) as RadioButton).text = text
+            (options.getChildAt(index) as RadioButton).text = text
         }
-        views.questionOptions.setOnCheckedChangeListener { group, id ->
+        options.setOnCheckedChangeListener { group, id ->
             model.select((0 until group.childCount).indexOfFirst { group.getChildAt(it).id == id })
         }
-        views.questionThinking.onEdit(model::thinking)
-        views.lessonComposer.onEdit(model::draft)
-        views.questionConfidence.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+        views.findViewById<EditText>(R.id.question_thinking).onEdit(model::thinking)
+        views.findViewById<EditText>(R.id.lesson_composer).onEdit(model::draft)
+        views.findViewById<SeekBar>(R.id.question_confidence).setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
                 if (fromUser) model.confidence(progress)
             }
             override fun onStartTrackingTouch(seekBar: SeekBar) = Unit
             override fun onStopTrackingTouch(seekBar: SeekBar) = Unit
         })
-        views.revealQuestion.setOnClickListener { model.expand(true) }
-        views.collapseQuestion.setOnClickListener {
+        views.findViewById<Button>(R.id.reveal_question).setOnClickListener { model.expand(true) }
+        views.findViewById<Button>(R.id.collapse_question).setOnClickListener {
             dismissKeyboard(views)
             model.expand(false)
         }
-        views.submitAnswer.setOnClickListener {
+        views.findViewById<Button>(R.id.submit_answer).setOnClickListener {
             dismissKeyboard(views)
             model.submitAnswer()
         }
-        views.composerAction.setOnClickListener {
+        views.findViewById<Button>(R.id.composer_action).setOnClickListener {
             val state = model.state.value
             when {
                 state.streaming -> model.stop()
@@ -77,13 +82,13 @@ class LearningSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             }
         }
         render(views, model.state.value)
-        return views.root
+        return views
     }
 
     // AppKit's visibility hooks also stop work when a stacked fragment is hidden, not just paused.
     override fun onShown() {
         super.onShown()
-        val views = binding ?: return
+        val views = pageView ?: return
         val model = lesson
         visibleScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).also { scope ->
             scope.launch { model.state.collect { render(views, it) } }
@@ -108,19 +113,34 @@ class LearningSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             else insets.systemWindowInsetBottom > insets.stableInsetBottom
         if (imeVisible != visible) {
             imeVisible = visible
-            binding?.let { render(it, lesson.state.value) }
+            pageView?.let { render(it, lesson.state.value) }
         }
     }
 
     override fun onDestroyView() {
         visibleScope?.cancel()
         visibleScope = null
-        binding?.lessonList?.adapter = null
-        binding = null
+        pageView?.findViewById<RecyclerView>(R.id.lesson_list)?.adapter = null
+        pageView = null
         super.onDestroyView()
     }
 
-    private fun render(views: FragmentLearningSessionBinding, state: MockLesson.State) = with(views) {
+    private fun render(views: View, state: MockLesson.State) = with(views) {
+        val root = views as ViewGroup
+        val lessonList = findViewById<RecyclerView>(R.id.lesson_list)
+        val lessonStatus = findViewById<TextView>(R.id.lesson_status)
+        val questionPanel = findViewById<View>(R.id.question_panel)
+        val composerPanel = findViewById<View>(R.id.composer_panel)
+        val dockShell = findViewById<View>(R.id.dock_shell)
+        val revealQuestion = findViewById<Button>(R.id.reveal_question)
+        val questionOptions = findViewById<RadioGroup>(R.id.question_options)
+        val questionConfidence = findViewById<SeekBar>(R.id.question_confidence)
+        val confidenceLabel = findViewById<TextView>(R.id.confidence_label)
+        val questionThinking = findViewById<EditText>(R.id.question_thinking)
+        val lessonComposer = findViewById<EditText>(R.id.lesson_composer)
+        val submitAnswer = findViewById<Button>(R.id.submit_answer)
+        val composerAction = findViewById<Button>(R.id.composer_action)
+        val composerNotice = findViewById<TextView>(R.id.composer_notice)
         val followTail = !lessonList.canScrollVertically(1)
         if (adapter.submit(state.items) && followTail) {
             lessonList.post { lessonList.scrollToPosition(adapter.itemCount - 1) }
@@ -181,10 +201,10 @@ class LearningSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         composerNotice.setText(if (atLimit) R.string.mock_limit else R.string.composer_preview_hint)
     }
 
-    private fun dismissKeyboard(views: FragmentLearningSessionBinding) {
-        views.root.context.getSystemService(InputMethodManager::class.java)
-            .hideSoftInputFromWindow(views.root.windowToken, 0)
-        views.root.requestFocus()
+    private fun dismissKeyboard(views: View) {
+        views.context.getSystemService(InputMethodManager::class.java)
+            .hideSoftInputFromWindow(views.windowToken, 0)
+        views.requestFocus()
     }
 
     private fun EditText.restoreText(value: String) {

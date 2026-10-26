@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="horizontal" android:gravity="center_vertical">
+    <EditText android:id="@+id/graph_search" style="@style/Widget.Harness.Input"
+        android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1"
+        android:background="@null" android:fontFamily="@font/ui" android:gravity="center_vertical|start"
+        android:hint="@string/graph_search" android:inputType="textFilter" android:singleLine="true"
+        android:imeOptions="actionSearch" android:maxLength="100" />
+    <ImageButton android:id="@+id/graph_search_clear" android:layout_width="@dimen/touch_target" android:layout_height="match_parent"
+        android:src="@drawable/ic_close" android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/graph_search_clear" android:visibility="invisible" />
+</LinearLayout>

@@ -1,0 +1,386 @@
+{
+  "source": {
+    "package": "@earendil-works/pi-ai",
+    "version": "1.4.0",
+    "license": "MIT",
+    "sha256": "cf5e119eb05f47bbf1dbad179de6a07b904bf7673e96691be72ab0b1fe40a781"
+  },
+  "models": {
+    "gpt-4": {
+      "name": "GPT-4",
+      "window": 8192,
+      "efforts": []
+    },
+    "gpt-4-turbo": {
+      "name": "GPT-4 Turbo",
+      "window": 128000,
+      "efforts": []
+    },
+    "gpt-4.1": {
+      "name": "GPT-4.1",
+      "window": 1047576,
+      "efforts": []
+    },
+    "gpt-4.1-mini": {
+      "name": "GPT-4.1 mini",
+      "window": 1047576,
+      "efforts": []
+    },
+    "gpt-4.1-nano": {
+      "name": "GPT-4.1 nano",
+      "window": 1047576,
+      "efforts": []
+    },
+    "gpt-4o": {
+      "name": "GPT-4o",
+      "window": 128000,
+      "efforts": []
+    },
+    "gpt-4o-2024-05-13": {
+      "name": "GPT-4o (2024-05-13)",
+      "window": 128000,
+      "efforts": []
+    },
+    "gpt-4o-2024-08-06": {
+      "name": "GPT-4o (2024-08-06)",
+      "window": 128000,
+      "efforts": []
+    },
+    "gpt-4o-2024-11-20": {
+      "name": "GPT-4o (2024-11-20)",
+      "window": 128000,
+      "efforts": []
+    },
+    "gpt-4o-mini": {
+      "name": "GPT-4o mini",
+      "window": 128000,
+      "efforts": []
+    },
+    "gpt-5": {
+      "name": "GPT-5",
+      "window": 400000,
+      "efforts": [
+        "minimal",
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "gpt-5-chat-latest": {
+      "name": "GPT-5 Chat Latest",
+      "window": 128000,
+      "efforts": []
+    },
+    "gpt-5-mini": {
+      "name": "GPT-5 Mini",
+      "window": 400000,
+      "efforts": [
+        "minimal",
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "gpt-5-nano": {
+      "name": "GPT-5 Nano",
+      "window": 400000,
+      "efforts": [
+        "minimal",
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "gpt-5-pro": {
+      "name": "GPT-5 Pro",
+      "window": 400000,
+      "efforts": [
+        "high"
+      ]
+    },
+    "gpt-5.1": {
+      "name": "GPT-5.1",
+      "window": 400000,
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "gpt-5.2": {
+      "name": "GPT-5.2",
+      "window": 400000,
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "gpt-5.2-pro": {
+      "name": "GPT-5.2 Pro",
+      "window": 400000,
+      "efforts": [
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "gpt-5.3-codex": {
+      "name": "GPT-5.3 Codex",
+      "window": 400000,
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "gpt-5.3-codex-spark": {
+      "name": "GPT-5.3 Codex Spark",
+      "window": 128000,
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "gpt-5.4": {
+      "name": "GPT-5.4",
+      "window": 272000,
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "gpt-5.4-mini": {
+      "name": "GPT-5.4 mini",
+      "window": 400000,
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "gpt-5.4-nano": {
+      "name": "GPT-5.4 nano",
+      "window": 400000,
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "gpt-5.4-pro": {
+      "name": "GPT-5.4 Pro",
+      "window": 1050000,
+      "efforts": [
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "gpt-5.5": {
+      "name": "GPT-5.5",
+      "window": 272000,
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "gpt-5.5-pro": {
+      "name": "GPT-5.5 Pro",
+      "window": 1050000,
+      "efforts": [
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "gpt-5.6-luna": {
+      "name": "GPT-5.6 Luna",
+      "window": 272000,
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    "gpt-5.6-sol": {
+      "name": "GPT-5.6 Sol",
+      "window": 272000,
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    "gpt-5.6-terra": {
+      "name": "GPT-5.6 Terra",
+      "window": 272000,
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    "gpt-6-astra": {
+      "name": "GPT-6 Astra",
+      "window": 272000,
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    "gpt-6-luna": {
+      "name": "GPT-6 Luna",
+      "window": 272000,
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    "gpt-6-sol": {
+      "name": "GPT-6 Sol",
+      "window": 272000,
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    "gpt-6.1-sol": {
+      "name": "GPT-6.1 Sol",
+      "window": 272000,
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    "gpt-daybreak-blue-latest": {
+      "name": "Daybreak Blue",
+      "window": 1050000,
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    "gpt-daybreak-red-latest": {
+      "name": "Daybreak Red",
+      "window": 400000,
+      "efforts": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh",
+        "max"
+      ]
+    },
+    "gpt-realtime-2.1": {
+      "name": "GPT-Realtime-2.1",
+      "window": 128000,
+      "efforts": [
+        "minimal",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ]
+    },
+    "o1": {
+      "name": "o1",
+      "window": 200000,
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "o1-pro": {
+      "name": "o1-pro",
+      "window": 200000,
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "o3": {
+      "name": "o3",
+      "window": 200000,
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "o3-mini": {
+      "name": "o3-mini",
+      "window": 200000,
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "o3-pro": {
+      "name": "o3-pro",
+      "window": 200000,
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "o4-mini": {
+      "name": "o4-mini",
+      "window": 200000,
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ]
+    }
+  }
+}

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="chatgpt_sign_out" type="id" />
+    <item name="chatgpt_reset" type="id" />
+    <string name="navigation_back">Back</string>
+    <string name="navigation_open">Open navigation</string>
+    <string name="navigation_graph">Knowledge graph</string>
+    <string name="navigation_sessions">Recent sessions</string>
+    <string name="navigation_empty">Your sessions will appear here.</string>
+    <string name="navigation_loading">Loading sessions…</string>
+    <string name="new_session">New session</string>
+    <string name="new_session_intro">What would you like to understand?</string>
+    <string name="new_session_local">Start session sends your goal and learning preferences to OpenAI using the selected connection and billing. Sessions are saved on this device.</string>
+    <string name="new_session_connection">%1$s · %2$s</string>
+    <string name="new_session_configure">Choose your connection and model in Settings first.</string>
+    <string name="new_session_change">Connection settings</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_providers">Providers &amp; models</string>
+    <string name="settings_providers_summary">ChatGPT account or API key, model and usage</string>
+    <string name="settings_learning">Learning preferences</string>
+    <string name="settings_learning_summary">Language, pace and explanation style</string>
+    <string name="settings_about">About &amp; privacy</string>
+    <string name="settings_about_summary">App information and how your data is used</string>
+    <string name="settings_save">Save preferences</string>
+    <string name="settings_saved">Saved.</string>
+    <string name="settings_preferences_note">Applies to new sessions. Existing sessions keep their original preferences.</string>
+    <string name="provider_intro">Choose a connection. Billing never switches automatically.</string>
+    <string name="provider_save_model">Save model</string>
+    <string name="settings_about_body">Reasoned is an Android learning prototype using LearnHarness teaching instructions (AGPL-3.0). It is not an official LearnHarness or OpenAI app.</string>
+    <string name="settings_privacy_heading">Your data</string>
+    <string name="settings_privacy_body">Sessions and learning preferences stay in app-private storage on this device. Credentials use Android Keystore-backed encryption and are excluded from backup.\n\nStarting a turn sends your goal, answers, preferences and session context directly to OpenAI. API-key requests use API billing; ChatGPT requests use the chosen plan’s allowance or credits. No automatic billing fallback.\n\nRequests disable response storage, but this does not guarantee zero provider retention. Keep the session in the foreground while generating.\n\nThe sample graph is illustrative, not a record of your knowledge. Real session content is not yet added to it.</string>
+    <string name="settings_reference">LearnHarness on GitHub</string>
+</resources>

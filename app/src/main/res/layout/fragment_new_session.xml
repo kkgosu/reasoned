@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
+    android:layout_height="match_parent" android:fillViewport="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
+        android:paddingVertical="@dimen/space_24" android:focusableInTouchMode="true">
+        <TextView android:id="@+id/session_connection" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24" android:textAppearance="@style/TextAppearance.Harness.Meta" />
+        <Button android:id="@+id/session_settings" style="@style/Widget.Harness.Navigation" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:text="@string/new_session_change" />
+        <TextView android:id="@+id/runtime_goal_label" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24" android:layout_marginTop="@dimen/space_24" android:labelFor="@id/runtime_goal"
+            android:textAppearance="@style/TextAppearance.Harness.Title" android:text="@string/new_session_intro" />
+        <EditText android:id="@+id/runtime_goal" style="@style/Widget.Harness.Input" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginHorizontal="@dimen/space_24" android:layout_marginTop="@dimen/space_16"
+            android:minLines="3" android:maxLines="6" android:hint="@string/runtime_goal_hint" />
+        <Button android:id="@+id/runtime_start" style="@style/Widget.Harness.Button" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginHorizontal="@dimen/space_24" android:layout_marginTop="@dimen/space_16" android:text="@string/runtime_create" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginHorizontal="@dimen/space_24" android:layout_marginTop="@dimen/space_16"
+            android:textAppearance="@style/TextAppearance.Harness.Meta" android:text="@string/new_session_local" />
+        <TextView android:id="@+id/session_create_status" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24" android:layout_marginTop="@dimen/space_16" android:accessibilityLiveRegion="polite" android:textAppearance="@style/TextAppearance.Harness.Meta" />
+    </LinearLayout>
+</ScrollView>

@@ -12,7 +12,7 @@ sealed class LessonDisplayItem(open val id: Long) {
         val confidence: Int?,
     ) : LessonDisplayItem(id)
 
-    enum class Role { TITLE, PROSE, LEARNER }
+    enum class Role { TITLE, PROSE, LEARNER, QUESTION }
 
     fun save(): Bundle = Bundle().apply {
         putLong("id", id)

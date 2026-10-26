@@ -18,6 +18,7 @@
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:titleTextAppearance">@style/TextAppearance.Harness.Toolbar</item>
         <item name="android:buttonStyle">@style/Widget.Harness.Button</item>
+        <item name="android:alertDialogTheme">@style/Theme.Harness.Dialog</item>
         <item name="appkitToolbarBackground">@color/background</item>
         <item name="appkitToolbarElevation">0dp</item>
         <item name="actionBarIconTint">@color/muted_foreground</item>

@@ -1,6 +1,9 @@
 package com.kkgosu.learnharness
 
-import android.graphics.Bitmap
+import android.app.AlertDialog
+import android.graphics.Typeface
+import android.graphics.drawable.InsetDrawable
+import android.graphics.drawable.RippleDrawable
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -13,7 +16,6 @@ import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.io.File
 
 @RunWith(AndroidJUnit4::class)
 class FoundationTest {
@@ -47,15 +49,57 @@ class FoundationTest {
         }
     }
 
-    // Captures for manual comparison, not an approved pixel-diff baseline yet.
-    @Test
-    fun captureFoundationScreens() {
+    @Test fun navigationUsesMastodonsAppKitDefaults() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            capture("home")
-            scenario.onActivity { it.openHomeAction(R.id.style_reference) }
-            InstrumentationRegistry.getInstrumentation().waitForIdleSync()
-            scenario.recreate() // Ensure the enter animation has finished before capturing.
-            capture("style-reference")
+            scenario.onActivity { activity ->
+                for ((name, duration) in listOf("createFragmentEnterTransition" to 300L, "createFragmentExitTransition" to 200L)) {
+                    org.junit.Assert.assertFalse(MainActivity::class.java.declaredMethods.any { it.name == name })
+                    val method = me.grishka.appkit.FragmentStackActivity::class.java.getDeclaredMethod(name, android.view.View::class.java, android.view.View::class.java)
+                    method.isAccessible = true
+                    val animation = method.invoke(activity, android.view.View(activity), android.view.View(activity)) as android.animation.AnimatorSet
+                    assertEquals(duration, animation.duration)
+                    assertEquals(3, animation.childAnimations.size)
+                }
+            }
+        }
+    }
+
+    @Test fun dialogsUseRoundedSurfacesAndNativeTextActions() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            lateinit var dialog: AlertDialog
+            scenario.onActivity { activity ->
+                dialog = AlertDialog.Builder(activity).setTitle(R.string.chatgpt_reset)
+                    .setMessage(R.string.chatgpt_reset_warning)
+                    .setNegativeButton(android.R.string.cancel, null).setPositiveButton(R.string.chatgpt_reset, null).show()
+            }
+            InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
+            scenario.onActivity { activity ->
+                try {
+                    org.junit.Assert.assertTrue(dialog.window!!.decorView.background is InsetDrawable)
+                    val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+                    for (id in listOf(AlertDialog.BUTTON_NEGATIVE, AlertDialog.BUTTON_POSITIVE)) {
+                        val button = dialog.getButton(id)
+                        val visible = android.graphics.Rect()
+                        val shown = button.getGlobalVisibleRect(visible)
+                        org.junit.Assert.assertTrue("Dialog action clipped: $visible, size=${button.width}x${button.height}",
+                            shown && visible.width() == button.width && visible.height() == button.height)
+                    }
+                    org.junit.Assert.assertTrue(cancel.background is RippleDrawable)
+                    org.junit.Assert.assertTrue(cancel.minimumHeight >= activity.resources.getDimensionPixelSize(R.dimen.touch_target))
+                    val text = activity.getString(android.R.string.cancel)
+                    assertEquals(text, cancel.transformationMethod?.getTransformation(text, cancel)?.toString() ?: text)
+                    assertEquals(Typeface.create("sans-serif-medium", Typeface.NORMAL), cancel.typeface)
+                    assertEquals(activity.getString(R.string.chatgpt_reset_warning), dialog.findViewById<TextView>(android.R.id.message).text.toString())
+                } finally { dialog.dismiss() }
+                var selected = -1
+                val picker = AlertDialog.Builder(activity).setTitle(R.string.chatgpt_models)
+                    .setItems(arrayOf("Model one", "Model two")) { _, index -> selected = index }.show()
+                try {
+                    assertEquals(2, picker.listView.count)
+                    picker.listView.performItemClick(null, 1, picker.listView.adapter.getItemId(1))
+                    assertEquals(1, selected)
+                } finally { picker.dismiss() }
+            }
         }
     }
 
@@ -63,17 +107,4 @@ class FoundationTest {
 
 internal fun MainActivity.openHomeAction(id: Int) {
     check(findViewById<Toolbar>(me.grishka.appkit.R.id.toolbar).menu.performIdentifierAction(id, 0))
-}
-
-// Capture the composed device frame, including system UI and native view layers.
-internal fun capture(name: String) {
-    val instrumentation = InstrumentationRegistry.getInstrumentation()
-    // Let native dock/fragment animations finish, not just the current UI queue.
-    instrumentation.uiAutomation.waitForIdle(500, 5000)
-    val bitmap = requireNotNull(instrumentation.uiAutomation.takeScreenshot())
-    val output = InstrumentationRegistry.getArguments().getString("additionalTestOutputDir")
-    val directory = (output?.let { File(it) }
-        ?: File(instrumentation.targetContext.getExternalFilesDir(null), "screenshots")).apply { mkdirs() }
-    File(directory, "$name.png").outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-    bitmap.recycle()
 }

@@ -263,38 +263,6 @@ class LessonTest {
         }
     }
 
-    @Test
-    fun captureLessonScreens() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            capture("phase2-home")
-            openLesson(scenario)
-            scenario.onActivity { finishStream(it.mockLesson) }
-            idle()
-            scenario.recreate()
-            capture("phase2-reading")
-            scenario.onActivity { it.findViewById<Button>(R.id.reveal_question).performClick() }
-            idle()
-            capture("phase2-question")
-            scenario.onActivity { activity ->
-                activity.findViewById<RadioButton>(R.id.option_left).performClick()
-                activity.findViewById<EditText>(R.id.question_thinking).setText("A positive slope rises to the right, so I would step left.")
-                activity.findViewById<ScrollView>(R.id.question_scroll).fullScroll(View.FOCUS_DOWN)
-            }
-            idle()
-            capture("phase2-thinking")
-            scenario.onActivity { activity ->
-                activity.findViewById<Button>(R.id.submit_answer).performClick()
-                finishStream(activity.mockLesson)
-            }
-            idle()
-            scenario.onActivity { activity ->
-                activity.findViewById<RecyclerView>(R.id.lesson_list)
-                    .scrollToPosition(activity.mockLesson.state.value.items.lastIndex)
-            }
-            capture("phase2-feedback")
-        }
-    }
-
     private fun openLesson(scenario: ActivityScenario<MainActivity>) {
         scenario.onActivity { it.openHomeAction(R.id.open_sample_lesson) }
         idle()

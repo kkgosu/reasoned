@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent">
+    <ListView android:id="@+id/graph_search_results" android:layout_width="match_parent" android:layout_height="match_parent"
+        android:divider="@color/border" android:dividerHeight="1dp" android:clipToPadding="false"
+        android:paddingHorizontal="@dimen/space_16" />
+    <TextView android:id="@+id/graph_search_empty" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_gravity="center" android:padding="@dimen/space_24" android:gravity="center"
+        android:textAppearance="@style/TextAppearance.Harness" android:text="@string/graph_no_matches"
+        android:accessibilityLiveRegion="polite" android:visibility="gone" />
+</FrameLayout>

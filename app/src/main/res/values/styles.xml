@@ -39,7 +39,7 @@
         <item name="android:textAllCaps">false</item>
         <item name="android:textColor">@color/primary_foreground</item>
         <item name="android:background">@drawable/button_primary</item>
-        <item name="android:stateListAnimator">@null</item>
+        <item name="android:stateListAnimator">@animator/button_state</item>
         <item name="android:minHeight">@dimen/touch_target</item>
         <item name="android:paddingStart">@dimen/space_16</item>
         <item name="android:paddingEnd">@dimen/space_16</item>
@@ -48,12 +48,38 @@
         <item name="android:textColor">@color/foreground</item>
         <item name="android:background">@drawable/button_secondary</item>
     </style>
+    <style name="Widget.Harness.Button.Composer" parent="Widget.Harness.Button.Secondary">
+        <item name="android:background">@drawable/button_composer</item>
+        <item name="android:minWidth">48dp</item>
+        <item name="android:paddingStart">8dp</item>
+        <item name="android:paddingEnd">8dp</item>
+    </style>
+    <style name="Widget.Harness.Navigation" parent="Widget.Harness.Button.Secondary">
+        <item name="android:background">?android:attr/selectableItemBackground</item>
+        <item name="android:gravity">center_vertical|start</item>
+        <item name="android:textSize">@dimen/text_14</item>
+        <item name="android:paddingStart">@dimen/space_24</item>
+        <item name="android:paddingEnd">@dimen/space_24</item>
+        <item name="android:paddingTop">@dimen/space_16</item>
+        <item name="android:paddingBottom">@dimen/space_16</item>
+    </style>
+    <style name="Widget.Harness.BillingChoice" parent="Widget.Harness.Choice">
+        <item name="android:gravity">center_vertical|start</item>
+        <item name="android:fontFamily">@font/ui</item>
+        <item name="android:textSize">@dimen/text_14</item>
+        <item name="android:background">?android:attr/selectableItemBackground</item>
+        <item name="android:button">@drawable/radio_indicator_inset</item>
+        <item name="android:paddingStart">0dp</item>
+        <item name="android:paddingEnd">@dimen/space_24</item>
+        <item name="android:paddingTop">@dimen/space_12</item>
+        <item name="android:paddingBottom">@dimen/space_12</item>
+    </style>
     <style name="Widget.Harness.Input" parent="android:Widget.EditText">
         <item name="android:fontFamily">@font/prose</item>
         <item name="android:textSize">@dimen/text_16</item>
         <item name="android:textColor">@color/foreground</item>
         <item name="android:textColorHint">@color/muted_foreground</item>
-        <item name="android:background">@android:color/transparent</item>
+        <item name="android:background">@drawable/input_background</item>
         <item name="android:minHeight">@dimen/touch_target</item>
         <item name="android:padding">@dimen/space_8</item>
         <item name="android:gravity">top|start</item>

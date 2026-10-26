@@ -7,11 +7,21 @@ testCore = "1.6.1"
 testRunner = "1.6.2"
 testJunit = "1.2.1"
 coroutines = "1.10.2"
+okhttp = "5.4.0"
+nimbus = "10.10"
+drawer = "1.2.0"
+markwon = "4.6.2"
 
 [libraries]
 appkit = { module = "me.grishka.appkit:appkit", version.ref = "appkit" }
 litex-recyclerview = { module = "me.grishka.litex:recyclerview", version.ref = "litexRecyclerView" }
 coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+nimbus = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus" }
+markwon-core = { module = "io.noties.markwon:core", version.ref = "markwon" }
+markwon-inline = { module = "io.noties.markwon:inline-parser", version.ref = "markwon" }
+markwon-latex = { module = "io.noties.markwon:ext-latex", version.ref = "markwon" }
+drawer = { module = "androidx.drawerlayout:drawerlayout", version.ref = "drawer" }
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "testCore" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "testRunner" }
