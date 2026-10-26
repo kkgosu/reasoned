@@ -1,15 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical"
-        android:padding="@dimen/space_24" android:focusableInTouchMode="true">
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:textAppearance="@style/TextAppearance.Harness.Meta"
-            android:text="@string/settings_preferences_note" />
-        <EditText android:id="@+id/runtime_instructions" style="@style/Widget.Harness.Input" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:minLines="5" android:maxLines="10"
-            android:maxLength="4000" android:hint="@string/runtime_instructions_hint" android:contentDescription="@string/settings_learning" />
-        <Button android:id="@+id/settings_save_preferences" style="@style/Widget.Harness.Button" android:layout_width="match_parent"
-            android:layout_height="wrap_content" android:layout_marginTop="@dimen/space_16" android:text="@string/settings_save" />
-        <TextView android:id="@+id/settings_status" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_16" android:accessibilityLiveRegion="polite" android:textAppearance="@style/TextAppearance.Harness.Meta" />
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:focusableInTouchMode="true"
+        android:orientation="vertical"
+        android:padding="@dimen/space_24">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_preferences_note"
+            android:textAppearance="@style/TextAppearance.Harness.Meta" />
+
+        <EditText
+            android:id="@+id/runtime_instructions"
+            style="@style/Widget.Harness.Input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_16"
+            android:contentDescription="@string/settings_learning"
+            android:hint="@string/runtime_instructions_hint"
+            android:maxLength="4000"
+            android:maxLines="10"
+            android:minLines="5" />
+
+        <Button
+            android:id="@+id/settings_save_preferences"
+            style="@style/Widget.Harness.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_16"
+            android:text="@string/settings_save" />
+
+        <TextView
+            android:id="@+id/settings_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_16"
+            android:accessibilityLiveRegion="polite"
+            android:textAppearance="@style/TextAppearance.Harness.Meta" />
     </LinearLayout>
 </ScrollView>

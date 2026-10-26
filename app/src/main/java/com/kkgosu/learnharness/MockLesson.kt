@@ -31,16 +31,28 @@ class MockLesson(private val resources: Resources, saved: Bundle? = null) {
         val notes: Int = 0,
     )
 
-    private val mutableState = MutableStateFlow(saved?.takeIf { it.getString("fixture") == FIXTURE }?.let(::restore) ?: initial())
+    private val mutableState =
+        MutableStateFlow(
+            saved?.takeIf { it.getString("fixture") == FIXTURE }?.let(::restore)
+                ?: initial()
+        )
     val state = mutableState.asStateFlow()
 
     private fun initial() = State(
         items = listOf(
             TextDisplayItem(1, text(R.string.lesson_heading), Role.TITLE),
             TextDisplayItem(2, text(R.string.lesson_intro)),
-            FormulaDisplayItem(3, text(R.string.lesson_function), text(R.string.lesson_function_spoken)),
+            FormulaDisplayItem(
+                3,
+                text(R.string.lesson_function),
+                text(R.string.lesson_function_spoken)
+            ),
             TextDisplayItem(4, text(R.string.lesson_step)),
-            FormulaDisplayItem(5, text(R.string.lesson_update), text(R.string.lesson_update_spoken)),
+            FormulaDisplayItem(
+                5,
+                text(R.string.lesson_update),
+                text(R.string.lesson_update_spoken)
+            ),
             TextDisplayItem(6, ""),
         ),
         streamTarget = text(R.string.lesson_stream),
@@ -48,8 +60,12 @@ class MockLesson(private val resources: Resources, saved: Bundle? = null) {
     )
 
     fun expand(expanded: Boolean) = mutableState.update { it.copy(expanded = expanded) }
-    fun select(selection: Int) = mutableState.update { it.copy(selection = selection.coerceIn(-1, 3)) }
-    fun confidence(confidence: Int) = mutableState.update { it.copy(confidence = confidence.coerceIn(0, 100)) }
+    fun select(selection: Int) =
+        mutableState.update { it.copy(selection = selection.coerceIn(-1, 3)) }
+
+    fun confidence(confidence: Int) =
+        mutableState.update { it.copy(confidence = confidence.coerceIn(0, 100)) }
+
     fun thinking(text: String) = mutableState.update { it.copy(thinking = text.take(MAX_INPUT)) }
     fun draft(text: String) = mutableState.update { it.copy(draft = text.take(MAX_INPUT)) }
     fun stop() = mutableState.update { it.copy(streaming = false) }
@@ -106,8 +122,12 @@ class MockLesson(private val resources: Resources, saved: Bundle? = null) {
             current.draft.isBlank() || current.notes >= MAX_NOTES
         ) return@update current
         current.copy(
-            items = current.items + TextDisplayItem(current.nextId, current.draft.trim(), Role.LEARNER) +
-                TextDisplayItem(current.nextId + 1, ""),
+            items = current.items + TextDisplayItem(
+                current.nextId,
+                current.draft.trim(),
+                Role.LEARNER
+            ) +
+                    TextDisplayItem(current.nextId + 1, ""),
             draft = "",
             streaming = true,
             streamTarget = text(R.string.lesson_mock_reply),
@@ -140,7 +160,8 @@ class MockLesson(private val resources: Resources, saved: Bundle? = null) {
     @Suppress("DEPRECATION") // Typed Bundle overload requires API 33; minimum is 26.
     private fun restore(saved: Bundle): State = with(saved) {
         State(
-            items = getParcelableArrayList<Bundle>("items").orEmpty().map(LessonDisplayItem::restore),
+            items = getParcelableArrayList<Bundle>("items").orEmpty()
+                .map(LessonDisplayItem::restore),
             dock = Dock.valueOf(getString("dock")!!),
             expanded = getBoolean("expanded"),
             selection = getInt("selection", -1),

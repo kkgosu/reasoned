@@ -1,13 +1,13 @@
 package com.kkgosu.learnharness
 
 import android.os.Bundle
-import androidx.core.view.GravityCompat
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.ArrayAdapter
 import android.widget.ListView
 import android.widget.TextView
+import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -33,20 +33,34 @@ class MainActivity : FragmentStackActivity() {
         // Keep AppKit's actual stack/inset owner; DrawerLayout supplies native scrim, gestures and back handling.
         (content.parent as ViewGroup).removeView(content)
         drawer = layoutInflater.inflate(R.layout.activity_main, null) as DrawerLayout
-        drawer.addView(content, 0, DrawerLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        drawer.addView(
+            content,
+            0,
+            DrawerLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        )
         setContentView(drawer)
         drawer.setDrawerTitle(GravityCompat.START, getString(R.string.navigation_open))
-        drawer.findViewById<View>(R.id.drawer_new_session).setOnClickListener { navigate(NewSessionFragment()) }
+        drawer.findViewById<View>(R.id.drawer_new_session)
+            .setOnClickListener { navigate(NewSessionFragment()) }
         drawer.findViewById<View>(R.id.drawer_graph).setOnClickListener { navigate(HomeFragment()) }
-        drawer.findViewById<View>(R.id.drawer_settings).setOnClickListener { navigate(SettingsFragment()) }
+        drawer.findViewById<View>(R.id.drawer_settings)
+            .setOnClickListener { navigate(SettingsFragment()) }
         drawer.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
-            override fun onDrawerOpened(drawerView: View) { loadDrawerSessions() }
+            override fun onDrawerOpened(drawerView: View) {
+                loadDrawerSessions()
+            }
         })
         if (savedInstanceState == null) showFragmentClearingBackStack(HomeFragment())
     }
 
     fun openDrawer() {
-        getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(content.windowToken, 0)
+        getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(
+            content.windowToken,
+            0
+        )
         drawer.openDrawer(GravityCompat.START)
     }
 
@@ -60,9 +74,15 @@ class MainActivity : FragmentStackActivity() {
         }
     }
 
-    fun openSession(id: String, start: Boolean = false, message: Long? = null) = navigate(RuntimeSessionFragment().apply {
-        arguments = Bundle().apply { putString("session", id); putBoolean("start_session", start); message?.let { putLong("message", it) } }
-    })
+    fun openSession(id: String, start: Boolean = false, message: Long? = null) =
+        navigate(RuntimeSessionFragment().apply {
+            arguments = Bundle().apply {
+                putString("session", id); putBoolean(
+                "start_session",
+                start
+            ); message?.let { putLong("message", it) }
+            }
+        })
 
     private fun loadDrawerSessions() {
         val status = drawer.findViewById<TextView>(R.id.drawer_status)
@@ -71,15 +91,24 @@ class MainActivity : FragmentStackActivity() {
         status.visibility = View.VISIBLE
         drawerScope.launch {
             try {
-                val sessions = withContext(Dispatchers.IO) { (application as ReasonedApplication).sessions.list() }
-                list.adapter = ArrayAdapter(this@MainActivity, R.layout.item_session_navigation, sessions.map { it.second })
+                val sessions =
+                    withContext(Dispatchers.IO) { (application as ReasonedApplication).sessions.list() }
+                list.adapter = ArrayAdapter(
+                    this@MainActivity,
+                    R.layout.item_session_navigation,
+                    sessions.map { it.second })
                 status.setText(R.string.navigation_empty)
                 status.visibility = if (sessions.isEmpty()) View.VISIBLE else View.GONE
-                val active = fragmentManager.fragments.filterIsInstance<RuntimeSessionFragment>().firstOrNull { it.isVisible }?.arguments?.getString("session")
-                sessions.indexOfFirst { it.first == active }.takeIf { it >= 0 }?.let { list.setItemChecked(it, true) }
+                val active = fragmentManager.fragments.filterIsInstance<RuntimeSessionFragment>()
+                    .firstOrNull { it.isVisible }?.arguments?.getString("session")
+                sessions.indexOfFirst { it.first == active }.takeIf { it >= 0 }
+                    ?.let { list.setItemChecked(it, true) }
                 list.setOnItemClickListener { _, _, position, _ -> openSession(sessions[position].first) }
-            } catch (cancelled: CancellationException) { throw cancelled }
-            catch (_: Exception) { status.setText(R.string.runtime_storage_error) }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                status.setText(R.string.runtime_storage_error)
+            }
         }
     }
 

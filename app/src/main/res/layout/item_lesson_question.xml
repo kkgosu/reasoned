@@ -5,25 +5,28 @@
     android:orientation="vertical"
     android:paddingTop="@dimen/space_12"
     android:paddingBottom="@dimen/space_16">
+
     <TextView
         android:id="@+id/item_answer_label"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textAppearance="@style/TextAppearance.Harness.Label" />
+
     <TextView
         android:id="@+id/item_answer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/space_8"
-        android:textAppearance="@style/TextAppearance.Harness.Prose"
         android:lineSpacingMultiplier="1.5"
+        android:textAppearance="@style/TextAppearance.Harness.Prose"
         android:textIsSelectable="true" />
+
     <TextView
         android:id="@+id/item_thinking"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/space_8"
-        android:textAppearance="@style/TextAppearance.Harness.Prose"
         android:lineSpacingMultiplier="1.5"
+        android:textAppearance="@style/TextAppearance.Harness.Prose"
         android:textIsSelectable="true" />
 </LinearLayout>

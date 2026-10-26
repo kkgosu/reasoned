@@ -1,15 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="wrap_content"
-    android:orientation="vertical" android:paddingBottom="@dimen/space_16">
-    <View android:id="@+id/item_divider" android:layout_width="match_parent" android:layout_height="1dp"
-        android:layout_marginBottom="@dimen/space_16" android:background="@color/border" android:visibility="gone" />
-    <LinearLayout android:id="@+id/item_band" android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/space_16">
+
+    <View
+        android:id="@+id/item_divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginBottom="@dimen/space_16"
+        android:background="@color/border"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/item_band"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical">
-        <Button android:id="@+id/item_label" style="@style/Widget.Harness.Disclosure"
-            android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone" />
-        <TextView android:id="@+id/item_text" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.Harness.Prose" android:lineSpacingMultiplier="1.5"
+
+        <Button
+            android:id="@+id/item_label"
+            style="@style/Widget.Harness.Disclosure"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/item_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:lineSpacingMultiplier="1.5"
+            android:textAppearance="@style/TextAppearance.Harness.Prose"
             android:textIsSelectable="true" />
     </LinearLayout>
 </LinearLayout>

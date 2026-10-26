@@ -3,63 +3,76 @@
     android:id="@+id/home_root"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:focusable="true"
-    android:focusableInTouchMode="true">
+    android:focusableInTouchMode="true"
+    android:orientation="vertical">
+
     <TextView
         android:id="@+id/graph_caption"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingStart="@dimen/space_16"
-        android:paddingEnd="@dimen/space_16"
         android:paddingTop="@dimen/space_8"
-        android:textAppearance="@style/TextAppearance.Harness.Label"
-        android:text="@string/graph_preview" />
-    <TextView android:id="@+id/knowledge_status" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:paddingStart="@dimen/space_16" android:paddingEnd="@dimen/space_16" android:visibility="gone"
-        android:accessibilityLiveRegion="polite" android:textAppearance="@style/TextAppearance.Harness.Meta" />
+        android:paddingEnd="@dimen/space_16"
+        android:text="@string/graph_preview"
+        android:textAppearance="@style/TextAppearance.Harness.Label" />
+
+    <TextView
+        android:id="@+id/knowledge_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:accessibilityLiveRegion="polite"
+        android:paddingStart="@dimen/space_16"
+        android:paddingEnd="@dimen/space_16"
+        android:textAppearance="@style/TextAppearance.Harness.Meta"
+        android:visibility="gone" />
+
     <Button
         android:id="@+id/graph_search_open"
         style="@style/Widget.Harness.Navigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:minHeight="56dp"
         android:layout_margin="@dimen/space_16"
         android:background="@drawable/search_bar_background"
         android:drawableStart="@drawable/ic_search"
         android:drawablePadding="@dimen/space_16"
+        android:minHeight="56dp"
         android:text="@string/graph_search" />
+
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
+
         <com.kkgosu.learnharness.KnowledgeGraphView
             android:id="@+id/knowledge_graph"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
+
         <TextView
             android:id="@+id/graph_loading"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:textAppearance="@style/TextAppearance.Harness.Meta"
-            android:text="@string/graph_loading" />
+            android:text="@string/graph_loading"
+            android:textAppearance="@style/TextAppearance.Harness.Meta" />
+
         <Button
             android:id="@+id/graph_details"
             style="@style/Widget.Harness.Button.Secondary"
-            android:stateListAnimator="@null"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="top|start"
             android:alpha="0"
-            android:visibility="invisible"
-            android:enabled="false"
-            android:maxWidth="240dp"
-            android:maxLines="2"
-            android:ellipsize="end"
-            android:fontFamily="@font/prose"
             android:drawableEnd="@drawable/ic_chevron_right"
             android:drawablePadding="@dimen/space_8"
-            android:textSize="@dimen/text_14" />
+            android:ellipsize="end"
+            android:enabled="false"
+            android:fontFamily="@font/prose"
+            android:maxWidth="240dp"
+            android:maxLines="2"
+            android:stateListAnimator="@null"
+            android:textSize="@dimen/text_14"
+            android:visibility="invisible" />
     </FrameLayout>
 </LinearLayout>

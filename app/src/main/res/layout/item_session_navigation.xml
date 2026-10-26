@@ -1,6 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<TextView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content"
-    android:minHeight="@dimen/touch_target" android:paddingStart="@dimen/space_24" android:paddingEnd="@dimen/space_24"
-    android:paddingTop="@dimen/space_12" android:paddingBottom="@dimen/space_12" android:gravity="center_vertical"
-    android:maxLines="2" android:ellipsize="end" android:textAppearance="@style/TextAppearance.Harness"
-    android:background="@drawable/navigation_row" />
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/navigation_row"
+    android:ellipsize="end"
+    android:gravity="center_vertical"
+    android:maxLines="2"
+    android:minHeight="@dimen/touch_target"
+    android:paddingStart="@dimen/space_24"
+    android:paddingTop="@dimen/space_12"
+    android:paddingEnd="@dimen/space_24"
+    android:paddingBottom="@dimen/space_12"
+    android:textAppearance="@style/TextAppearance.Harness" />

@@ -19,16 +19,24 @@ import java.util.regex.Pattern
 internal fun lessonMarkdown(context: Context): Markwon = Markwon.builder(context)
     .usePlugin(MarkwonInlineParserPlugin.create { it.addInlineProcessor(DollarMathProcessor()) })
     .usePlugin(JLatexMathPlugin.create(context.resources.getDimension(R.dimen.text_16)) { builder ->
-        builder.inlinesEnabled(true).errorHandler { _, _ -> null } // Never log failed formula/lesson content.
-        builder.theme().inlineTextColor(context.getColor(R.color.foreground)).blockTextColor(context.getColor(R.color.foreground))
+        builder.inlinesEnabled(true)
+            .errorHandler { _, _ -> null } // Never log failed formula/lesson content.
+        builder.theme().inlineTextColor(context.getColor(R.color.foreground))
+            .blockTextColor(context.getColor(R.color.foreground))
     })
     .usePlugin(object : AbstractMarkwonPlugin() {
         override fun configureConfiguration(builder: MarkwonConfiguration.Builder) {
             builder.linkResolver { view, link ->
                 val uri = Uri.parse(link)
                 if (uri.scheme?.lowercase() in listOf("http", "https")) {
-                    try { view.context.startActivity(Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE)) }
-                    catch (_: ActivityNotFoundException) { /* No browser installed. */ }
+                    try {
+                        view.context.startActivity(
+                            Intent(Intent.ACTION_VIEW, uri).addCategory(
+                                Intent.CATEGORY_BROWSABLE
+                            )
+                        )
+                    } catch (_: ActivityNotFoundException) { /* No browser installed. */
+                    }
                 }
             }
         }
@@ -43,6 +51,13 @@ private class DollarMathProcessor : InlineProcessor() {
         val delimiter = if (source.startsWith("\$\$")) 2 else 1
         // ponytail: oversized inline formulas stay readable as source; add a dedicated math viewport if needed.
         if (source.length > 2000) return Text(source)
-        return JLatexMathNode().apply { latex(source.substring(delimiter, source.length - delimiter)) }
+        return JLatexMathNode().apply {
+            latex(
+                source.substring(
+                    delimiter,
+                    source.length - delimiter
+                )
+            )
+        }
     }
 }

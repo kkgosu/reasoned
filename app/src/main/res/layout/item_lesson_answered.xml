@@ -1,30 +1,85 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="wrap_content"
-    android:layout_marginBottom="@dimen/space_16" android:padding="@dimen/space_16"
-    android:orientation="vertical" android:background="@drawable/surface_outline">
-    <TextView android:id="@+id/answered_label" android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/space_16"
+    android:background="@drawable/surface_outline"
+    android:orientation="vertical"
+    android:padding="@dimen/space_16">
+
+    <TextView
+        android:id="@+id/answered_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
         android:textAppearance="@style/TextAppearance.Harness.Label" />
-    <TextView android:id="@+id/answered_question" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_8" android:textAppearance="@style/TextAppearance.Harness.Prose"
+
+    <TextView
+        android:id="@+id/answered_question"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_8"
+        android:textAppearance="@style/TextAppearance.Harness.Prose"
         android:textIsSelectable="true" />
-    <LinearLayout android:id="@+id/answered_choices" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_8" android:orientation="vertical" />
-    <TextView android:id="@+id/answered_text" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_8" android:textAppearance="@style/TextAppearance.Harness.Prose"
+
+    <LinearLayout
+        android:id="@+id/answered_choices"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_8"
+        android:orientation="vertical" />
+
+    <TextView
+        android:id="@+id/answered_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_8"
+        android:textAppearance="@style/TextAppearance.Harness.Prose"
         android:textIsSelectable="true" />
-    <ProgressBar android:id="@+id/answered_confidence" style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent" android:layout_height="6dp" android:layout_marginTop="@dimen/space_16"
-        android:max="100" android:progressDrawable="@drawable/confidence_track" android:importantForAccessibility="no" />
-    <TextView android:id="@+id/answered_confidence_label" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_8" android:textAppearance="@style/TextAppearance.Harness.Meta" />
-    <Button android:id="@+id/answered_thinking_toggle" style="@style/Widget.Harness.Disclosure"
-        android:layout_width="match_parent" android:layout_height="wrap_content" />
-    <TextView android:id="@+id/answered_thinking" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.Harness.Prose" android:textStyle="italic"
-        android:textColor="@color/muted_foreground" android:textIsSelectable="true" android:visibility="gone" />
-    <Button android:id="@+id/answered_why_toggle" style="@style/Widget.Harness.Disclosure"
-        android:layout_width="match_parent" android:layout_height="wrap_content" />
-    <TextView android:id="@+id/answered_why" android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.Harness.Prose" android:textIsSelectable="true" android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/answered_confidence"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="6dp"
+        android:layout_marginTop="@dimen/space_16"
+        android:importantForAccessibility="no"
+        android:max="100"
+        android:progressDrawable="@drawable/confidence_track" />
+
+    <TextView
+        android:id="@+id/answered_confidence_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_8"
+        android:textAppearance="@style/TextAppearance.Harness.Meta" />
+
+    <Button
+        android:id="@+id/answered_thinking_toggle"
+        style="@style/Widget.Harness.Disclosure"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/answered_thinking"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.Harness.Prose"
+        android:textColor="@color/muted_foreground"
+        android:textIsSelectable="true"
+        android:textStyle="italic"
+        android:visibility="gone" />
+
+    <Button
+        android:id="@+id/answered_why_toggle"
+        style="@style/Widget.Harness.Disclosure"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/answered_why"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.Harness.Prose"
+        android:textIsSelectable="true"
+        android:visibility="gone" />
 </LinearLayout>

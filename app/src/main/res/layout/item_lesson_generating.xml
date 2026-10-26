@@ -2,23 +2,25 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingTop="@dimen/space_8"
-    android:paddingBottom="@dimen/space_16"
     android:gravity="center_vertical"
-    android:orientation="horizontal">
+    android:orientation="horizontal"
+    android:paddingTop="@dimen/space_8"
+    android:paddingBottom="@dimen/space_16">
+
     <ProgressBar
         android:id="@+id/generation_progress"
         style="?android:attr/progressBarStyleSmall"
         android:layout_width="20dp"
         android:layout_height="20dp"
         android:layout_marginEnd="@dimen/space_8"
-        android:indeterminateTint="@color/foreground"
-        android:importantForAccessibility="no" />
+        android:importantForAccessibility="no"
+        android:indeterminateTint="@color/foreground" />
+
     <TextView
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:accessibilityLiveRegion="polite"
-        android:textAppearance="@style/TextAppearance.Harness.Label"
-        android:text="@string/runtime_generating" />
+        android:text="@string/runtime_generating"
+        android:textAppearance="@style/TextAppearance.Harness.Label" />
 </LinearLayout>

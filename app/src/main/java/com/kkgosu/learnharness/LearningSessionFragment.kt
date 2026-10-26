@@ -3,21 +3,21 @@ package com.kkgosu.learnharness
 import android.animation.ValueAnimator
 import android.os.Build
 import android.os.Bundle
-import android.transition.ChangeBounds
-import android.transition.TransitionManager
 import android.text.Editable
 import android.text.TextWatcher
+import android.transition.ChangeBounds
+import android.transition.TransitionManager
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
 import android.view.inputmethod.InputMethodManager
+import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.RadioButton
-import android.widget.SeekBar
-import android.widget.Button
 import android.widget.RadioGroup
+import android.widget.SeekBar
 import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -38,7 +38,11 @@ class LearningSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     private var imeVisible = false
     private val lesson get() = (activity as MainActivity).mockLesson
 
-    override fun onCreateContentView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+    override fun onCreateContentView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         setTitle(R.string.sample_lesson_title)
         val views = inflater.inflate(R.layout.fragment_learning_session, container, false)
         pageView = views
@@ -57,13 +61,15 @@ class LearningSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         }
         views.findViewById<EditText>(R.id.question_thinking).onEdit(model::thinking)
         views.findViewById<EditText>(R.id.lesson_composer).onEdit(model::draft)
-        views.findViewById<SeekBar>(R.id.question_confidence).setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                if (fromUser) model.confidence(progress)
-            }
-            override fun onStartTrackingTouch(seekBar: SeekBar) = Unit
-            override fun onStopTrackingTouch(seekBar: SeekBar) = Unit
-        })
+        views.findViewById<SeekBar>(R.id.question_confidence)
+            .setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
+                    if (fromUser) model.confidence(progress)
+                }
+
+                override fun onStartTrackingTouch(seekBar: SeekBar) = Unit
+                override fun onStopTrackingTouch(seekBar: SeekBar) = Unit
+            })
         views.findViewById<Button>(R.id.reveal_question).setOnClickListener { model.expand(true) }
         views.findViewById<Button>(R.id.collapse_question).setOnClickListener {
             dismissKeyboard(views)
@@ -110,7 +116,7 @@ class LearningSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     override fun onApplyWindowInsets(insets: WindowInsets) {
         super.onApplyWindowInsets(insets)
         val visible = if (Build.VERSION.SDK_INT >= 30) insets.isVisible(WindowInsets.Type.ime())
-            else insets.systemWindowInsetBottom > insets.stableInsetBottom
+        else insets.systemWindowInsetBottom > insets.stableInsetBottom
         if (imeVisible != visible) {
             imeVisible = visible
             pageView?.let { render(it, lesson.state.value) }
@@ -145,17 +151,19 @@ class LearningSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         if (adapter.submit(state.items) && followTail) {
             lessonList.post { lessonList.scrollToPosition(adapter.itemCount - 1) }
         }
-        lessonStatus.setText(when {
-            state.dock == MockLesson.Dock.QUESTION -> R.string.lesson_waiting
-            state.streaming -> R.string.lesson_writing
-            state.streamTarget.isNotEmpty() -> R.string.lesson_paused
-            else -> R.string.lesson_preview
-        })
+        lessonStatus.setText(
+            when {
+                state.dock == MockLesson.Dock.QUESTION -> R.string.lesson_waiting
+                state.streaming -> R.string.lesson_writing
+                state.streamTarget.isNotEmpty() -> R.string.lesson_paused
+                else -> R.string.lesson_preview
+            }
+        )
         val question = state.dock == MockLesson.Dock.QUESTION
         val expanded = question && state.expanded
         if (root.isLaidOut && ValueAnimator.areAnimatorsEnabled() &&
             ((questionPanel.visibility == View.VISIBLE) != expanded ||
-                (composerPanel.visibility == View.VISIBLE) == question)
+                    (composerPanel.visibility == View.VISIBLE) == question)
         ) {
             TransitionManager.beginDelayedTransition(root, ChangeBounds().apply {
                 duration = resources.getInteger(R.integer.motion_short_ms).toLong()
@@ -178,25 +186,30 @@ class LearningSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             dockShell.layoutParams = params
         }
         revealQuestion.setText(if (state.selection >= 0 || state.thinking.isNotEmpty()) R.string.resume_question else R.string.reveal_question)
-        val checkedId = if (state.selection >= 0) questionOptions.getChildAt(state.selection).id else -1
+        val checkedId =
+            if (state.selection >= 0) questionOptions.getChildAt(state.selection).id else -1
         if (questionOptions.checkedRadioButtonId != checkedId) questionOptions.check(checkedId)
         val hasConfidence = state.selection != 3
         questionConfidence.isEnabled = hasConfidence
         questionConfidence.progress = state.confidence
-        confidenceLabel.text = if (hasConfidence) getString(R.string.confidence_label, state.confidence)
+        confidenceLabel.text =
+            if (hasConfidence) getString(R.string.confidence_label, state.confidence)
             else getString(R.string.confidence_unavailable)
         questionThinking.restoreText(state.thinking)
         lessonComposer.restoreText(state.draft)
         submitAnswer.isEnabled = state.selection >= 0
         submitAnswer.alpha = if (submitAnswer.isEnabled) 1f else 0.4f
-        composerAction.setText(when {
-            state.streaming -> R.string.stop_stream
-            state.streamTarget.isNotEmpty() -> R.string.resume_stream
-            else -> R.string.send_note
-        })
+        composerAction.setText(
+            when {
+                state.streaming -> R.string.stop_stream
+                state.streamTarget.isNotEmpty() -> R.string.resume_stream
+                else -> R.string.send_note
+            }
+        )
         val atLimit = state.notes >= MockLesson.MAX_NOTES
         lessonComposer.isEnabled = !atLimit
-        composerAction.isEnabled = state.streaming || state.streamTarget.isNotEmpty() || (!atLimit && state.draft.isNotBlank())
+        composerAction.isEnabled =
+            state.streaming || state.streamTarget.isNotEmpty() || (!atLimit && state.draft.isNotBlank())
         composerAction.alpha = if (composerAction.isEnabled) 1f else 0.4f
         composerNotice.setText(if (atLimit) R.string.mock_limit else R.string.composer_preview_hint)
     }
@@ -213,9 +226,19 @@ class LearningSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
 
     private fun EditText.onEdit(action: (String) -> Unit) {
         addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(text: Editable?) { action(text.toString()) }
-            override fun beforeTextChanged(text: CharSequence?, start: Int, count: Int, after: Int) = Unit
-            override fun onTextChanged(text: CharSequence?, start: Int, before: Int, count: Int) = Unit
+            override fun afterTextChanged(text: Editable?) {
+                action(text.toString())
+            }
+
+            override fun beforeTextChanged(
+                text: CharSequence?,
+                start: Int,
+                count: Int,
+                after: Int
+            ) = Unit
+
+            override fun onTextChanged(text: CharSequence?, start: Int, before: Int, count: Int) =
+                Unit
         })
     }
 }

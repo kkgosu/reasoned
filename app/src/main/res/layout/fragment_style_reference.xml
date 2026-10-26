@@ -13,55 +13,55 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="@style/TextAppearance.Harness.Label"
-            android:text="@string/type_title_label" />
+            android:text="@string/type_title_label"
+            android:textAppearance="@style/TextAppearance.Harness.Label" />
 
         <TextView
             android:id="@+id/title_sample"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_8"
-            android:textAppearance="@style/TextAppearance.Harness.Title"
-            android:text="@string/type_title_sample" />
+            android:text="@string/type_title_sample"
+            android:textAppearance="@style/TextAppearance.Harness.Title" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_24"
-            android:textAppearance="@style/TextAppearance.Harness.Label"
-            android:text="@string/type_prose_label" />
+            android:text="@string/type_prose_label"
+            android:textAppearance="@style/TextAppearance.Harness.Label" />
 
         <TextView
             android:id="@+id/prose_sample"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_8"
-            android:textAppearance="@style/TextAppearance.Harness.Prose"
             android:lineSpacingMultiplier="1.5"
-            android:textIsSelectable="true"
-            android:text="@string/type_prose_sample" />
+            android:text="@string/type_prose_sample"
+            android:textAppearance="@style/TextAppearance.Harness.Prose"
+            android:textIsSelectable="true" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_24"
-            android:textAppearance="@style/TextAppearance.Harness.Label"
-            android:text="@string/type_ui_label" />
+            android:text="@string/type_ui_label"
+            android:textAppearance="@style/TextAppearance.Harness.Label" />
 
         <TextView
             android:id="@+id/ui_sample"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_8"
-            android:textAppearance="@style/TextAppearance.Harness"
-            android:text="@string/type_ui_sample" />
+            android:text="@string/type_ui_sample"
+            android:textAppearance="@style/TextAppearance.Harness" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_24"
-            android:textAppearance="@style/TextAppearance.Harness.Label"
-            android:text="@string/surface_label" />
+            android:text="@string/surface_label"
+            android:textAppearance="@style/TextAppearance.Harness.Label" />
 
         <TextView
             android:layout_width="match_parent"
@@ -69,66 +69,66 @@
             android:layout_marginTop="@dimen/space_8"
             android:background="@drawable/surface_outline"
             android:padding="@dimen/space_16"
-            android:textAppearance="@style/TextAppearance.Harness.Meta"
-            android:text="@string/surface_sample" />
+            android:text="@string/surface_sample"
+            android:textAppearance="@style/TextAppearance.Harness.Meta" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_24"
-            android:textAppearance="@style/TextAppearance.Harness.Label"
-            android:text="@string/type_scale_label" />
+            android:text="@string/type_scale_label"
+            android:textAppearance="@style/TextAppearance.Harness.Label" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_8"
-            android:textAppearance="@style/TextAppearance.Harness.Label"
-            android:text="@string/type_scale_11" />
+            android:text="@string/type_scale_11"
+            android:textAppearance="@style/TextAppearance.Harness.Label" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_8"
-            android:textAppearance="@style/TextAppearance.Harness.Meta"
-            android:text="@string/type_scale_12_5" />
+            android:text="@string/type_scale_12_5"
+            android:textAppearance="@style/TextAppearance.Harness.Meta" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_8"
-            android:textAppearance="@style/TextAppearance.Harness"
-            android:text="@string/type_scale_14" />
+            android:text="@string/type_scale_14"
+            android:textAppearance="@style/TextAppearance.Harness" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_8"
-            android:textAppearance="@style/TextAppearance.Harness.Prose"
-            android:text="@string/type_scale_16" />
+            android:text="@string/type_scale_16"
+            android:textAppearance="@style/TextAppearance.Harness.Prose" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_8"
             android:fontFamily="@font/prose"
+            android:text="@string/type_scale_20"
             android:textColor="@color/foreground"
-            android:textSize="@dimen/text_20"
-            android:text="@string/type_scale_20" />
+            android:textSize="@dimen/text_20" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_8"
-            android:textAppearance="@style/TextAppearance.Harness.Toolbar"
-            android:text="@string/type_scale_25" />
+            android:text="@string/type_scale_25"
+            android:textAppearance="@style/TextAppearance.Harness.Toolbar" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_8"
-            android:textAppearance="@style/TextAppearance.Harness.Title"
-            android:text="@string/type_scale_32" />
+            android:text="@string/type_scale_32"
+            android:textAppearance="@style/TextAppearance.Harness.Title" />
 
         <EditText
             android:id="@+id/draft_sample"
@@ -137,14 +137,14 @@
             android:layout_marginTop="@dimen/space_24"
             android:background="@drawable/surface_outline"
             android:fontFamily="@font/prose"
-            android:textSize="@dimen/text_16"
-            android:lineSpacingMultiplier="1.25"
-            android:padding="@dimen/space_16"
-            android:minHeight="@dimen/touch_target"
             android:gravity="top|start"
-            android:inputType="textCapSentences|textMultiLine"
             android:hint="@string/draft_hint"
-            android:importantForAutofill="no" />
+            android:importantForAutofill="no"
+            android:inputType="textCapSentences|textMultiLine"
+            android:lineSpacingMultiplier="1.25"
+            android:minHeight="@dimen/touch_target"
+            android:padding="@dimen/space_16"
+            android:textSize="@dimen/text_16" />
 
         <Button
             android:id="@+id/return_home"
