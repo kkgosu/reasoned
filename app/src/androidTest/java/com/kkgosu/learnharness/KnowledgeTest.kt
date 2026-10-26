@@ -62,6 +62,94 @@ class KnowledgeTest {
         app.deleteDatabase(name)
     }
 
+    @Test
+    fun planChangesStayUnapprovedAcrossRepliesInterruptionAndReopening() = runBlocking {
+        val name = "plan-edit-${UUID.randomUUID()}.db"
+        try {
+            SessionStore(app, name).use { store ->
+                val original =
+                    StudyPlan(listOf(StudyPlan.Node("a", "Foundation", "First")), emptyList())
+                val revised = original.copy(
+                    nodes = original.nodes + StudyPlan.Node(
+                        "b",
+                        "Practice",
+                        "Apply it"
+                    ), edges = listOf("a" to "b")
+                )
+                val saved = session().copy(
+                    phase = "teacher",
+                    status = "plan",
+                    plan = original,
+                    planPending = true,
+                    proseIds = emptySet()
+                )
+                store.save(saved)
+                var calls = 0
+                val provider = ModelProvider { request, _ ->
+                    calls++
+                    if (calls < 3) assertTrue(
+                        request.getJSONArray("input").toString().contains("Add practice")
+                    )
+                    if (calls == 1) response(
+                        "plan_init",
+                        revised.json().apply { remove("version") })
+                    else JSONObject().put("status", "completed").put(
+                        "output", JSONArray().put(
+                            JSONObject()
+                                .put("type", "message").put("role", "assistant").put(
+                                    "content", JSONArray().put(
+                                        JSONObject()
+                                            .put("type", "output_text").put(
+                                                "text",
+                                                if (calls == 2) "Plan clarification, not teaching." else "Teaching starts now."
+                                            )
+                                    )
+                                )
+                        )
+                    )
+                }
+                val runtime = SessionRuntime(app, store, provider)
+                runtime.open(saved.id).join()
+                runtime.edit("Add practice", -1, 60, false)
+                runtime.approveRoute().join()
+                assertEquals(0, calls) // Unsent changes must not be silently approved/discarded.
+                runtime.send().join()
+                assertEquals(1, calls); assertEquals("plan", runtime.state.value!!.status)
+                assertEquals(2, runtime.state.value!!.plan!!.version)
+                assertTrue(store.load(saved.id)!!.planPending)
+                runtime.edit("Explain that prerequisite", -1, 60, false)
+                runtime.send().join()
+                val pending = runtime.state.value!!
+                assertEquals("plan", pending.status); assertTrue(pending.planPending)
+                assertTrue(
+                    pending.passages().isEmpty()
+                ) // Plan discussion is not teaching evidence.
+                rejected {
+                    RuntimeTools.validate(
+                        response(
+                            "visual",
+                            JSONObject().put("brief", "Figure")
+                        ), pending
+                    )
+                }
+                runtime.stop().join()
+                store.save(pending.copy(status = "interrupted"))
+                val reopened = SessionRuntime(app, store, provider)
+                reopened.open(saved.id).join(); reopened.retry().join()
+                assertEquals(2, calls); assertEquals(
+                "plan",
+                reopened.state.value!!.status
+            ) // No generation replay.
+                reopened.approveRoute().join()
+                assertEquals(3, calls); assertEquals("idle", reopened.state.value!!.status)
+                assertFalse(store.load(saved.id)!!.planPending)
+                reopened.stop().join()
+            }
+        } finally {
+            app.deleteDatabase(name)
+        }
+    }
+
     @Test fun mergeIsAtomicReplaySafeAndKeepsMessageEvidenceAndFirstIdentity() {
         val name = "knowledge-${UUID.randomUUID()}.db"
         try { SessionStore(app, name).use { store ->

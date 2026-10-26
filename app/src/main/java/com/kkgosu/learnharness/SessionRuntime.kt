@@ -159,7 +159,7 @@ internal class SessionRuntime(
 
     fun send(): Job = command {
         var s = mutable.value ?: return@command
-        if (s.status !in listOf("idle", "question")) return@command
+        if (s.status !in listOf("idle", "question", "plan")) return@command
         val question = s.question
         val input = JSONArray(s.protocol)
         if (question != null) {
@@ -193,7 +193,10 @@ internal class SessionRuntime(
         } else {
             require(s.draft.isNotBlank())
             input.put(userMessage(s.draft))
-            s = append(s, s.draft, Role.LEARNER).copy(protocol = input.toString(), draft = "")
+            s = append(s, s.draft, Role.LEARNER).copy(
+                protocol = input.toString(), draft = "",
+                status = "idle", planPending = s.planPending || s.status == "plan"
+            )
             store.save(s)
         }
         mutable.value = s
@@ -203,8 +206,9 @@ internal class SessionRuntime(
     fun approveRoute(): Job = command {
         val s = mutable.value ?: return@command
         if (s.status == "plan") {
+            if (s.draft.isNotBlank()) return@command // An unsent change request is not approval.
             val next = s.copy(
-                status = "idle",
+                status = "idle", planPending = false, draft = "",
                 protocol = JSONArray(s.protocol).put(userMessage("I approve this dependency plan. Teach it one reasoning step at a time."))
                     .toString()
             )
@@ -227,7 +231,10 @@ internal class SessionRuntime(
     fun retry(): Job = command {
         val s = mutable.value ?: return@command
         if (s.status !in listOf("idle", "interrupted", "error")) return@command
-        if (s.question != null || (s.phase == "probe" && s.routeCall.isNotEmpty())) {
+        if (s.planPending && s.plan != null) {
+            val restored = s.copy(status = "plan", error = "")
+            store.save(restored); mutable.value = restored
+        } else if (s.question != null || (s.phase == "probe" && s.routeCall.isNotEmpty())) {
             val restored =
                 s.copy(status = if (s.question != null) "question" else "route", error = "")
             store.save(restored); mutable.value = restored
@@ -318,11 +325,15 @@ internal class SessionRuntime(
                 "learnharness-0795ef197cca-v1",
                 "learnharness-0795ef197cca-v2",
                 "learnharness-0795ef197cca-v3",
+                "learnharness-0795ef197cca-v4",
                 AgentInstructions.VERSION
             )
         ) throw ProviderFailure("prompt_version")
         val run = UUID.randomUUID().toString()
-        s = s.copy(status = "running", error = "", promptVersion = AgentInstructions.VERSION)
+        s = s.copy(
+            status = "running", error = "", promptVersion = AgentInstructions.VERSION,
+            planPending = s.planPending || s.status == "plan"
+        )
         store.save(s); store.run(run, s, "running"); mutable.value = s
         var terminal = "interrupted"
         var pendingBlock: Long? = null
@@ -330,12 +341,14 @@ internal class SessionRuntime(
         val outputBefore = s.outputTokens
         try {
             withTimeout(180_000) {
+                var figures = 0
                 repeat(4) {
                     s = mutable.value!!
                     if (s.protocol.toByteArray(Charsets.UTF_8).size > 120_000) throw ProviderFailure(
                         "context_limit"
                     )
-                    val instructions = AgentInstructions.compose(application.assets, s.phase)
+                    val instructions = AgentInstructions.compose(application.assets, s.phase) +
+                            if (s.planPending) "\n\nThe learner has NOT approved the dependency plan. Discuss or revise it with plan_init according to their latest message. Do not teach, ask learning questions, make figures or finish the lesson until explicit approval." else ""
                     val request =
                         JSONObject().put("model", s.model).put("input", JSONArray(s.protocol))
                             .put("instructions", instructions)
@@ -393,13 +406,75 @@ internal class SessionRuntime(
                         outputTokens = base.outputTokens + (usage?.optLong("output_tokens") ?: 0),
                         contextTokens = usage?.optLong("input_tokens") ?: 0,
                         proseIds = (base.proseIds ?: base.passages().map { it.id }.toSet()) +
-                                if (validated.text.isNotBlank()) setOf(s.items.last().id) else emptySet()
+                                if (validated.text.isNotBlank() && !base.planPending && validated.call?.optString(
+                                        "name"
+                                    ) != "plan_init"
+                                ) setOf(s.items.last().id) else emptySet()
                     )
                     val call = validated.call
                     if (call == null) {
                         if (s.items == base.items) throw ProviderFailure("invalid_output")
-                        s = s.copy(status = "idle")
+                        s = s.copy(status = if (s.planPending) "plan" else "idle")
                     } else when (call.getString("name")) {
+                        "visual" -> {
+                            // Durable interruption result first: restore/Retry must never resume a half-finished maker silently.
+                            val result = toolResult(
+                                call.getString("call_id"),
+                                "Figure interrupted; no artifact was delivered. It will not restart automatically."
+                            )
+                            input.put(result)
+                            s = s.copy(protocol = input.toString())
+                            store.save(s); mutable.value = s; pendingBlock = null
+                            try {
+                                if (++figures > 1) throw ProviderFailure("visual_turn_limit")
+                                val figure =
+                                    VisualMaker(application, providerFor(s.connection)).make(
+                                        s,
+                                        JSONObject(call.getString("arguments")).getString("brief")
+                                    ) { incoming, outgoing ->
+                                        s = s.copy(
+                                            inputTokens = s.inputTokens + incoming,
+                                            outputTokens = s.outputTokens + outgoing
+                                        )
+                                        store.save(s); mutable.value = s
+                                    }
+                                val fence = "`".repeat(
+                                    maxOf(
+                                        3,
+                                        (Regex("`+").findAll(figure.svg)
+                                            .maxOfOrNull { it.value.length } ?: 0) + 1))
+                                s = append(
+                                    s,
+                                    figure.notes + "\n\n" + fence + "svg\n" + figure.svg + "\n" + fence,
+                                    Role.FIGURE
+                                )
+                                result.put(
+                                    "output",
+                                    JSONObject().put("status", "model_reviewed")
+                                        .put("notes", figure.notes)
+                                        .put("message_id", s.items.last().id).put(
+                                            "notice",
+                                            "Delivered in the lesson. Model review is not an independent correctness guarantee."
+                                        ).toString()
+                                )
+                            } catch (cancelled: CancellationException) {
+                                throw cancelled
+                            } catch (error: Exception) {
+                                result.put(
+                                    "output",
+                                    JSONObject().put("status", "failed").put(
+                                        "reason",
+                                        (error as? ProviderFailure)?.reason
+                                            ?: "diagram_render_failed"
+                                    )
+                                        .put(
+                                            "notice",
+                                            "No figure was delivered. Fall back to prose or Mermaid; do not claim success."
+                                        ).toString()
+                                )
+                            }
+                            s = s.copy(protocol = input.toString())
+                        }
                         "learning_context" -> {
                             val graph = store.knowledge()
                             val terms =
@@ -454,7 +529,12 @@ internal class SessionRuntime(
                                         .put("awaitingLearnerApproval", true).toString()
                                 )
                             )
-                            s = s.copy(plan = plan, status = "plan", protocol = input.toString())
+                            s = s.copy(
+                                plan = plan,
+                                planPending = true,
+                                status = "plan",
+                                protocol = input.toString()
+                            )
                         }
 
                         "ask_question" -> {

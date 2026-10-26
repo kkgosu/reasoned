@@ -263,18 +263,68 @@ The perpetual Stop graph update item was stale UI: AppKit does not invoke platfo
 
 APK/test-APK compilation and lint pass. Regression fixtures cover answer-key validation, public-summary-only rendering, card/disclosure/confidence state, legacy cards and idle Stop visibility; they are compiled, not run. No device/emulator tests, installation, screenshot or live requests were performed. Actual extraction results, UI geometry and provider-summary availability still require the owner's check.
 
+Plan-review follow-up (build-only): removed the repeated approval dialog. The existing composer now
+accepts natural-language plan changes before approval. Persisted pending approval survives revision,
+clarification, interruption and reopening; learner approval remains explicit and unsent edits cannot
+be discarded by approval. Plan discussion is not canonical teaching evidence. A regression fixture
+covers revision/versioning, persistence, clarification, tool gating and non-replaying interruption
+recovery; compiled, not run.
+
+## Phase 6 — Mermaid and SVG slice (build-only)
+
+Owner reported a long-running Mermaid arrow preview ending in the generic safe-rendering error.
+Owner-device format-only logs subsequently confirmed the interceptor blocked the main frame with
+HTTP 403; neither the engine nor runner loaded, and serialized jobs each waited for their timeout.
+Replaced data-HTML bootstrapping with an exact intercepted local HTML route, retained the
+pinned-script route and allowed only inert SVG data-image decode through browser handling; all other
+requests remain denied. Main-page/engine load errors now fail immediately. The existing offline
+SVG/arrow rendering fixture covers this pipeline; it remains compiled, not run. Added
+privacy-bounded `ReasonedDiagrams` stage/timing, WebView/resource/console-metadata, failure and
+timeout logs; no diagram/lesson text, credentials, raw error messages or URLs are logged. Build/lint
+and JavaScript syntax validation only for the correction; device log reading did not launch tests,
+render work or model requests. Corrected rendering still awaits owner verification.
+
+Owner chose diagrams/figures before PDF. Implemented pinned offline Mermaid 11.17.0 and validated
+inert SVG rasterization, native inline previews/fullscreen zoom/source, cancellation and bounded
+caching. Only trusted bundled Mermaid/runner JavaScript executes in the short-lived internal
+rasterizer; the lesson remains native. Remote resources, active SVG and Mermaid configuration
+overrides are denied; generated HTML/JS remains disabled.
+
+Diagram refinement (build-only): UI diagrams rasterize vector sources to a 2048px long edge and
+share a bounded 24 MiB bitmap cache between transcript and inspector; opening a ready image reuses
+that exact bitmap. Visual Maker retains its original image resolution/billing bounds. Removed Open
+diagram and completed gesture/status text; loading reads Rendering…. Diagram taps bypass native
+TextView text-selection scrolling while retaining prose selection and accessibility; equal adapter
+rows no longer trigger follow-tail work. Fixtures cover high-resolution dimensions, unchanged
+natural-size model renders, tap selection/click semantics, visible-bitmap cache handoff and
+equal-row adapter updates; compiled, not run.
+
+Teacher `visual` ports the upstream write/edit/render → actual PNG → vision review/revision → final
+notes loop. One figure per learner action, at most eight additional selected-model calls within the
+existing 180-second turn; no billing/model fallback. Typed persisted FIGURE rows say MODEL-REVIEWED,
+not verified; plain fenced diagrams have no review badge. Restore/open only rerenders locally; a
+durable interrupted result and stage usage checkpoints prevent silent generation replay. Brief/PNG
+transmission and extra billing are disclosed. Upstream prompt bytes stay unchanged; the separate
+Android appendix is v5.
+
+Build/lint and instrumentation-APK compilation pass; fixtures cover active markup/config rejection,
+native offline rendering, ordinary code preservation, source hashes, and mandatory reinspection
+after SVG revisions. Fixtures are compiled, not run. No device/emulator tests, installation,
+screenshots or live requests. Rendering/vision/zoom/large-text acceptance is still pending. PDF
+import/render/search is the next unimplemented slice; no page citation or PDF support is claimed.
+
 ## Remaining milestones and acceptance gates
 
-| Phase | Minimum implementation | Gate before advancing |
-|---|---|---|
-| **2 — visual classroom (implemented)** | Home/session navigation, typed DisplayItems, text/basic formulas/choice rows, persistent dock and incremental mock streaming | Technical checks and captures recorded; owner subsequently requested proceeding after visual refinements. |
-| **3 — graph prototype (implemented)** | Kotlin Canvas, 30 sample propositions/six clusters, off-main snapshot, pan/pinch/selection/search/browse/fit and native details | Technical camera/picking/gesture/restoration/navigation checks pass; reference comparison/captures recorded. Owner-requested label/tooltip/search/fade fixes completed before phase 4. |
-| **4 — local runtime (implemented)** | OpenAI Responses/OkHttp, Keystore BYOK, cancellable bounded loop, Prober/Teacher, SQLite checkpoints and original prompts | Eight deterministic runtime/transport/credential/UI checks pass, including malformed tools, cancellation and interruption recovery. End-to-end real-session smoke testing remains incomplete; the one authorized format diagnostic is recorded above. |
-| **5 — plans and knowledge (implemented, build-only)** | Dependency validation, Extractor/Auditor/deterministic merger, SQLite graph/evidence/provenance, session continuity | Code/compiled fixtures cover reference/DAG rejection, atomic replay-safe merges, conservative identity resolution and precise sources. Device/live acceptance remains unverified; plan and persistent graph stay independent. |
-| **6 — educational content** | Bounded PDF import/render/search, Mermaid, SVG Visual Maker with render/vision/revision workflow | Page-citation, cache/memory and malformed-file tests; unsafe markup denied; artifacts store truthful verification status; specialized WebViews have explicit capability limits. |
-| **7 — practice and research** | Knowledge-aware exercises/attempts, Researcher search/fetch, citations and persistence | Reasoning/transfer checked; attempts survive interruption; retrieved text cannot grant tools or replace instructions. |
-| **8 — generated demos** | Demo Builder generate/validate/test/repair loop, only after an acceptable execution strategy exists | Threat model, malicious HTML/JS fixtures, network/file/bridge restrictions, runtime-failure detection and release security review. **Keep arbitrary execution disabled if isolation is not adequate.** |
-| **9 — optional features** | More providers, speech, import/export, advanced graph/background recovery (official OSS ChatGPT sign-in is implemented separately below) | Separate requirements/evidence for each; no undocumented auth endpoints or dependency on optional sign-in. |
+| Phase                                                                          | Minimum implementation                                                                                                                   | Gate before advancing                                                                                                                                                                                                                                 |
+|--------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **2 — visual classroom (implemented)**                                         | Home/session navigation, typed DisplayItems, text/basic formulas/choice rows, persistent dock and incremental mock streaming             | Technical checks and captures recorded; owner subsequently requested proceeding after visual refinements.                                                                                                                                             |
+| **3 — graph prototype (implemented)**                                          | Kotlin Canvas, 30 sample propositions/six clusters, off-main snapshot, pan/pinch/selection/search/browse/fit and native details          | Technical camera/picking/gesture/restoration/navigation checks pass; reference comparison/captures recorded. Owner-requested label/tooltip/search/fade fixes completed before phase 4.                                                                |
+| **4 — local runtime (implemented)**                                            | OpenAI Responses/OkHttp, Keystore BYOK, cancellable bounded loop, Prober/Teacher, SQLite checkpoints and original prompts                | Eight deterministic runtime/transport/credential/UI checks pass, including malformed tools, cancellation and interruption recovery. End-to-end real-session smoke testing remains incomplete; the one authorized format diagnostic is recorded above. |
+| **5 — plans and knowledge (implemented, build-only)**                          | Dependency validation, Extractor/Auditor/deterministic merger, SQLite graph/evidence/provenance, session continuity                      | Code/compiled fixtures cover reference/DAG rejection, atomic replay-safe merges, conservative identity resolution and precise sources. Device/live acceptance remains unverified; plan and persistent graph stay independent.                         |
+| **6 — educational content (Mermaid/SVG implemented, build-only; PDF pending)** | Offline bounded diagrams, native inspection and SVG write/render/vision/revision loop; PDF import/render/search remains next             | Diagram fixtures compiled, not run; owner device/live acceptance pending. PDF page-citation/cache/malformed-file gates remain open. Model review is not independent verification; generated HTML/JS stays disabled.                                   |
+| **7 — practice and research**                                                  | Knowledge-aware exercises/attempts, Researcher search/fetch, citations and persistence                                                   | Reasoning/transfer checked; attempts survive interruption; retrieved text cannot grant tools or replace instructions.                                                                                                                                 |
+| **8 — generated demos**                                                        | Demo Builder generate/validate/test/repair loop, only after an acceptable execution strategy exists                                      | Threat model, malicious HTML/JS fixtures, network/file/bridge restrictions, runtime-failure detection and release security review. **Keep arbitrary execution disabled if isolation is not adequate.**                                                |
+| **9 — optional features**                                                      | More providers, speech, import/export, advanced graph/background recovery (official OSS ChatGPT sign-in is implemented separately below) | Separate requirements/evidence for each; no undocumented auth endpoints or dependency on optional sign-in.                                                                                                                                            |
 
 ## Explicitly deferred / release decisions
 

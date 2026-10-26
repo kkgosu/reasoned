@@ -47,13 +47,13 @@
     <string name="runtime_thinking_unavailable">This model has no selectable thinking levels.</string>
     <string name="runtime_models_loading">Loading models…</string>
     <string name="runtime_generating">Generating answer…</string>
-    <string name="runtime_tokens_reported">Saved session usage: %1$d input tokens · %2$d output tokens. Only completed, validated responses are included; interrupted requests may also be billed.</string>
+    <string name="runtime_tokens_reported">Saved teaching/figure usage: %1$d input tokens · %2$d output tokens. Only completed, validated responses are included; interrupted requests may also be billed.</string>
     <string name="runtime_models_note">Only this session’s model changes. Its account and billing stay the same; the next explicit Send, Retry or Approve uses the selection.</string>
     <string name="runtime_context">Context window</string>
     <string name="runtime_context_accessibility">Context: %1$s. Tap for reported usage and limits.</string>
     <string name="runtime_context_unknown">Unknown</string>
     <string name="runtime_context_percent">%1$d%%</string>
-    <string name="runtime_context_reported">Last request: %1$d input tokens reported. This is a snapshot, not a live count; new answers and generated output are not included.</string>
+    <string name="runtime_context_reported">Last teaching request: %1$d input tokens reported. This is a snapshot, not a live count; new answers and generated output are not included.</string>
     <string name="runtime_context_unreported">No input-token usage reported for the current model yet.</string>
     <string name="runtime_context_capacity">Catalog context window: %1$d tokens (pi-ai metadata; provider limits may differ).</string>
     <string name="runtime_context_capacity_unknown">Context capacity is not known for this model.</string>

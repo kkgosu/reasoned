@@ -66,7 +66,9 @@ Resources: `values/dimens.xml`, `drawable/{surface_outline,input_background,butt
 - Radius ladder: **4 / 8 / 12 / 16 dp**. Foundation buttons use 8; inputs use 16. Native dialogs use the explicitly requested Mastodon treatment: 28 dp corners and a 16 dp window inset, not a new general surface token.
 - Separators use 1 dp `border`. Editable fields now have a 1 dp muted-foreground outline, a 2 dp foreground focus outline and a subdued disabled outline; shared input styling includes forms and the lesson composer. Graph search uses a clickable pill on Home and an unboxed editor inside its dedicated toolbar.
 - Main reading content remains directly on the page; don't put every paragraph or lesson turn inside a card.
-- Functional input/dock: subtle surface fill, thin outline, rounded perimeter. Inline code: quiet darker tint and thin outline; tables and Mermaid are content, not floating panels. These content renderers are phase 2/6, not implemented here.
+- Functional input/dock: subtle surface fill, thin outline, rounded perimeter. Inline code: quiet
+  darker tint and thin outline; tables and Mermaid are content, not floating panels. Diagram
+  previews now render inline as native static spans (phase 6); they are not interactive web panels.
 - No decorative elevation. Toolbar elevation is zero. Native pressed ripples use the monochrome palette.
 - **48 dp minimum touch target** is an Android accessibility adaptation, not a LearnHarness desktop token. It takes precedence over the desktop's smaller controls.
 
@@ -154,15 +156,43 @@ Graph tests pass at normal and 200% text size with animations disabled. Recreate
 
 Phase-5 update (build-only): Home now renders persistent source-backed propositions/argument junctions through the existing Canvas and accessible search/detail screens; an honest empty state replaces invented fixture evidence. The sample graph is a separate overflow destination. Birth-session grouping and denser deterministic placement preserve the monochrome design. Details provide native full-width source actions that open exact saved messages without sending another request.
 
-The session overflow adds Learning plan and Update/Stop knowledge graph. A native dependency-list screen and review/approve dialog display stable steps and prerequisites; current/visited are positional, not mastery/completion marks. A muted live-region status reports extraction/auditing/merging independently of the teaching footer. Context details disclose estimated pending coverage, separate stage usage and additional selected-connection billing. No new card system, graph editor, Mermaid surface or per-role model settings were introduced. Device/large-text acceptance for these additions is not yet claimed.
+The session overflow adds Learning plan and Update/Stop knowledge graph. A native dependency-list
+screen displays stable steps and prerequisites; current/visited are positional, not
+mastery/completion marks. Approve plan confirms directly, without a repeated dialog. While awaiting
+approval the existing composer accepts change requests, using Send plan changes when nonblank and
+Approve plan when blank; every revised plan still waits for approval. A muted live-region status
+reports extraction/auditing/merging independently of the teaching footer. Context details disclose
+estimated pending coverage, separate stage usage and additional selected-connection billing. No new
+card system, graph editor, Mermaid surface or per-role model settings were introduced.
+Device/large-text acceptance for these additions is not yet claimed.
 
-The real-session renderer reuses the established document rows, font roles and persistent native dock. It does not introduce chat bubbles, a new component system or web content. The hamburger opens a native modal drawer with New session, Knowledge graph, recent saved sessions and a pinned Settings entry. Settings presents three categories opening focused pages: Providers & models, Learning preferences, and About & privacy. New session holds the goal, connection summary and a single Start session action, not account configuration or a second start/preview gate. The disclosure states that this action sends the goal/preferences using the selected billing. Reopening a saved session never starts generation. The Providers & models window blocks screenshots/recents capture and never restores the password field. No key appears in review frames.
+The real-session renderer reuses the established document rows, font roles and persistent native
+dock. It does not introduce chat bubbles, a new component system or web-based document UI. The
+hamburger opens a native modal drawer with New session, Knowledge graph, recent saved sessions and a
+pinned Settings entry. Settings presents three categories opening focused pages: Providers & models,
+Learning preferences, and About & privacy. New session holds the goal, connection summary and a
+single Start session action, not account configuration or a second start/preview gate. The
+disclosure states that this action sends the goal/preferences using the selected billing. Reopening
+a saved session never starts generation. The Providers & models window blocks screenshots/recents
+capture and never restores the password field. No key appears in review frames.
 
 Providers & models offers explicit API-key versus ChatGPT-plan radio choices in equal-width, vertically aligned native rows. Forms use 24-dp outer gutters, 16-dp section spacing and 8-dp action gaps. Disabled buttons use 40% alpha; the graph tooltip opts out because its alpha belongs to selection fades. Short connection status replaces introductory walls of text; full retention/billing/privacy guidance remains in About & privacy and the plan acknowledgement. Plan mode hides API-key entry and shows separate account selection, browser sign-in/add/sign-out, refreshed model selection and Manage usage. Native notices distinguish plan usage/possible credits from API billing; a first successful plan connection requires an acknowledgement before model selection or session creation. Saved sessions retain their connection even if setup changes. Plan sessions expose the account/usage link without putting credentials into the transcript. Secure setup screenshot blocking is unchanged; browser authentication is external, never an embedded login.
 
 Start session is one disclosed action: local checkpoint then first request, without a second preview gate. Runtime refinements use a 24-dp rounded composer, unboxed 1–4-line input, Send/Stop icons, session model/thinking selectors and a small context ring. Controls retain 48-dp touch targets; model/thinking controls scroll horizontally instead of clipping at enlarged type. No pretend attachment or voice actions are shown. The ring reports the last request's input share of catalog capacity, or ? when unknown; tapping explains limits and holds account/Manage usage details. The always-visible plan button is removed. A native progress row follows the last message rather than appearing at the top; it stays last as streaming rows arrive. Composer controls use bounded 8-dp-corner button ripples, not borderless circular ripples. The question panel restores the existing outlined surface. Questions use native Markdown/LaTeX, choices and a six-position 0/20/40/60/80/100 confidence slider. The question panel fades/changes bounds on arrival; answer entry stays in the bottom dock, and the transcript remains visible during probing/IME resize. API-30+ native IME frames animate the inset. These latest changes are build/lint checked only, not claimed verified at 200% text or on-device.
 
 Answer-card refinement follows the owner's LearnHarness reference: a subtle learner band and thin divider before the next agent turn, not chat bubbles. One answered card holds the Markdown question, outlined choices with selected/correct symbols, and a six-color confidence rail. Correctness is independent of self-reported confidence; missing keys stay ungraded. Written reference answers open without claiming automatic semantic grading. Your thinking, Why and public Agent’s thinking summaries have independent native disclosure controls; encrypted reasoning is never shown. This refinement is build/lint checked only; on-device layout and accessibility review remain pending.
+
+Phase-6 diagram slice (build-only): Mermaid uses the pinned strict/dark offline engine with plain
+SVG text labels; authored SVG retains its colors on a white render background. Previews stay in the
+prose column and open by tapping the image, without a separate Open diagram label or decorative
+card. Inline/fullscreen share the same bounded 2048px bitmap cache instead of rendering twice. Short
+fence titles or SVG title/Mermaid accTitle supply accessible image labels. Fullscreen inspection
+uses a native canvas, pinch/pan, fit and source menu and labeled accessibility zoom actions. It
+shows only Rendering… while loading or an error on failure; the completed image has no
+gesture-hint/status banner. Image text is rasterized, so enlarged-text readers can zoom rather than
+expecting reflow. Only successful maker jobs receive a FIGURE · MODEL-REVIEWED label; ordinary
+fences do not imply review, and rendering never confers a correctness/review badge. No installation,
+new captures, device/large-text or live-vision verification was performed; PDF remains next.
 
 Review captures: [local ready state](docs/screenshots/phase4-ready.png), [seeded free-response dock](docs/screenshots/phase4-question.png), [200% dock](docs/screenshots/phase4-question-large-text.png). These show local test fixtures, **not live model output or assessment quality**. The runtime UI check verifies recreation, secure key entry, a visible editor line and reachable submit above the actual IME at 200% text. These remain manual visual baselines, not approved image-diff goldens.
 

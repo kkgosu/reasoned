@@ -115,7 +115,19 @@ Extraction reads bounded transcript evidence. An Auditor proposes identity match
 
 ## Plans and persistent knowledge: phase 5, build-only acceptance pending
 
-`StudyPlan` stores stable lowercase node IDs, titles/summaries, prerequisite edges and a monotonic version in the session checkpoint; old plan tool arguments remain in protocol history. `plan_init` uses structured JSON, validates duplicates/endpoints/self-loops/DAG cycles before committing, and pauses for explicit plan approval. Rewrites replace the structure, not a completion ledger. Current/visited positions derive only from tagged question calls and are never mastery assessments. The native plan page and approval dialog list dependencies; no Mermaid/WebView or automatic plan→knowledge conversion is introduced.
+`StudyPlan` stores stable lowercase node IDs, titles/summaries, prerequisite edges and a monotonic
+version in the session checkpoint; old plan tool arguments remain in protocol history. `plan_init`
+uses structured JSON, validates duplicates/endpoints/self-loops/DAG cycles before committing, and
+pauses for explicit plan approval. Rewrites replace the structure, not a completion ledger.
+Current/visited positions derive only from tagged question calls and are never mastery assessments.
+The native Learning plan page lists dependencies; Approve plan confirms directly without a second
+dialog. While awaiting approval, the existing composer accepts revision requests and switches its
+action from approval to Send plan changes. A persisted `planPending` flag survives
+generation/reopening/interruption: revised plans and plain clarification replies still require
+approval, unsent edits cannot be approved, and question/figure/finish tools are denied until
+approval. Retry after an interrupted revision restores plan review without replaying generation.
+Plan/revision prose is excluded from canonical teaching evidence; there is no automatic
+plan→knowledge conversion.
 
 `KnowledgeExtraction` owns one app-wide foreground job, independently of the teaching command. The owner chose LearnHarness's hybrid dispatch: after a completed teaching turn, 4096 estimated uncovered tokens trigger extraction; the session menu can request it earlier. Estimates are ceil(chars/4) over the exact teacher-prose view, not provider context usage. Each run snapshots its initial passages, greedily batches without splitting messages and stops on an unprocessed-batch failure; earlier committed batches remain covered. Opening/restoring sessions never dispatches. MainActivity foreground changes and credential removal cancel stage requests; cancellation/failure cannot checkpoint a partial batch. No server/service/background-resume promise, parallel writer pool or additional provider/model defaults were added.
 
@@ -131,17 +143,57 @@ Validation: APK/test-APK compilation and lint, pinned-source hashes and an offli
 
 `ReasonedApplication` lazily owns one `SessionRuntime`, a concrete SQLite store and a Keystore credential store. The graph/mock screens do not initialize the runtime or send requests. A native DrawerLayout wraps AppKit's existing stack/inset owner, with New session, Knowledge graph, recent sessions and a pinned Settings entry; the library handles drawer scrim, gestures and back. Settings opens focused Providers & models, Learning preferences and About & privacy pages. New session collects the goal; the explicitly disclosed Start session action creates its local checkpoint and requests the first teaching step in one tap. An argument consumed before loading triggers that first request only after the checkpoint opens successfully; saved-session navigation and activity recreation never replay it. The underlying runtime create operation remains local for callers that only need a checkpoint. Only Start session, Start on a previously idle session, Send, explicit Retry or route approval sends learning content to OpenAI. Account/model discovery can make separate authenticated requests. API model IDs are user-entered; ChatGPT connections automatically load the active account's model catalog on the Providers screen and show full-width radio rows with display names, saving selected slugs per connection. Refresh is explicit; account changes cancel the previous load and discard its rows. No catalog request is required to create a local session, and there is no assumed default or unverified account-access claim. The newest 30 saved sessions are browsable; full history management is later work.
 
-`RuntimeSessionFragment` uses its own native composer layout with the shared `LessonAdapter`, not `MockLesson` or a parallel renderer. Native Markwon spans render standard Markdown and inline/display LaTeX in transcript, questions and choices, without a WebView or remote image loader. Typed prose blocks have monotonically allocated IDs; streaming replaces only the current block, at most once per 100 ms. Accepted questions and answers both enter history; older missing questions are reconstructed from SQLite evidence without rewriting protocol context. Written answers are displayed once, not duplicated as answer plus reasoning. One pending question holds free-response or 2–4 choices, reasoning, confidence in 20-percent steps and collapse state. Prober questions open automatically; Teacher checks wait for reveal. The transcript remains visible when editing; a separate scrollable question panel leaves a persistent answer/Send dock above the IME. An ephemeral native progress row after the last transcript message shows generation, including while waiting for first text; it is not stored as lesson content. The question panel keeps the existing rounded outline, and question arrival uses bounds/fade motion and API-30+ IME frames resize the viewport. This refinement is build-checked, not device-verified.
+`RuntimeSessionFragment` uses its own native composer layout with the shared `LessonAdapter`, not
+`MockLesson` or a parallel renderer. Native Markwon spans render standard Markdown and
+inline/display LaTeX in transcript, questions and choices, without web-based document UI or a remote
+image loader; only fenced diagrams use the isolated offline rasterizer described below. Typed prose
+blocks have monotonically allocated IDs; streaming replaces only the current block, at most once per
+100 ms. Accepted questions and answers both enter history; older missing questions are reconstructed
+from SQLite evidence without rewriting protocol context. Written answers are displayed once, not
+duplicated as answer plus reasoning. One pending question holds free-response or 2–4 choices,
+reasoning, confidence in 20-percent steps and collapse state. Prober questions open automatically;
+Teacher checks wait for reveal. The transcript remains visible when editing; a separate scrollable
+question panel leaves a persistent answer/Send dock above the IME. An ephemeral native progress row
+after the last transcript message shows generation, including while waiting for first text; it is
+not stored as lesson content. The question panel keeps the existing rounded outline, and question
+arrival uses bounds/fade motion and API-30+ IME frames resize the viewport. This refinement is
+build-checked, not device-verified.
 
 Answered questions render as one typed native card reconstructed from the existing question/answer evidence, including legacy sessions: question, outlined options, selected/correct marks, a six-color confidence rail, learner thinking and Why disclosures. New `ask_question` calls commit `explanation` and `correctAnswer` before submission; neither is rendered in the pending dock. Listed choices are compared to the exact key; free responses reveal the reference but receive no automatic semantic verdict. Legacy/explicitly ungraded questions have no correctness badge. Learner bands and thin separators distinguish authorship without chat bubbles. Reasoning-capable models request `reasoning.summary=auto` unless effort is off/none. Only completed provider `summary_text` enters collapsible THINKING rows; encrypted content remains opaque. THINKING rows never become graph evidence. AppKit toolbar state is applied in onCreateOptionsMenu and refreshed via the fragment's invalidateOptionsMenu, not the unused platform preparation hook; graph Stop is visible only while extraction actually runs. Manual extraction with no eligible passages reports why instead of implying a new graph was created. Build-only verification; UI/live acceptance remains pending.
 
 The rounded runtime composer exposes Send/Stop, session model, thinking level and context snapshot. Model discovery stays on the session's saved connection; selection never generates or changes billing. The API picker intersects the fetched IDs with known Responses capabilities; an existing/manual model remains usable. ChatGPT uses its account-scoped model names/slugs. Capability metadata (42 exact IDs, context windows and supported wire reasoning efforts) is generated from pi-ai 1.4.0 with `scripts/update-model-catalog.mjs`, not guessed from model-name prefixes. The asset records its source version and SHA-256. The generator reads flattened model.id values, not pi-ai's internal chat:-prefixed catalog keys; exact API IDs therefore resolve their levels and capacity, including gpt-6.1-sol. Unknown models offer only Auto and unknown capacity. Successful model lists are cached in local preferences by connection and shared between session/Providers pickers; opening a picker reuses the cache, while Refresh models explicitly fetches/replaces it. Failed refresh preserves the prior cache; replacing/forgetting an API key or signing out/resetting plan connections invalidates the associated UI cache. It contains names/IDs only, never credentials. Auto omits reasoning.effort; an explicit supported level is checkpointed and sent on the next request. The context ring uses last completed request input usage divided by catalog capacity, not accumulated billing tokens or an invented live tokenizer; its dialog also shows saved input/output token totals and explains the snapshot, unknowns and independent 120,000-byte local history cap. Composer ripples use a bounded rounded-button mask with a transparent resting background, so the overlaid context button does not hide the ring. Account details/Manage usage moved into this dialog instead of an always-visible plan button.
 
-The Prober diagnoses before `finish_probe` proposes 1–8 provisional textual steps. Learner approval supplies the suspended tool result and switches to the Teacher. This probe route is not itself a dependency-validated plan or extracted knowledge. The Teacher separately writes a validated StudyPlan, pauses for explicit approval and tags later questions with its stable node IDs. The Teacher checks one reasoning step at a time, can repair via another question, and ends with a summary, never a mastery certification. `learning_context` reads the goal, route, current plan and a bounded goal-relevant preview of persistent propositions with source IDs; these are prior teaching content, not learner mastery. Teaching has no direct graph mutation tools; no filesystem, shell, arbitrary network, code-execution, graph-write or remote built-in tools are available. `AgentInstructions.kt` loads unmodified LearnHarness Prober/Teacher sources from `assets/learnharness/`, using upstream's base → sorted role fragments → sorted shared appendix order. A separate `agents/android-compatibility.md` maps current tool names and states unavailable tools/rendering; it does not rewrite source fragments. The independently written v1 prompts/reasoning-check skill were removed. Practice and learning-data skill sources remain inactive. Extractor/Auditor constants are projected from the preserved specialist source into separate active stage assets; TypeScript itself is never executed by Android. Runs record `learnharness-0795ef197cca-v4` for committed question answers; legacy `1`, `learnharness-0795ef197cca-v1`, `learnharness-0795ef197cca-v2` and `learnharness-0795ef197cca-v3` sessions adopt it on the next generation without dropping their transcript. Local AGENTS.md preferences are editable in Settings → Learning preferences and snapshotted as a **user** message at session creation, not elevated instructions or permissions.
+The Prober diagnoses before `finish_probe` proposes 1–8 provisional textual steps. Learner approval
+supplies the suspended tool result and switches to the Teacher. This probe route is not itself a
+dependency-validated plan or extracted knowledge. The Teacher separately writes a validated
+StudyPlan, pauses for explicit approval and tags later questions with its stable node IDs. The
+Teacher checks one reasoning step at a time, can repair via another question, and ends with a
+summary, never a mastery certification. `learning_context` reads the goal, route, current plan and a
+bounded goal-relevant preview of persistent propositions with source IDs; these are prior teaching
+content, not learner mastery. Teaching has no direct graph mutation tools; no filesystem, shell,
+arbitrary network, code-execution, graph-write or remote built-in tools are available.
+`AgentInstructions.kt` loads unmodified LearnHarness Prober/Teacher sources from
+`assets/learnharness/`, using upstream's base → sorted role fragments → sorted shared appendix
+order. A separate `agents/android-compatibility.md` maps current tool names and states unavailable
+tools/rendering; it does not rewrite source fragments. The independently written v1
+prompts/reasoning-check skill were removed. Practice and learning-data skill sources remain
+inactive. Extractor/Auditor constants are projected from the preserved specialist source into
+separate active stage assets; TypeScript itself is never executed by Android. Runs record
+`learnharness-0795ef197cca-v5` for diagram capabilities (v4 introduced committed question answers);
+legacy `1` and v1–v4 sessions adopt it on the next generation without dropping their transcript.
+Local AGENTS.md preferences are editable in Settings → Learning preferences and snapshotted as a *
+*user** message at session creation, not elevated instructions or permissions.
 
 The Responses adapter uses the fixed HTTPS OpenAI endpoint, `store=false`, stateless input history and opaque completed reasoning items (`reasoning.encrypted_content`). Only a validated `response.completed` can commit model context/tool effects. The fixed-endpoint transport validates SSE framing rather than rejecting a valid stream because of its Content-Type label: only data, comments and standard event/id/retry fields are accepted; ordinary JSON/HTML responses are not a fallback. Partial arguments never execute. Native checks independently enforce tool/role allowlists, exact argument keys/types, choice/route bounds, one call per response and replay IDs; unknown output types, refusals, incomplete/EOF/malformed streams and over-budget responses stop visibly. A mutex serializes commands and checkpoints; the deterministic fake provider uses this same runner.
 
-Bounds: four provider steps and 180 seconds per learner action; 120-second HTTP call / 45-second read / 15-second connect limits; 4,096 output tokens per API-key request (the ChatGPT preview rejects this parameter, so only local stream/time/character limits apply there); 2 MiB total SSE data, 256 KiB line/event/completed output, 24,000 visible characters per response, 120,000 bytes of protocol context, and 160 transcript blocks/120,000 text characters per session. No automatic context truncation or retry. At a limit, start a new local session; budgeted context selection beyond this bounded full-session policy is future work.
+Bounds: four teaching-provider steps and 180 seconds per learner action, including at most one
+foreground figure job with up to eight additional selected-model calls; 120-second HTTP call /
+45-second read / 15-second connect limits; 4,096 output tokens per API-key request (the ChatGPT
+preview rejects this parameter, so only local stream/time/character limits apply there); 2 MiB total
+SSE data, 256 KiB line/event/completed output, 24,000 visible characters per response, 120,000 bytes
+of protocol context, and 160 transcript blocks/120,000 text characters per session. No automatic
+context truncation or retry. At a limit, start a new local session; budgeted context selection
+beyond this bounded full-session policy is future work.
 
 Hiding the runtime screen or stopping the Activity cancels the foreground job; there is no service/background-execution promise. Cancellation closes the HTTP call/body, including blocked reads. Finally checkpoints run non-cancellably on IO; streamed partial text is marked interrupted and excluded from model context. Startup marks unfinished runs/sessions interrupted; Retry starts a new charged request rather than claiming token-level resume. Reported usage accumulates completed responses/runs; interrupted or rejected responses may have billed usage the client cannot report. Draft writes debounce 200 ms and flush on actions/hiding. Native saved state carries no real transcript or credentials.
 
@@ -184,10 +236,63 @@ A Home search button opens `GraphSearchFragment`: native `EditText`, `ListView` 
 The fixture deliberately uses a fixed six-cluster arrangement, radial tints, linear picking and O(n²) label decluttering. Large real graphs need bounded incremental layout, spatial indexing and an appropriate accessible representation. Saved camera/selection are presentation state, never knowledge evidence. See DESIGN_SYSTEM for the visual comparison and IMPLEMENTATION_PLAN for checks/limitations.
 
 ## Rich content: phases 6, 8
-- Formulas/Markdown: evaluate small native span/rendering solutions at the renderer milestone, retaining horizontal overflow for genuinely wide math/tables. Do not choose a whole-screen WebView to avoid implementing native lesson rows.
-- Mermaid: a specialized local WebView surface with controlled assets, no credential bridge, bounded content and fullscreen inspection/zoom. It is not the generated-demo sandbox.
+
+Phase 6 Mermaid/SVG slice is implemented, build-only acceptance pending; PDF remains unimplemented.
+Native Markwon document spans now recognize `mermaid` and `svg` fences. `DiagramPlugin` displays
+tappable static images with descriptive labels, a shared bounded 24 MiB bitmap/source-key cache and
+attachment-aware cancellation. Inline and fullscreen views use the same 2048px-long-edge bitmap;
+tapping retains the visible bitmap even if it was evicted, so opening a ready preview does not
+repeat rendering. Cache misses after restoration still rerender locally. Image-only touch handling
+bypasses TextView selection/focus-induced scroll, while ordinary prose selection and
+keyboard/TalkBack spans remain native. Equal transcript rows no longer report a spurious adapter
+change/re-follow. Ordinary code blocks and LaTeX retain their native rendering. `DiagramFragment` is
+a native fullscreen bitmap canvas with pinch/pan, double-tap/toolbar fit, labeled accessibility zoom
+actions and selectable source; reopening does not call a model.
+
+`DiagramRenderer` serializes all local jobs through one short-lived WebView at a time. The
+unmodified Mermaid 11.17.0 browser bundle is pinned/hash-recorded locally, using strict security,
+dark theme, 16px sans-serif and plain SVG labels. Source is at most 24,000 characters/64 KiB;
+configuration directives/frontmatter are denied, graph edges capped at 200. The app-owned runner
+rasterizes within 15 seconds: UI previews request a 2048px long edge (at most 2048×2048), including
+upsampling small vector sources before rasterization. Visual Maker keeps the original
+natural-size/1024px cap and 512 KiB PNG transmission bound, so UI sharpness does not increase model
+image size. Native PNG result limits remain bounded by the selected profile. Authored SVG is
+XML-validated (namespace, allowed elements, finite bounded viewBox, depth/count, no active
+tags/events/references/external styles), then decoded as an inert SVG image, never inserted into the
+live document. CSP, request interception and WebView flags independently deny network, file/content
+URLs, frames, workers, storage and privileged bridges. Only the bundled script and app-owned runner
+execute. Malformed/unsupported output keeps source available and fails visibly in the inspector;
+this is not an HTML/JS demo sandbox. Owner-requested `ReasonedDiagrams` diagnostics report ephemeral
+render IDs, elapsed time, source character count, WebView version, fixed stage/error categories,
+resource status, console severity/line and PNG dimensions/size. They never log source, lesson text,
+URLs, console/error messages or stacks. Owner-device logs identified the Mermaid bootstrap failure:
+the deny-all interceptor returned HTTP 403 for the renderer's main frame, leaving both engine and
+runner absent until timeout. The renderer now loads an exact intercepted local HTML route plus the
+pinned script route; only the runner's inert SVG data-image decode may use browser handling. All
+other requests remain blocked and network/file/content denial stays enabled. Main-page/engine
+loading errors fail immediately. This correction is build-checked, not yet device-render verified.
+
+The teacher's `visual` tool is available only after an approved plan. `VisualMaker` projects the
+pinned upstream INSTRUCTIONS verbatim, adds an independent Android capability note, and ports
+write_svg/edit_svg/render_svg → actual PNG → selected-model inspection/revision → final-notes
+semantics. At most eight stage calls, 18,000 SVG characters, 512 KiB PNG and 2 MiB stage history; no
+final delivery unless the current source's actual image reached a completed model request. The
+source plus final notes persist as a typed FIGURE transcript row: MODEL-REVIEWED, not independently
+verified. Plain inline SVG/Mermaid has no review badge. Stage images/protocol are temporary;
+previews rerender offline from saved source. Figure rows are not canonical graph evidence. A durable
+interrupted tool result precedes work, completed stage usage is checkpointed, and
+cancellation/restoration never resumes generation silently. Same session model, effort, connection
+and billing, with no automatic vision-model fallback. Figures send only their self-contained brief
+and local renders, not the full lesson. Usage totals include completed figure calls; the context
+ring remains the last teaching-request snapshot. Device rendering, gesture/accessibility and live
+vision acceptance remain unverified.
+
+- Formulas/Markdown: native Markwon/math spans, not a whole-screen WebView; genuinely wide math
+  retains horizontal overflow.
+- Mermaid: offline specialized rasterizer only; no interactive bindings or generated-JS execution.
 - PDF: Storage Access Framework import to app-private storage; evaluate `PdfRenderer` for bounded page bitmaps and PDFBox-Android for searchable text/license/dependency cost. Search/extract selected pages, cite page indices explicitly and cap bitmap/cache memory. Avoid loading an entire large document by default.
-- SVG: validate allowed markup and dimensions, render to a bitmap, inspect labels/values/clipping through a vision model, revise within limits, persist source/preview/verification status. Unsafe or unverified output is not silently marked verified.
+- SVG: source/notes/model-review status are persisted; bitmap previews are bounded ephemeral caches.
+  Model review is never presented as an objective correctness guarantee.
 - Generated HTML/JS: **disabled until isolation is demonstrated**. No privileged `addJavascriptInterface`, credentials, app file access or unrestricted networking. WebView flags alone are not proof of an adequate sandbox; build a threat model and malicious fixtures before enabling execution. Respect the specification's fail-closed requirement.
 - Research/PDF/web text is untrusted evidence, never a new instruction authority. Preserve citations and tool permissions independently of retrieved content.
 

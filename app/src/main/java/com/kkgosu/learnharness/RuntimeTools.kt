@@ -58,6 +58,11 @@ internal object RuntimeTools {
             )
         } else {
             tool(
+                "visual",
+                "Make ONE precise static SVG figure from a self-contained brief. Foreground, selected model/connection, extra usage; write/render/vision/revise before delivery. One figure per learner action. Explain the concept before calling. For flows and relationships use inline mermaid instead.",
+                JSONObject().put("brief", string())
+            )
+            tool(
                 "plan_init",
                 "Write or rewrite the session dependency plan, not the knowledge graph. Stable lowercase slug IDs; edges from prerequisite to dependent. Wait for learner approval before teaching.",
                 JSONObject().put(
@@ -166,6 +171,13 @@ internal object RuntimeTools {
                     if (namespace.isNotEmpty() && (session.connection == "api" || namespace != NAMESPACE)) throw ProviderFailure(
                         "tool_denied"
                     )
+                    if (session.planPending && name in setOf(
+                            "ask_question",
+                            "visual",
+                            "finish_lesson"
+                        )
+                    )
+                        throw ProviderFailure("plan_approval_required")
                     val schema = tools.objects().firstOrNull { it.getString("name") == name }
                         ?: throw ProviderFailure("tool_denied")
                     val args = JSONObject(item.strictString("arguments", 24_000))
@@ -220,6 +232,12 @@ internal object RuntimeTools {
                             }
                         }
 
+                        "visual" -> {
+                            args.strictString("brief", 4000)
+                            if (session.phase != "teacher" || session.plan == null) throw ProviderFailure(
+                                "invalid_plan_reference"
+                            )
+                        }
                         "plan_init" -> StudyPlan.parse(args)
                         "finish_probe" -> {
                             if (session.answers < 1) throw ProviderFailure("invalid_probe_handoff")

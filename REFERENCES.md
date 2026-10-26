@@ -1,6 +1,9 @@
 # Reference and licensing ledger
 
-Research baseline: 2026-10-25. Scope: phases 0–5. **Reasoned** is an independent prototype name, not an official LearnHarness client. Reference checkouts were inspected outside this repository. Selected LearnHarness sources are now vendored, and the search transition adapts Mastodon's native pattern; see the reuse notices below.
+Research baseline: 2026-10-25. Scope: phases 0–6 (PDF pending). **Reasoned** is an independent
+prototype name, not an official LearnHarness client. Reference checkouts were inspected outside this
+repository. Selected LearnHarness sources are now vendored, and the search transition adapts
+Mastodon's native pattern; see the reuse notices below.
 
 ## Pinned repositories
 
@@ -18,6 +21,22 @@ Links below use immutable revisions. Source descriptions apply to these revision
 At the same pinned revision, inspected `src/agent/tools/plan.ts`, `src/core/plan-tree.ts`, and `src/core/contracts/plan.ts` for stable session-only dependency DAGs, whole-plan rewrites, learner approval and call-derived positional status. Android uses structured JSON/native dependency lists rather than porting Mermaid parsing.
 
 Inspected `src/agent/subagents/extraction.ts`, `src/core/contracts/graph.ts`, `src/core/coverage.ts`, `src/server/turn-service.ts`, `src/server/chat-handler.ts`, and `components/extraction-coverage.tsx` for teacher-prose-only coverage, exact message anchors, same-source digest continuation, Extractor/Auditor separation, identity-only verdicts, joint-premise chains, atomic coverage and hybrid dispatch. The code's factory threshold is 4096 estimated tokens; stale comments mentioning 8192 were not treated as authoritative. Android uses the existing SQLite owner and one foreground job, not the desktop/server process pool, JSONL stores or separate model-role settings. The original extraction source remains byte-preserved; a local generator projects its active prompt constants into native assets, with an independent compatibility appendix.
+
+## Phase-6 diagram reference checks
+
+Inspected pinned `components/mermaid-render.ts`, `components/artifacts/visual-card.tsx`,
+`components/mermaid-error.tsx`, `src/core/session-markdown.ts` and
+`src/agent/subagents/visual-maker.ts`. Retained strict/dark Mermaid at 16px, inline
+figures/fullscreen inspection and write/edit/render/actual-image vision revision. Android uses
+native image spans/canvas and a restricted offline rasterizer, not React/Electron, background
+workers, file artifacts, browser SVG injection or inversion/download UI. The model-review badge
+records a completed stage that received the current PNG, not independent correctness.
+
+Mermaid 11.17.0 is a bundled unmodified MIT browser asset; source hash is in
+`assets/diagrams/NOTICE.md`, full license and inclusive dependency notices are under
+`assets/licenses/mermaid*.txt`. Its version matches the reference lockfile. The Visual Maker prompt
+is projected verbatim from preserved upstream bytes, with a separate Android capability note and
+AGPL provenance. Device/live acceptance and PDF remain pending.
 
 ## LearnHarness inspection map
 

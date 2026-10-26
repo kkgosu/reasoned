@@ -17,4 +17,15 @@ The upstream root `AGENTS.md` is development guidance, not a teaching system pro
 
 Phase 5 projects `EXTRACTOR_INSTRUCTIONS` and `AUDITOR_INSTRUCTIONS` from the already-vendored `src/agent/subagents/extraction.ts` into `assets/agents/extractor.md` and `auditor.md`, using `scripts/update-extraction-prompts.py`. The original constants' wording is retained, with a separate runtime Android capability note. The Kotlin pipeline follows upstream teacher-prose coverage, message anchors, Extractor → identity Auditor → merger separation, joint-premise arguments and the hybrid automatic/manual trigger. Android uses one foreground writer, SQLite transactions and structured JSON plan inputs instead of Electron/server workers, JSONL ledgers or Mermaid parsing. Chains additionally require exact message anchors. The 36-file pinned inventory remains untouched.
 
+Phase 6 projects `INSTRUCTIONS` verbatim from the already-vendored
+`src/agent/subagents/visual-maker.ts` into `assets/agents/visual-maker.md` using
+`scripts/update-visual-prompt.py`. `VisualMaker.kt` adapts its bounded write/edit/render → actual
+PNG input → vision/revision loop to foreground Kotlin and the saved session connection.
+`DiagramRenderer.kt` / `renderer.html` use an independently authored restricted offline rasterizer;
+Mermaid settings and native inspection follow the product intent in `components/mermaid-render.ts`
+and `components/artifacts/visual-card.tsx`, not their React implementation. Android denies active
+SVG rather than silently sanitizing it, does not run background jobs or reuse the desktop
+filesystem, and never marks merely rendered output as verified. The 36-file pinned source inventory
+remains unchanged.
+
 This vendored content is copyleft material, unlike the earlier reference-only use. Preserve attribution, license and applicable corresponding-source obligations when distributing. The application's first-party licensing and compatibility must be resolved before public binary release; this notice does not choose a license for unrelated code.

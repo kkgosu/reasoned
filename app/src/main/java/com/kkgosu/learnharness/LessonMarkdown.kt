@@ -15,7 +15,7 @@ import org.commonmark.node.Node
 import org.commonmark.node.Text
 import java.util.regex.Pattern
 
-/** Native spans only: no WebView, HTML or remote image loader. */
+/** Native text/math spans and bounded static diagram previews; no remote image loader or live lesson HTML. */
 internal fun lessonMarkdown(context: Context): Markwon = Markwon.builder(context)
     .usePlugin(MarkwonInlineParserPlugin.create { it.addInlineProcessor(DollarMathProcessor()) })
     .usePlugin(JLatexMathPlugin.create(context.resources.getDimension(R.dimen.text_16)) { builder ->
@@ -24,6 +24,7 @@ internal fun lessonMarkdown(context: Context): Markwon = Markwon.builder(context
         builder.theme().inlineTextColor(context.getColor(R.color.foreground))
             .blockTextColor(context.getColor(R.color.foreground))
     })
+    .usePlugin(DiagramPlugin(context))
     .usePlugin(object : AbstractMarkwonPlugin() {
         override fun configureConfiguration(builder: MarkwonConfiguration.Builder) {
             builder.linkResolver { view, link ->

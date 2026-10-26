@@ -139,7 +139,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             when (runtime.state.value?.status) {
                 "running" -> runtime.stop()
                 "route" -> runtime.approveRoute()
-                "plan" -> confirmPlan()
+                "plan" -> if (runtime.state.value?.draft.isNullOrBlank()) runtime.approveRoute() else runtime.send()
                 "error", "interrupted" -> runtime.retry()
                 "question" -> runtime.send()
                 else -> if (runtime.state.value?.draft.isNullOrBlank()) runtime.retry() else runtime.send()
@@ -288,7 +288,11 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             // Keep the transcript visible during probing and IME resize, and keep the answer field in the dock.
             questionThinking.visibility = if (question != null) View.VISIBLE else View.GONE
             lessonComposer.visibility =
-                if (question == null && state.status == "idle") View.VISIBLE else View.GONE
+                if (question == null && state.status in setOf(
+                        "idle",
+                        "plan"
+                    )
+                ) View.VISIBLE else View.GONE
             if (question != null) {
                 if (questionText.tag != question.text) findViewById<android.widget.ScrollView>(R.id.question_scroll).scrollTo(
                     0,
@@ -322,18 +326,22 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                     )
                 )
             } else lessonComposer.restore(state.draft)
-            lessonComposer.isEnabled = state.status == "idle"
+            lessonComposer.isEnabled = state.status in setOf("idle", "plan")
+            lessonComposer.setHint(if (state.status == "plan") R.string.plan_change_hint else R.string.runtime_composer_hint)
             val action = when (state.status) {
                 "running" -> R.string.stop_stream
                 "route" -> R.string.runtime_approve
-                "plan" -> R.string.plan_approve
+                "plan" -> if (state.draft.isBlank()) R.string.plan_approve else R.string.plan_send_changes
                 "error", "interrupted" -> R.string.runtime_retry
                 "question" -> R.string.submit_answer
                 else -> if (state.draft.isBlank()) R.string.runtime_start else R.string.runtime_send
             }
             val icon = when {
                 state.status == "running" -> R.drawable.ic_stop
-                state.status == "question" || (state.status == "idle" && state.draft.isNotBlank()) -> R.drawable.ic_send
+                state.status == "question" || (state.status in setOf(
+                    "idle",
+                    "plan"
+                ) && state.draft.isNotBlank()) -> R.drawable.ic_send
                 else -> 0
             }
             composerAction.text = if (icon == 0) getString(action) else ""
@@ -440,23 +448,6 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             runtime.configure(state.model, levels[index]); picker.dismiss()
         }.setNegativeButton(android.R.string.cancel, null)
         dialog = builder.setOnDismissListener { dialog = null }.show()
-    }
-
-    private fun confirmPlan() {
-        val plan = runtime.state.value?.takeIf { it.id == sessionId }?.plan ?: return
-        val description = plan.nodes.joinToString("\n\n") { node ->
-            val requires = plan.edges.filter { it.second == node.id }
-                .map { edge -> plan.nodes.first { it.id == edge.first }.title }
-            "${node.title}\n${node.summary}\n" + if (requires.isEmpty()) getString(R.string.plan_foundation) else getString(
-                R.string.plan_requires,
-                requires.joinToString(", ")
-            )
-        }
-        dialog =
-            AlertDialog.Builder(activity).setTitle(R.string.learning_plan).setMessage(description)
-                .setPositiveButton(R.string.plan_approve) { _, _ -> runtime.approveRoute() }
-                .setNegativeButton(android.R.string.cancel, null)
-                .setOnDismissListener { dialog = null }.show()
     }
 
     private fun showContext() {

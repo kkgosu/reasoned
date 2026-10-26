@@ -73,6 +73,7 @@ internal data class RuntimeSession(
     val proseIds: Set<Long>? = null, // Null only for legacy checkpoints without canonical passage IDs.
     // Reconstructed from question/answer evidence, including old checkpoints without question rows.
     val answerCards: Map<Long, LessonDisplayItem.AnsweredDisplayItem> = emptyMap(),
+    val planPending: Boolean = status == "plan",
 ) {
     val displayItems: List<LessonDisplayItem>
         get() = items.mapIndexedNotNull { index, item ->
@@ -90,6 +91,7 @@ internal data class RuntimeSession(
             .put("outputTokens", outputTokens)
             .put("error", error).put("promptVersion", promptVersion).put("connection", connection)
             .put("effort", effort).put("contextTokens", contextTokens).put("plan", plan?.json())
+            .put("planPending", planPending)
             .put("proseIds", proseIds?.let { JSONArray(it.toList()) }).toString()
 }
 
@@ -186,7 +188,8 @@ internal class SessionStore(context: Context, name: String = "sessions.db") :
                 ?.let { ids -> (0 until ids.length()).map { ids.getLong(it) }.toSet() },
             answers.mapValues { (message, data) ->
                 RuntimeQuestion.parse(data.second).answered(message, data.first)
-            })
+            }, planPending = json.optBoolean("planPending", json.optString("status") == "plan")
+        )
     }
 
     @Synchronized

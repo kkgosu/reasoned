@@ -1,6 +1,8 @@
 <resources>
     <string name="learning_plan">Learning plan</string>
-    <string name="plan_ready">Dependency plan ready · review it before teaching</string>
+    <string name="plan_ready">Plan ready · details in Learning plan. Request changes below, or approve to start teaching.</string>
+    <string name="plan_change_hint">What would you like to change in the plan?</string>
+    <string name="plan_send_changes">Send plan changes</string>
     <string name="plan_approve">Approve plan</string>
     <string name="plan_missing">No dependency plan yet. The Teacher presents it after the probe.</string>
     <string name="plan_notice">Session scaffolding, not persistent knowledge. Current/visited indicate question position, never mastery. Prerequisites point to the steps that depend on them.</string>

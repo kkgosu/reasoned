@@ -31,7 +31,7 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
 
     // ponytail: the mock is append-only; use DiffUtil when real sessions support edits/removals.
     fun submit(next: List<LessonDisplayItem>, running: Boolean = false): Boolean {
-        if (items === next && generating == running) return false
+        if (items == next && generating == running) return false
         val previous = items
         val wasGenerating = generating
         require(next.size >= previous.size && previous.indices.all { previous[it].id == next[it].id })
@@ -112,7 +112,11 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
             text.setTextColor(itemView.context.getColor(if (learner || thinking) R.color.muted_foreground else R.color.foreground))
             if (learner) text.setTypeface(text.typeface, Typeface.ITALIC)
             label.visibility =
-                if (learner || thinking || item.role == Role.QUESTION) View.VISIBLE else View.GONE
+                if (learner || thinking || item.role in setOf(
+                        Role.QUESTION,
+                        Role.FIGURE
+                    )
+                ) View.VISIBLE else View.GONE
             text.visibility = View.VISIBLE
             label.isEnabled = true
             if (learner || thinking) disclosure(
@@ -124,7 +128,7 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
                 initiallyOpen = learner
             )
             else {
-                label.setText(R.string.runtime_question)
+                label.setText(if (item.role == Role.FIGURE) R.string.diagram_reviewed else R.string.runtime_question)
                 label.setOnClickListener(null)
                 label.isEnabled = false
             }

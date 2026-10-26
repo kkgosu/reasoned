@@ -1,0 +1,65 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta content="default-src 'none'; script-src 'nonce-{{nonce}}'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; font-src 'none'; frame-src 'none'; worker-src 'none'; base-uri 'none'; form-action 'none'"
+          http-equiv="Content-Security-Policy">
+    <title>loading</title>
+    <script nonce="{{nonce}}">
+        window.diagramStage = 'engine';
+        // Fixed metadata only: never expose error messages/stacks, which may contain the diagram source.
+        window.addEventListener('error', () => { document.title = 'failed-script'; }, true);
+        window.addEventListener('unhandledrejection', () => { document.title = 'failed-script'; });
+        document.addEventListener('securitypolicyviolation', () => { console.warn('diagram_policy_violation'); });
+    </script>
+    <script nonce="{{nonce}}" src="https://diagrams.reasoned.invalid/mermaid.js"></script>
+</head>
+<body>
+<script nonce="{{nonce}}">
+    'use strict';
+    mermaid.initialize({startOnLoad:false, securityLevel:'strict', theme:'dark', fontFamily:'sans-serif', fontSize:16,
+      htmlLabels:false, flowchart:{htmlLabels:false}, maxTextSize:24000, maxEdges:200, suppressErrorRendering:true,
+      secure:['securityLevel','startOnLoad','maxTextSize','maxEdges','suppressErrorRendering','htmlLabels','flowchart','theme']});
+    function setDiagramStage(stage) { window.diagramStage = stage; document.title = 'stage-' + stage; }
+    window.renderDiagram = async function(kind, source, targetPixels = 0) {
+      try {
+        if (![0, 1024, 2048].includes(targetPixels)) throw Error('invalid_size');
+        const limit = targetPixels || 1024;
+        setDiagramStage(kind === 'mermaid' ? 'mermaid' : 'svg_validate');
+        const svg = kind === 'mermaid' ? (await mermaid.render('diagram', source)).svg : source;
+        setDiagramStage('svg_validate');
+        const doc = new DOMParser().parseFromString(svg, 'image/svg+xml');
+        const root = doc.documentElement;
+        if (root.localName !== 'svg' || doc.querySelector('parsererror')) throw Error('invalid_svg');
+        const box = (root.getAttribute('viewBox') || '').trim().split(/[\s,]+/).map(Number);
+        if (box.length !== 4 || !box.every(Number.isFinite) || box[2] <= 0 || box[3] <= 0 || box[2]/box[3] < 1/16 || box[2]/box[3] > 16) throw Error('invalid_dimensions');
+        const fit = limit / Math.max(box[2], box[3]);
+        const scale = targetPixels ? fit : Math.min(1, fit);
+        const width = Math.min(limit, Math.max(1, Math.ceil(box[2] * scale)));
+        const height = Math.min(limit, Math.max(1, Math.ceil(box[3] * scale)));
+        root.setAttribute('width', width); root.setAttribute('height', height);
+        root.style.maxWidth = 'none';
+        const image = new Image();
+        const loaded = new Promise((resolve, reject) => { image.onload = resolve; image.onerror = reject; });
+        // SVG-as-image is inert: never inject authored SVG into the page DOM.
+        setDiagramStage('image_load');
+        image.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(root));
+        await loaded;
+        setDiagramStage('canvas_draw');
+        const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = kind === 'svg' ? '#ffffff' : '#171717'; ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(image, 0, 0, width, height);
+        setDiagramStage('png_export');
+        window.diagramResult = canvas.toDataURL('image/png');
+        document.title = 'complete';
+      } catch (error) {
+        const names = ['Error','SyntaxError','TypeError','SecurityError','ReferenceError','RangeError','InvalidStateError'];
+        window.diagramErrorType = names.includes(error?.name) ? error.name : 'other';
+        document.title = 'failed';
+      }
+    };
+    document.title = 'ready';
+</script>
+</body>
+</html>

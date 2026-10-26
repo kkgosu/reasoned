@@ -51,6 +51,9 @@ scripts/update-extraction-prompts.py. The source asset is unchanged; Android
 capability adaptations and native plan/coverage/storage behavior are documented
 in ../learnharness/NOTICE.md. Distribution must meet applicable
 copyleft/corresponding-source requirements.
+The phase-6 VisualMaker.kt write/edit/render/vision loop and projected prompt derive
+from src/agent/subagents/visual-maker.ts at the same revision; regeneration:
+scripts/update-visual-prompt.py. The original source bytes remain unchanged.
 
 Mastodon for Android search-transition adaptation, Mastodon and contributors
 https://github.com/mastodon/mastodon-android/blob/24e8cdbc1f2bc9a4164d911f2a20894f39e6268b/mastodon/src/main/java/org/joinmastodon/android/fragments/discover/SearchQueryFragment.java
@@ -81,5 +84,13 @@ https://github.com/noties/jlatexmath-android
 License: GPL-2.0-or-later with linking exception; notice/exception in jlatexmath.txt,
 GPL text in jlatexmath-gpl2.txt. Bundled font notices are preserved in the dependency's
 assets/org/scilab/forge/jlatexmath/fonts/licences/ (OFL, Knuth, dsrom).
+
+Mermaid 11.17.0, Mermaid contributors
+https://github.com/mermaid-js/mermaid/tree/mermaid@11.17.0
+License: MIT; full text in mermaid.txt. Unmodified browser dist/mermaid.min.js is
+bundled for offline static rasterization, not loaded from a CDN. Inclusive npm
+runtime-dependency license/copyright notices: mermaid-dependencies.txt.
+Bundle source/hash and regeneration: ../diagrams/NOTICE.md,
+scripts/vendor-mermaid.mjs. No user-authored JavaScript or native bridge enabled.
 
 These notices supplement the existing AppKit, LiteX, font and coroutines notices.
