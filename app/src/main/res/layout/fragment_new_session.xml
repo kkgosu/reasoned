@@ -25,6 +25,45 @@
             android:layout_height="wrap_content"
             android:text="@string/new_session_change" />
 
+        <RadioGroup
+            android:id="@+id/session_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24"
+            android:checkedButton="@id/session_learn"
+            android:orientation="vertical">
+
+            <RadioButton
+                android:id="@+id/session_learn"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/touch_target"
+                android:text="@string/session_learning" />
+
+            <RadioButton
+                android:id="@+id/session_practice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/touch_target"
+                android:text="@string/session_practice" />
+        </RadioGroup>
+
+        <Button
+            android:id="@+id/practice_targets"
+            style="@style/Widget.Harness.Navigation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/practice_targets_note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24"
+            android:text="@string/practice_targets_note"
+            android:textAppearance="@style/TextAppearance.Harness.Meta"
+            android:visibility="gone" />
+
         <TextView
             android:id="@+id/runtime_goal_label"
             android:layout_width="match_parent"
@@ -45,6 +84,21 @@
             android:hint="@string/runtime_goal_hint"
             android:maxLines="6"
             android:minLines="3" />
+
+        <CheckBox
+            android:id="@+id/session_research"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24"
+            android:layout_marginTop="@dimen/space_16"
+            android:text="@string/research_allow" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24"
+            android:text="@string/new_session_research_notice"
+            android:textAppearance="@style/TextAppearance.Harness.Meta" />
 
         <Button
             android:id="@+id/runtime_start"

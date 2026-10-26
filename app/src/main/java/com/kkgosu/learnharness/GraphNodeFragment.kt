@@ -110,14 +110,21 @@ class GraphNodeFragment : ToolbarFragment(R.layout.fragment_shell) {
                             }
                         }
                     views.findViewById<Button>(R.id.graph_open_lesson).apply {
+                        val canPractice =
+                            !sample && knowledge?.nodes?.any { it.id == node.id } == true
                         visibility =
-                            if (sample && node.id in SampleGraph.lessonNodes) View.VISIBLE else View.GONE
+                            if (canPractice || sample && node.id in SampleGraph.lessonNodes) View.VISIBLE else View.GONE
+                        if (canPractice) setText(R.string.session_practice)
                         setOnClickListener {
-                            Nav.go(
+                            if (canPractice) Nav.go(
                                 activity,
-                                LearningSessionFragment::class.java,
-                                null
-                            )
+                                NewSessionFragment::class.java,
+                                Bundle().apply {
+                                    putString("target", node.id); putString(
+                                    "topic",
+                                    node.statement.take(2000)
+                                )
+                                }) else Nav.go(activity, LearningSessionFragment::class.java, null)
                         }
                     }
                 } catch (cancelled: CancellationException) {

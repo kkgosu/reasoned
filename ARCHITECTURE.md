@@ -4,6 +4,10 @@
 
 This document separates **implemented phases 0–4** from **future feature design**. The mock classroom and Canvas graph retain independently authored illustrative fixtures. Phase 4 adds an independent, opt-in OpenAI runtime and durable local sessions; it does not turn the sample graph into learner evidence. Phase 5 now implements dependency plans and persistent knowledge extraction/storage; it is a build-only handoff pending device/live acceptance checks. The owner's go-ahead after graph refinements clears the prior visual-review gate for this implementation; live-model smoke testing remains opt-in and was not performed.
 
+Phase 7 is now a build-only implementation: knowledge-aware Practice and isolated foreground
+Researcher with opt-in Brave/public-page tools; phase-6 PDF remains deferred. Runtime/device/live
+acceptance is not implied by successful assembly or compiled fixtures.
+
 The app is standalone, Kotlin-first, traditional Views. It is not a web wrapper, LearnHarness client, Mastodon skin, or Pi host. It executes its own Kotlin learning runtime locally and can call OpenAI's Responses API directly with the learner's API key or an explicitly authorized ChatGPT plan connection. No custom backend, Node.js or remote agent runtime is part of the design.
 
 Current single Gradle application module:
@@ -24,7 +28,11 @@ app/src/main/java/com/kkgosu/learnharness/
   ModelProvider.kt            Real/fake boundary, bounded Responses SSE and HTTP cancellation
   CredentialStore.kt          Keystore AES-GCM, atomic no-backup credential ciphertext
   ChatGptAuth.kt              Browser OAuth/PKCE, verified identity, encrypted registrations/refresh
-  SessionRuntime.kt           Application owner, foreground Prober/Teacher tool loop
+  SessionRuntime.kt           Application owner, foreground Prober/Teacher/Practice tool loop
+  Practice.kt                 Hidden solution commitments and saved learner submissions/verdicts
+  Researcher.kt               Isolated bounded question/search/read/brief model context
+  ResearchWeb.kt              Brave search and validated public HTTPS text reader
+  ResearchSourcesFragment.kt  Offline saved reports, retrieval metadata and plain-text excerpts
   RuntimeTools.kt             Role-specific strict schemas and independent native validation
   SessionStore.kt             SQLite sessions/messages/questions/answers/runs and checkpoints
   ProviderSettingsFragment.kt Secure credentials and account-scoped model choices
@@ -45,7 +53,45 @@ app/src/androidTest/           Kotlin navigation/restoration/font checks; no scr
 - Java 17 compile compatibility; **all first-party application and test source is Kotlin**. AGP 9.3.3 supplies built-in Kotlin support; no redundant Kotlin Android plugin is added.
 - AppKit **1.5.3**, LiteX RecyclerView **1.2.1.1**, platform widgets. No Compose, AppCompat, AndroidX Navigation, Hilt or Material Components. `Theme.AppKit` inherits Android's platform Material-era widget theme; that is not the Material Components dependency or a Material 3 visual design.
 - Coroutines **1.10.2**, native `findViewById` (ViewBinding disabled) and maintained **OkHttp 5.4.0** (overriding AppKit's old transitive 3.14.9). The newer 5.5.1 AAR requires compile API 37, so 5.4.0 retains the verified API-36 baseline. SQLite and versioned LearnHarness instruction sources now support the real runtime; no generated-code renderer is enabled.
-- INTERNET permission enables the explicit OpenAI path only. No backend, session-cookie authentication or bundled credentials. Official ChatGPT browser OAuth is optional alongside BYOK. Cleartext, redirects and automatic HTTP retries are disabled. Backup/device-transfer exclusions cover sessions/settings as well as the no-backup credential file.
+- INTERNET permission enables explicit OpenAI and learner-permitted web research. No backend,
+  session-cookie authentication or bundled credentials. Official ChatGPT browser OAuth is optional
+  alongside BYOK. Cleartext and automatic HTTP retries are disabled. OpenAI redirects are disabled;
+  the separate public web reader follows bounded HTTPS redirects after validating every destination.
+  Backup/device-transfer exclusions cover sessions/settings as well as the no-backup credential
+  file.
+
+## Practice and research: phase-7 implementation, build-only
+
+Practice reuses the same runtime/transcript/composer/checkpoint and unchanged upstream practice
+fragments; it does not fork a second session engine. The selected graph snapshot and attempts
+are learner material/evidence, never a mastery score. Strict phase schemas enforce one active
+`problem`, immutable hidden solution, model-judged `conclude`, and explicit native next-problem
+permission. Public reasoning summaries are suppressed in practice to avoid solution spoilers.
+Model prose adherence (hint quality, legitimate conclusion and fresh-surface transfer) is not a
+native correctness oracle and needs live evaluation. Local dismissal needs no inference and keeps
+unsent work. Additive checkpoint keys preserve existing sessions without another database migration.
+
+Research has an independent context and only `web_search`/`web_fetch`; parent history is not copied.
+Session-level permission is controlled only by native UI. The Brave key uses a distinct
+`CredentialStore` alias/no-backup ciphertext, never the session's provider credentials. Brave
+headers
+are restricted to its fixed search endpoint, with redirects denied for authenticated search.
+Page fetching has no cookies, proxy, scripts, file access or PDF fallback. URL checks include IP
+literals (OkHttp can bypass Dns for these); the socket Dns hook rejects any private/special-use
+answer, preventing a preflight check/second-resolution gap. Every redirect re-enters that policy.
+Decompressed bodies are capped at 1 MiB and inert jsoup text excerpts at 8000 characters.
+
+Research limits: one per action, four saved reports per session, eight model calls / three
+searches /
+three reads within the parent's foreground timeout. Completed request usage persists stage-by-stage;
+Brave charges are not included in model token totals. An interrupted result is saved before
+starting,
+so restoration cannot silently replay a half-finished research job. Final source URLs must have been
+read; source title/URL/retrieval time/excerpt/hash persist alongside the brief. A native offline
+source
+screen displays excerpts as selectable plain text. Web data never grants tools, account changes,
+permissions or billing changes. These are native boundaries, not a guarantee against all model
+misinterpretation of untrusted prose. Reports and practice rows are not graph-extraction passages.
 
 ## Navigation and lifecycle: implemented
 

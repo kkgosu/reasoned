@@ -74,7 +74,13 @@ internal data class RuntimeSession(
     // Reconstructed from question/answer evidence, including old checkpoints without question rows.
     val answerCards: Map<Long, LessonDisplayItem.AnsweredDisplayItem> = emptyMap(),
     val planPending: Boolean = status == "plan",
+    val practiceMaterial: String = "[]",
+    val problems: List<PracticeProblem> = emptyList(),
+    val research: List<ResearchReport> = emptyList(),
+    val researchAllowed: Boolean = false,
+    val practiceReady: Boolean = true,
 ) {
+    val activeProblem get() = problems.lastOrNull()?.takeIf { it.outcome.isEmpty() }
     val displayItems: List<LessonDisplayItem>
         get() = items.mapIndexedNotNull { index, item ->
             answerCards[item.id] ?: item.takeUnless {
@@ -91,7 +97,10 @@ internal data class RuntimeSession(
             .put("outputTokens", outputTokens)
             .put("error", error).put("promptVersion", promptVersion).put("connection", connection)
             .put("effort", effort).put("contextTokens", contextTokens).put("plan", plan?.json())
-            .put("planPending", planPending)
+            .put("planPending", planPending).put("practiceMaterial", practiceMaterial)
+            .put("problems", JSONArray(problems.map { it.json() }))
+            .put("research", JSONArray(research.map { it.json() }))
+            .put("researchAllowed", researchAllowed).put("practiceReady", practiceReady)
             .put("proseIds", proseIds?.let { JSONArray(it.toList()) }).toString()
 }
 
@@ -188,7 +197,15 @@ internal class SessionStore(context: Context, name: String = "sessions.db") :
                 ?.let { ids -> (0 until ids.length()).map { ids.getLong(it) }.toSet() },
             answers.mapValues { (message, data) ->
                 RuntimeQuestion.parse(data.second).answered(message, data.first)
-            }, planPending = json.optBoolean("planPending", json.optString("status") == "plan")
+            },
+            planPending = json.optBoolean("planPending", json.optString("status") == "plan"),
+            practiceMaterial = json.optString("practiceMaterial", "[]"),
+            problems = json.optJSONArray("problems")?.objects()?.map(PracticeProblem::parse)
+                .orEmpty(),
+            research = json.optJSONArray("research")?.objects()?.map(ResearchReport::parse)
+                .orEmpty(),
+            researchAllowed = json.optBoolean("researchAllowed"),
+            practiceReady = json.optBoolean("practiceReady", true)
         )
     }
 

@@ -3,7 +3,7 @@ package com.kkgosu.learnharness
 import android.content.res.AssetManager
 
 internal object AgentInstructions {
-    const val VERSION = "learnharness-0795ef197cca-v5"
+    const val VERSION = "learnharness-0795ef197cca-v6"
 
     fun compose(assets: AssetManager, phase: String): String {
         val agent = when (phase) {

@@ -9,14 +9,15 @@
     <string name="navigation_empty">Your sessions will appear here.</string>
     <string name="navigation_loading">Loading sessions…</string>
     <string name="new_session">New session</string>
-    <string name="new_session_intro">What would you like to understand?</string>
-    <string name="new_session_local">Start session sends your goal and learning preferences to OpenAI using the selected connection and billing. Sessions are saved on this device. Knowledge extraction and identity auditing make additional requests using this session’s selected model and billing: automatically after approximately 4096 new assistant-text tokens, or explicitly from the session menu. Precise SVG figures may use up to eight additional model requests, including locally rendered images for visual review, on the same connection.</string>
+    <string name="new_session_intro">Learning topic</string>
+    <string name="new_session_local">Sends your goal and context to OpenAI. Graph updates and figures may cost extra.</string>
+    <string name="new_session_research_notice">Brave receives queries; OpenAI receives public-page text. Extra charges may apply.</string>
     <string name="new_session_connection">%1$s · %2$s</string>
     <string name="new_session_configure">Choose your connection and model in Settings first.</string>
     <string name="new_session_change">Connection settings</string>
     <string name="settings_title">Settings</string>
     <string name="settings_providers">Providers &amp; models</string>
-    <string name="settings_providers_summary">ChatGPT account or API key, model and usage</string>
+    <string name="settings_providers_summary">ChatGPT or API connection, model, usage and Brave Search</string>
     <string name="settings_learning">Learning preferences</string>
     <string name="settings_learning_summary">Language, pace and explanation style</string>
     <string name="settings_about">About &amp; privacy</string>
@@ -28,6 +29,6 @@
     <string name="provider_save_model">Save model</string>
     <string name="settings_about_body">Reasoned is an Android learning prototype using LearnHarness teaching instructions (AGPL-3.0). It is not an official LearnHarness or OpenAI app.</string>
     <string name="settings_privacy_heading">Your data</string>
-    <string name="settings_privacy_body">Sessions and learning preferences stay in app-private storage on this device. Credentials use Android Keystore-backed encryption and are excluded from backup.\n\nStarting a turn sends your goal, answers, preferences and session context directly to OpenAI. API-key requests use API billing; ChatGPT requests use the chosen plan’s allowance or credits. No automatic billing fallback.\n\nRequests disable response storage, but this does not guarantee zero provider retention. Keep the session in the foreground while generating. SVG figures use a separate bounded write/render/visual-review loop on the same model and billing; its brief and locally rendered PNG are sent to OpenAI. Model-reviewed does not mean independently verified. Opening saved diagrams is offline and never regenerates them.\n\nYour graph stores extracted propositions and reasoning chains with links to their source messages, not mastery assessments. Extractor/Auditor make additional requests using the session’s selected model and billing; processing stops when the app leaves the foreground. The separate sample graph is illustrative.</string>
+    <string name="settings_privacy_body">Sessions and learning preferences stay in app-private storage on this device. Credentials use Android Keystore-backed encryption and are excluded from backup.\n\nStarting a turn sends your goal, answers, preferences and session context directly to OpenAI. API-key requests use API billing; ChatGPT requests use the chosen plan’s allowance or credits. No automatic billing fallback.\n\nRequests disable response storage, but this does not guarantee zero provider retention. Keep the session in the foreground while generating. SVG figures use a separate bounded write/render/visual-review loop on the same model and billing; its brief and locally rendered PNG are sent to OpenAI. Model-reviewed does not mean independently verified. Opening saved diagrams is offline and never regenerates them.\n\nYour graph stores extracted propositions and reasoning chains with links to their source messages, not mastery assessments. Extractor/Auditor make additional requests using the session’s selected model and billing; processing stops when the app leaves the foreground. The separate sample graph is illustrative.\n\nPractice saves model-committed solutions, learner submissions and model verdicts locally; these are not mastery certificates. With your per-session permission, Researcher sends self-contained questions and public-page excerpts to the selected model. Brave receives search queries and has separate key/billing; without its key only known public links can be read. Visited sites see requests from this device, never app account cookies. Reports, read URLs, retrieval dates and bounded excerpts stay in the session. Web text cannot grant tools or permissions. No PDF, background browsing or private-network access.</string>
     <string name="settings_reference">LearnHarness on GitHub</string>
 </resources>

@@ -207,6 +207,58 @@
             android:accessibilityLiveRegion="polite"
             android:textAppearance="@style/TextAppearance.Harness.Meta" />
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24"
+            android:layout_marginTop="@dimen/space_24"
+            android:text="@string/research_settings"
+            android:textAppearance="@style/TextAppearance.Harness.Title" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24"
+            android:text="@string/research_key_note"
+            android:textAppearance="@style/TextAppearance.Harness.Meta" />
+
+        <EditText
+            android:id="@+id/research_key"
+            style="@style/Widget.Harness.Input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24"
+            android:layout_marginTop="@dimen/space_16"
+            android:hint="@string/research_key_hint"
+            android:importantForAutofill="noExcludeDescendants"
+            android:inputType="textPassword"
+            android:maxLength="512"
+            android:saveEnabled="false"
+            android:singleLine="true" />
+
+        <Button
+            android:id="@+id/research_save_key"
+            style="@style/Widget.Harness.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24"
+            android:text="@string/research_save_key" />
+
+        <Button
+            android:id="@+id/research_forget_key"
+            style="@style/Widget.Harness.Navigation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/research_forget_key" />
+
+        <TextView
+            android:id="@+id/research_key_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24"
+            android:accessibilityLiveRegion="polite"
+            android:textAppearance="@style/TextAppearance.Harness.Meta" />
+
         <LinearLayout
             android:id="@+id/runtime_chatgpt_actions"
             android:layout_width="match_parent"

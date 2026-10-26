@@ -1,5 +1,4 @@
 <resources>
-    <string name="graph_preview">SAMPLE KNOWLEDGE · 30 PROPOSITIONS · NOT YOUR RECORD</string>
     <string name="graph_search">Search propositions…</string>
     <string name="graph_browse">Browse</string>
     <string name="graph_loading">Arranging sample knowledge…</string>

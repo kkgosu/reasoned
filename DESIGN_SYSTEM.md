@@ -194,6 +194,19 @@ expecting reflow. Only successful maker jobs receive a FIGURE · MODEL-REVIEWED 
 fences do not imply review, and rendering never confers a correctness/review badge. No installation,
 new captures, device/large-text or live-vision verification was performed; PDF remains next.
 
+Phase-7 slice (build-only): New session uses native Learning/Practice radio rows, optional saved
+proposition selection and an explicit web-research checkbox with data/billing disclosure. Practice
+reuses the bottom composer and question/document rows, not a second chat UI. Active statements
+stay in the transcript; submitted reasoning/hint requests retain learner bands. Committed solutions
+appear only at conclusion, labeled as model assessment, not mastery. Practice hides agent-summary
+disclosures to avoid solution spoilers. Next problem is a learner action after conclusion;
+confirmed local dismissal does not reveal the solution or make a request. Confidence scores are
+not added to practice. RESEARCH rows carry a source-derived/not-verified label, with saved read
+sources available through the session menu on a native offline selectable-text screen. Session web
+permission is visible/controllable in the same overflow; no model output can toggle it. Providers
+retains its secure window and adds an independent unsaved Brave password field. Device, enlarged
+text, TalkBack, IME and recreation acceptance for these new controls remain pending.
+
 Review captures: [local ready state](docs/screenshots/phase4-ready.png), [seeded free-response dock](docs/screenshots/phase4-question.png), [200% dock](docs/screenshots/phase4-question-large-text.png). These show local test fixtures, **not live model output or assessment quality**. The runtime UI check verifies recreation, secure key entry, a visible editor line and reachable submit above the actual IME at 200% text. These remain manual visual baselines, not approved image-diff goldens.
 
 Navigation review: [drawer](docs/screenshots/navigation-drawer.png), [Settings categories](docs/screenshots/navigation-settings.png), [New session](docs/screenshots/navigation-new-session.png). The reference's `components/sidebar.tsx` and `components/settings/settings-dialog.tsx` were revisited: session history and independent categorized settings are retained, but Android uses a modal phone drawer and full-screen focused pages rather than an inline desktop sidebar and two-column dialog. No unimplemented reference categories were added. The default-text 26-test suite passes; the provider-controls check passes at 200% text, while the longer 200% navigation journey timed out and is not counted as passed.

@@ -18,7 +18,7 @@ internal object RuntimeTools {
             .put("name", name).put("description", description).put("strict", true)
             .put("parameters", objectSchema(properties))
 
-    fun schemas(phase: String): JSONArray {
+    fun schemas(phase: String, researchAllowed: Boolean = false): JSONArray {
         val tools = JSONArray()
         fun tool(name: String, description: String, properties: JSONObject) {
             tools.put(function(name, description, properties))
@@ -31,6 +31,62 @@ internal object RuntimeTools {
             "Read the goal, session plan and bounded persistent propositions with source IDs. These are not mastery assessments.",
             JSONObject()
         )
+        if (researchAllowed) tool(
+            "research",
+            "Research a self-contained question in an isolated foreground context. Requires this session's web permission. Extra selected-model usage and Brave search billing; sources and report persist. No PDFs.",
+            JSONObject().put("question", string())
+        )
+        if (phase == "practice") {
+            tool(
+                "problem",
+                "Pose one solved-and-checked practice problem; hidden modelSolution is precommitted, revealed verbatim only at conclude. Ends the turn. One active problem. target is known proposition IDs or [] for topic-only material.",
+                JSONObject().put("statement", string()).put("modelSolution", string())
+                    .put(
+                        "mode",
+                        string().put(
+                            "enum",
+                            JSONArray(listOf("recall", "discrimination", "composition"))
+                        )
+                    )
+                    .put("target", strings())
+            )
+            tool(
+                "conclude",
+                "Conclude ONLY when solved or learner explicitly asks to end. Reveal committed solution; end turn, no next problem until learner go-ahead. Outcomes/assessment are model judgments, not mastery certification. Empty rung/missClass means none.",
+                JSONObject().put(
+                    "outcome",
+                    string().put(
+                        "enum",
+                        JSONArray(listOf("solved", "solvedWithHints", "movedOn", "surrendered"))
+                    )
+                )
+                    .put("verdict", string()).put(
+                        "rung",
+                        string().put(
+                            "enum",
+                            JSONArray(listOf("", "R0", "R1", "R2", "R3", "R4", "R5"))
+                        )
+                    )
+                    .put(
+                        "missClass",
+                        string().put(
+                            "enum",
+                            JSONArray(
+                                listOf(
+                                    "",
+                                    "cue",
+                                    "discrimination",
+                                    "execution",
+                                    "careless",
+                                    "structural"
+                                )
+                            )
+                        )
+                    )
+                    .put("retest", JSONObject().put("type", "boolean"))
+            )
+            return tools
+        }
         tool(
             "ask_question",
             "Pause for a learner answer. Ask one question. choices must be empty for free response, or 2–4 distinct short options. Never put the answer in the question.",
@@ -95,7 +151,7 @@ internal object RuntimeTools {
     fun validate(
         response: JSONObject,
         session: RuntimeSession,
-        tools: JSONArray = schemas(session.phase)
+        tools: JSONArray = schemas(session.phase, session.researchAllowed)
     ): Validated {
         if (!response.isNull("error")) throw ProviderFailure(
             openAiErrorCode(response.toString()) ?: "incomplete"
@@ -197,6 +253,67 @@ internal object RuntimeTools {
                     )
                         throw ProviderFailure("invalid_tool_arguments")
                     when (name) {
+                        "research" -> {
+                            if (!session.researchAllowed || session.research.size >= 4) throw ProviderFailure(
+                                "research_not_allowed"
+                            )
+                            args.strictString("question", 4000)
+                        }
+
+                        "problem" -> {
+                            if (!session.practiceReady || session.activeProblem != null || session.problems.size >= 24) throw ProviderFailure(
+                                "practice_problem_active_or_limit"
+                            )
+                            args.strictString("statement", 4000); args.strictString(
+                                "modelSolution",
+                                6000
+                            )
+                            if (args.strictString("mode", 30) !in setOf(
+                                    "recall",
+                                    "discrimination",
+                                    "composition"
+                                )
+                            ) throw ProviderFailure("practice_mode")
+                            val targets = args.getJSONArray("target").strings(8, 100)
+                            val known = JSONArray(session.practiceMaterial).objects()
+                                .map { it.getString("id") }.toSet()
+                            if (targets.toSet().size != targets.size || targets.any { it !in known }) throw ProviderFailure(
+                                "practice_target"
+                            )
+                        }
+
+                        "conclude" -> {
+                            val active = session.activeProblem
+                                ?: throw ProviderFailure("practice_no_problem")
+                            if (active.attempts.isEmpty()) throw ProviderFailure("practice_no_attempt")
+                            if (args.strictString("outcome", 30) !in setOf(
+                                    "solved",
+                                    "solvedWithHints",
+                                    "movedOn",
+                                    "surrendered"
+                                )
+                            ) throw ProviderFailure("practice_outcome")
+                            args.strictString("verdict", 3000)
+                            if (args.strictString("rung", 2, allowEmpty = true) !in setOf(
+                                    "",
+                                    "R0",
+                                    "R1",
+                                    "R2",
+                                    "R3",
+                                    "R4",
+                                    "R5"
+                                ) ||
+                                args.strictString("missClass", 30, allowEmpty = true) !in setOf(
+                                    "",
+                                    "cue",
+                                    "discrimination",
+                                    "execution",
+                                    "careless",
+                                    "structural"
+                                ) || args.opt("retest") !is Boolean
+                            )
+                                throw ProviderFailure("practice_verdict")
+                        }
                         "ask_question" -> {
                             android.util.Log.d(
                                 "ReasonedRuntime",

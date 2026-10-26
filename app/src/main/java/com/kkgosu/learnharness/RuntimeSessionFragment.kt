@@ -58,6 +58,15 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.runtime_session, menu)
+        val state = runtime.state.value?.takeIf { it.id == sessionId }
+        menu.findItem(R.id.practice_dismiss).apply {
+            isVisible = state?.activeProblem != null; isEnabled = state?.status != "running"
+        }
+        menu.findItem(R.id.session_plan).isVisible = state?.phase != "practice"
+        menu.findItem(R.id.session_update_graph).isVisible = state?.phase != "practice"
+        menu.findItem(R.id.session_research).apply {
+            isChecked = state?.researchAllowed == true; isEnabled = state?.status != "running"
+        }
         menu.findItem(R.id.session_update_graph)?.apply {
             setTitle(if (app.extraction.state.value.running) R.string.knowledge_stop else R.string.knowledge_update)
             isEnabled = runtime.state.value?.status != "running"
@@ -65,6 +74,31 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.practice_dismiss -> {
+            dialog = AlertDialog.Builder(activity).setTitle(R.string.practice_dismiss)
+                .setMessage(R.string.practice_dismiss_warning)
+                .setPositiveButton(android.R.string.ok) { _, _ -> runtime.dismissProblem() }
+                .setNegativeButton(android.R.string.cancel, null)
+                .setOnDismissListener { dialog = null }.show()
+            true
+        }
+
+        R.id.session_sources -> {
+            Nav.go(
+                activity,
+                ResearchSourcesFragment::class.java,
+                Bundle().apply { putString("session", sessionId) }); true
+        }
+
+        R.id.session_research -> {
+            if (runtime.state.value?.researchAllowed == true) runtime.allowResearch(false)
+            else dialog = AlertDialog.Builder(activity).setTitle(R.string.research_enable_warning)
+                .setMessage(R.string.research_permission)
+                .setPositiveButton(R.string.research_enable) { _, _ -> runtime.allowResearch(true) }
+                .setNegativeButton(android.R.string.cancel, null)
+                .setOnDismissListener { dialog = null }.show()
+            true
+        }
         R.id.session_plan -> {
             Nav.go(
                 activity,
@@ -142,7 +176,11 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 "plan" -> if (runtime.state.value?.draft.isNullOrBlank()) runtime.approveRoute() else runtime.send()
                 "error", "interrupted" -> runtime.retry()
                 "question" -> runtime.send()
-                else -> if (runtime.state.value?.draft.isNullOrBlank()) runtime.retry() else runtime.send()
+                else -> {
+                    val state = runtime.state.value
+                    if (state?.phase == "practice" && state.activeProblem == null && state.draft.isBlank() && !state.practiceReady) runtime.nextProblem()
+                    else if (state?.draft.isNullOrBlank()) runtime.retry() else runtime.send()
+                }
             }
         }
         return views
@@ -181,8 +219,9 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 runtime.state.collect {
                     if (it?.id == sessionId) {
                         render(views, it)
-                        if (menuStatus != it.status) {
-                            menuStatus = it.status; invalidateOptionsMenu()
+                        val menuKey = "${it.status}:${it.researchAllowed}:${it.activeProblem?.id}"
+                        if (menuStatus != menuKey) {
+                            menuStatus = menuKey; invalidateOptionsMenu()
                         }
                     }
                 }
@@ -262,7 +301,11 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 lessonList.post { lessonList.scrollToPosition(target) }
             } else if (changed && follow) lessonList.post { lessonList.scrollToPosition(adapter.itemCount - 1) }
             val role =
-                getString(if (state.phase == "probe") R.string.runtime_prober else R.string.runtime_teacher)
+                getString(
+                    when (state.phase) {
+                        "practice" -> R.string.session_practice; "probe" -> R.string.runtime_prober; else -> R.string.runtime_teacher
+                    }
+                )
             lessonStatus.text = when (state.status) {
                 "running" -> role
                 "question" -> getString(R.string.runtime_waiting, role)
@@ -271,7 +314,9 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 "interrupted" -> getString(R.string.runtime_interrupted)
                 "error" -> activity.runtimeError(state.error)
                 "complete" -> getString(R.string.runtime_complete)
-                else -> getString(R.string.runtime_ready)
+                else -> if (state.phase == "practice") getString(if (state.activeProblem != null) R.string.practice_working else R.string.practice_paused) else getString(
+                    R.string.runtime_ready
+                )
             }
             val question = state.question?.takeIf { state.status == "question" }
             val expanded = question != null && state.expanded
@@ -327,14 +372,18 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 )
             } else lessonComposer.restore(state.draft)
             lessonComposer.isEnabled = state.status in setOf("idle", "plan")
-            lessonComposer.setHint(if (state.status == "plan") R.string.plan_change_hint else R.string.runtime_composer_hint)
+            lessonComposer.setHint(
+                when {
+                    state.status == "plan" -> R.string.plan_change_hint; state.phase == "practice" && state.activeProblem != null -> R.string.practice_thinking_hint; else -> R.string.runtime_composer_hint
+                }
+            )
             val action = when (state.status) {
                 "running" -> R.string.stop_stream
                 "route" -> R.string.runtime_approve
                 "plan" -> if (state.draft.isBlank()) R.string.plan_approve else R.string.plan_send_changes
                 "error", "interrupted" -> R.string.runtime_retry
                 "question" -> R.string.submit_answer
-                else -> if (state.draft.isBlank()) R.string.runtime_start else R.string.runtime_send
+                else -> if (state.draft.isNotBlank()) R.string.runtime_send else if (state.phase == "practice" && state.activeProblem == null && !state.practiceReady) R.string.practice_next else R.string.runtime_start
             }
             val icon = when {
                 state.status == "running" -> R.drawable.ic_stop
@@ -348,7 +397,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             composerAction.contentDescription = getString(action)
             composerAction.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0)
             composerAction.isEnabled =
-                state.status != "complete" && (question == null || state.selection in question.choices.indices || state.draft.isNotBlank())
+                state.status != "complete" && !(state.phase == "practice" && state.activeProblem != null && state.status == "idle" && state.draft.isBlank()) && (question == null || state.selection in question.choices.indices || state.draft.isNotBlank())
             val editable = state.status != "running" && state.status != "complete"
             findViewById<Button>(R.id.session_model).apply {
                 text =
@@ -493,7 +542,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                         pending.size,
                         pending.sumOf { it.tokens })
                 }.orEmpty()
-            ).joinToString("\n\n")
+            ).filter { it.isNotBlank() }.joinToString("\n")
             val builder =
                 AlertDialog.Builder(activity).setTitle(R.string.runtime_context).setMessage(message)
                     .setPositiveButton(android.R.string.ok, null)

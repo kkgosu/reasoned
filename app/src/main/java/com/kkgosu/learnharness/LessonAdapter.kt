@@ -114,7 +114,7 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
             label.visibility =
                 if (learner || thinking || item.role in setOf(
                         Role.QUESTION,
-                        Role.FIGURE
+                        Role.FIGURE, Role.RESEARCH
                     )
                 ) View.VISIBLE else View.GONE
             text.visibility = View.VISIBLE
@@ -128,7 +128,11 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
                 initiallyOpen = learner
             )
             else {
-                label.setText(if (item.role == Role.FIGURE) R.string.diagram_reviewed else R.string.runtime_question)
+                label.setText(
+                    when (item.role) {
+                        Role.FIGURE -> R.string.diagram_reviewed; Role.RESEARCH -> R.string.research_report_label; else -> R.string.runtime_question
+                    }
+                )
                 label.setOnClickListener(null)
                 label.isEnabled = false
             }

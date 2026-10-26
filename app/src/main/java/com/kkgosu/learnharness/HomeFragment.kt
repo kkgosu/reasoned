@@ -74,8 +74,6 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
         setTitle(R.string.app_name)
         val views = inflater.inflate(R.layout.fragment_home, container, false)
         pageView = views
-        views.findViewById<TextView>(R.id.graph_caption)
-            .setText(if (sample) R.string.graph_preview else R.string.knowledge_caption)
         views.findViewById<Button>(R.id.graph_search_open).setOnClickListener {
             Nav.go(
                 activity,

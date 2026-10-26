@@ -9,8 +9,7 @@
         android:layout_height="match_parent"
         android:clipToPadding="false"
         android:divider="@color/border"
-        android:dividerHeight="1dp"
-        android:paddingHorizontal="@dimen/space_16" />
+        android:dividerHeight="1dp" />
 
     <TextView
         android:id="@+id/graph_search_empty"

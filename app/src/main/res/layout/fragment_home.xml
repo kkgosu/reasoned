@@ -8,16 +8,6 @@
     android:orientation="vertical">
 
     <TextView
-        android:id="@+id/graph_caption"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingStart="@dimen/space_16"
-        android:paddingTop="@dimen/space_8"
-        android:paddingEnd="@dimen/space_16"
-        android:text="@string/graph_preview"
-        android:textAppearance="@style/TextAppearance.Harness.Label" />
-
-    <TextView
         android:id="@+id/knowledge_status"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

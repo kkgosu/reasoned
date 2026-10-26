@@ -1,4 +1,4 @@
-# Implementation plan and phase 0–5 handoff
+# Implementation plan and phase 0–7 handoff (PDF pending)
 
 ## Scope decision
 
@@ -313,6 +313,52 @@ after SVG revisions. Fixtures are compiled, not run. No device/emulator tests, i
 screenshots or live requests. Rendering/vision/zoom/large-text acceptance is still pending. PDF
 import/render/search is the next unimplemented slice; no page citation or PDF support is claimed.
 
+## Phase 7 — practice and foreground research (build-only)
+
+Owner selected phase 7 before PDF, and Brave Search plus direct public-page reads with a separate
+Keystore key. Added a native Learning/Practice selector, optional graph-proposition selection
+(up to 8 from the first 100 listed), and Practice entry from saved proposition details. Topic-only
+practice needs no graph. Selected claims, source anchors and fully selected reasoning chains are
+snapshotted; they do not become mastery records.
+
+The existing runtime now runs the unchanged pinned Practice doctrine. `problem` privately commits
+a solved model solution before showing the statement and ends the turn; one active problem.
+Submitted work/hint requests persist before inference, at most 40 per problem and 24 problems
+within existing session/context limits. Wrong attempts are not native auto-conclusions: the model
+is instructed to diagnose/nudge and wait. `conclude` records model verdict/outcome, hint rung,
+miss class and fresh-surface retest flag and reveals the exact commitment. Public reasoning
+summaries are not requested/displayed in Practice because they could spoil a hidden solution.
+A concluded problem requires the native **Next problem** button; discussion alone cannot pose
+another. Local confirmed dismissal preserves work/draft without a model request or solution reveal.
+Practice prose/attempts and RESEARCH rows are excluded from automatic graph passage attribution.
+No deterministic semantic grading, transfer proof or mastery certification is claimed.
+
+`research` is advertised only with opt-in session web permission. The separate pinned Researcher
+prompt gets a self-contained question, not classroom history; its only tools are search and fetch.
+Brave queries use their own encrypted/no-backup key, never OpenAI/ChatGPT credentials. Without it,
+known-link reading remains available. Public HTTPS HTML/text only: no cookies, proxies, scripts,
+files or PDFs. Every redirect is revalidated; both IP literals and actual socket DNS results deny
+private/special-use/transition addresses. Fetches bound decompressed bytes and extracted excerpts.
+jsoup 1.21.2 parses inert HTML; its MIT notice ships with the app. These are safeguards, not a
+claim of a completed security audit or absolute model prompt-injection immunity.
+
+Research is foreground/cancellable, one job per learner action, four saved reports per session,
+eight model calls / three searches / three reads per job within the existing turn timeout.
+Request usage is checkpointed even before final report validation; Brave charges are separate.
+Durable interrupted tool results prevent silent job replay after reopening. Briefs may link only
+successfully read final URLs, with explicit gaps. Saved sources include title, final URL, retrieval
+time, excerpt and SHA-256; a native saved-sources screen is readable offline. Retrieved text is
+untrusted data and cannot change native permissions, tools, credentials or billing.
+
+Validation: debug app and instrumentation APK compile, debug lint passes. Four new offline
+`PracticeResearchTest` fixtures cover commitment/attempt persistence and pause/dismissal,
+isolation/source provenance and unread-citation rejection, cancellation/usage/no implicit restart,
+and public URL/address policy. Fixtures are **compiled, not executed**. No installation, device,
+emulator, screenshot, Brave search/page-fetch runtime request or live model request was used.
+Real hint quality, transfer/retest behavior, Brave service integration, redirects/cancellation on
+real sockets and large-text/accessibility/recreation acceptance remain unverified. PDF remains
+deferred.
+
 ## Remaining milestones and acceptance gates
 
 | Phase                                                                          | Minimum implementation                                                                                                                   | Gate before advancing                                                                                                                                                                                                                                 |
@@ -322,7 +368,7 @@ import/render/search is the next unimplemented slice; no page citation or PDF su
 | **4 — local runtime (implemented)**                                            | OpenAI Responses/OkHttp, Keystore BYOK, cancellable bounded loop, Prober/Teacher, SQLite checkpoints and original prompts                | Eight deterministic runtime/transport/credential/UI checks pass, including malformed tools, cancellation and interruption recovery. End-to-end real-session smoke testing remains incomplete; the one authorized format diagnostic is recorded above. |
 | **5 — plans and knowledge (implemented, build-only)**                          | Dependency validation, Extractor/Auditor/deterministic merger, SQLite graph/evidence/provenance, session continuity                      | Code/compiled fixtures cover reference/DAG rejection, atomic replay-safe merges, conservative identity resolution and precise sources. Device/live acceptance remains unverified; plan and persistent graph stay independent.                         |
 | **6 — educational content (Mermaid/SVG implemented, build-only; PDF pending)** | Offline bounded diagrams, native inspection and SVG write/render/vision/revision loop; PDF import/render/search remains next             | Diagram fixtures compiled, not run; owner device/live acceptance pending. PDF page-citation/cache/malformed-file gates remain open. Model review is not independent verification; generated HTML/JS stays disabled.                                   |
-| **7 — practice and research**                                                  | Knowledge-aware exercises/attempts, Researcher search/fetch, citations and persistence                                                   | Reasoning/transfer checked; attempts survive interruption; retrieved text cannot grant tools or replace instructions.                                                                                                                                 |
+| **7 — practice and research (implemented, build-only)**                        | Knowledge-aware exercises/attempts, Researcher search/fetch, citations and persistence                                                   | Offline fixtures compiled, not run; live reasoning/transfer, real Brave integration and native UI acceptance remain pending. Native permission/tool boundaries do not follow web instructions.                                                        |
 | **8 — generated demos**                                                        | Demo Builder generate/validate/test/repair loop, only after an acceptable execution strategy exists                                      | Threat model, malicious HTML/JS fixtures, network/file/bridge restrictions, runtime-failure detection and release security review. **Keep arbitrary execution disabled if isolation is not adequate.**                                                |
 | **9 — optional features**                                                      | More providers, speech, import/export, advanced graph/background recovery (official OSS ChatGPT sign-in is implemented separately below) | Separate requirements/evidence for each; no undocumented auth endpoints or dependency on optional sign-in.                                                                                                                                            |
 

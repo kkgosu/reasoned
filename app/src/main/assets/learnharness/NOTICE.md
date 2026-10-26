@@ -7,7 +7,12 @@ The learning-data skill declares `AGPL-3.0-only` and retains its own license.
 
 The files listed in `SOURCE.sha256` are unmodified upstream bytes, with their original repository-relative paths. They include the shared base, every Prober/Teacher/Practice fragment, the learning-data skill and its readers/reference, root development guidance, prompt assembly sources, specialist instructions embedded in TypeScript, and compaction instruction sources. TypeScript and Python sources are preserved as source/reference, not executed by Android.
 
-`AgentInstructions.kt` mirrors upstream `prompt-segments.ts` / `composeInstructions`: shared base, sorted numeric-prefix role fragments, then sorted shared fragments, trimmed and separated by `\n\n---\n\n`. Practice omits the teaching base and uses upstream's four-file shared allowlist. Prober and Teacher are the active teaching roles. The separate foreground extraction channel also activates the pinned Extractor/Auditor instructions.
+`AgentInstructions.kt` mirrors upstream `prompt-segments.ts` / `composeInstructions`: shared base,
+sorted numeric-prefix role fragments, then sorted shared fragments, trimmed and separated by
+`\n\n---\n\n`. Practice omits the teaching base and uses upstream's four-file shared allowlist.
+Prober and Teacher are the active teaching roles; the separate practice mode now activates the
+pinned Practice fragments. The separate foreground extraction channel also activates the pinned
+Extractor/Auditor instructions.
 
 The app appends a separately authored `agents/android-compatibility.md`; it never rewrites upstream fragments or adds the old independently written reasoning-check skill. The appendix maps the available Android tools and explicitly states missing capabilities and rendering differences. This is instruction-source parity plus a compatibility layer, not full runtime feature parity.
 
@@ -27,5 +32,14 @@ and `components/artifacts/visual-card.tsx`, not their React implementation. Andr
 SVG rather than silently sanitizing it, does not run background jobs or reuse the desktop
 filesystem, and never marks merely rendered output as verified. The 36-file pinned source inventory
 remains unchanged.
+
+Phase 7 projects `INSTRUCTIONS` verbatim from preserved `src/agent/subagents/researcher.ts`
+into `assets/agents/researcher.md` with `scripts/update-research-prompt.py`. `Researcher.kt`
+retains its isolated question → search/read → sourced brief contract with a separate native
+capability/security note. `ResearchWeb.kt` adapts Brave search and public HTTPS text fetching,
+not upstream filesystem/PDF readers or reader proxies. Practice uses the unchanged practice
+fragments; native `problem`/`conclude`, local dismissal, explicit next-problem pacing and saved
+attempts adapt its doctrine without adding mastery scores. The original 36 source hashes are
+unchanged. Additional native limits and per-session web permission remain Android-specific.
 
 This vendored content is copyleft material, unlike the earlier reference-only use. Preserve attribution, license and applicable corresponding-source obligations when distributing. The application's first-party licensing and compatibility must be resolved before public binary release; this notice does not choose a license for unrelated code.

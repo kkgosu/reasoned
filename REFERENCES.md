@@ -1,6 +1,7 @@
 # Reference and licensing ledger
 
-Research baseline: 2026-10-25. Scope: phases 0–6 (PDF pending). **Reasoned** is an independent
+Research baseline: 2026-10-25. Scope: phases 0–7 (PDF pending; phase 7 build-only). **Reasoned** is
+an independent
 prototype name, not an official LearnHarness client. Reference checkouts were inspected outside this
 repository. Selected LearnHarness sources are now vendored, and the search transition adapts
 Mastodon's native pattern; see the reuse notices below.
@@ -37,6 +38,22 @@ Mermaid 11.17.0 is a bundled unmodified MIT browser asset; source hash is in
 `assets/licenses/mermaid*.txt`. Its version matches the reference lockfile. The Visual Maker prompt
 is projected verbatim from preserved upstream bytes, with a separate Android capability note and
 AGPL provenance. Device/live acceptance and PDF remain pending.
+
+## Phase-7 practice/research references
+
+Practice uses pinned `src/agent/prompts/practice/00-base.md`, `10-doctrine.md` and upstream's
+practice shared-fragment allowlist: precommitted solutions, one active problem, diagnostic hints,
+learner-paced conclusion/next demand and fresh-surface retests. Native fields and button pacing
+are documented in the separate Android appendix, not rewritten into the vendored fragments.
+`src/agent/subagents/researcher.ts` supplies the isolated research method; its verbatim prompt is
+projected with `scripts/update-research-prompt.py`. Kotlin uses bounded foreground Brave/search
+and public HTTPS reads, not upstream desktop filesystem/PDF tools or reader proxies. The original
+36 source hashes remain unchanged. AGPL attribution and corresponding-source duties apply.
+
+Added jsoup 1.21.2 for inert HTML extraction instead of a regex/custom HTML parser. Its MIT
+copyright/license ships in `assets/licenses/jsoup.txt`; source:
+https://github.com/jhy/jsoup/tree/jsoup-1.21.2. No page JavaScript is executed. Brave is an optional
+remote service requiring the user's separate key and subject to its usage/billing terms.
 
 ## LearnHarness inspection map
 

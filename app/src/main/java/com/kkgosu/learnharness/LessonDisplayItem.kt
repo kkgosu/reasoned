@@ -31,7 +31,7 @@ sealed class LessonDisplayItem(open val id: Long) {
         val phase: String = "",
     ) : LessonDisplayItem(id)
 
-    enum class Role { TITLE, PROSE, LEARNER, QUESTION, THINKING, FIGURE }
+    enum class Role { TITLE, PROSE, LEARNER, QUESTION, THINKING, FIGURE, RESEARCH }
 
     fun save(): Bundle = Bundle().apply {
         putLong("id", id)

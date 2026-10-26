@@ -13,13 +13,12 @@
     <string name="chatgpt_manage_usage">Manage usage</string>
     <string name="chatgpt_models">Choose model</string>
     <string name="chatgpt_refresh_models">Refresh models</string>
-    <string name="chatgpt_models_loading">Loading models for this account…</string>
-    <string name="chatgpt_models_loaded">%1$d models available. Tap a model to select it.</string>
+    <string name="chatgpt_models_loading">Loading models…</string>
     <string name="chatgpt_models_failed">Could not load this account’s models. Check your connection and tap Refresh models.</string>
     <string name="chatgpt_no_models">No models are available for this ChatGPT connection. Check plan eligibility and permissions.</string>
     <string name="chatgpt_browser_pending">Finish sign-in in your browser, then return here. If the app closes or five minutes pass, try again.</string>
-    <string name="chatgpt_disconnected">Connect an eligible ChatGPT plan. Requests use your plan allowance or credits; account limits apply.</string>
-    <string name="chatgpt_connected">%1$s\nConnected · uses your plan allowance or credits.</string>
+    <string name="chatgpt_disconnected">Sign in to ChatGPT.</string>
+    <string name="chatgpt_connected">%1$s · Connected</string>
     <string name="chatgpt_permission_missing">%1$s\nPlan access isn’t authorized. Continue with ChatGPT to review permissions.</string>
     <string name="chatgpt_signed_out">Signed out. This registration is retained for later sign-in; its local tokens were removed.</string>
     <string name="chatgpt_revocation_unconfirmed">Local tokens were removed, but remote revocation could not be confirmed. Disconnect this app in ChatGPT settings via Manage usage.</string>

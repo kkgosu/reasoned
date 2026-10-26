@@ -123,6 +123,28 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
                     .setText(R.string.runtime_key_absent)
             }
         }
+        val searchKey = views.findViewById<EditText>(R.id.research_key)
+        views.findViewById<Button>(R.id.research_save_key).setOnClickListener {
+            val value = searchKey.text.toString().trim()
+            if (value.length !in 16..512 || value.any { it.code !in 33..126 }) searchKey.error =
+                getString(R.string.runtime_key_invalid)
+            else action {
+                app.runtime.stop().join()
+                withContext(Dispatchers.IO) { app.searchCredentials.save(value) }
+                searchKey.text.clear()
+                views.findViewById<TextView>(R.id.research_key_status)
+                    .setText(R.string.research_key_saved)
+            }
+        }
+        views.findViewById<Button>(R.id.research_forget_key).setOnClickListener {
+            action {
+                app.runtime.stop().join()
+                withContext(Dispatchers.IO) { app.searchCredentials.forget() }
+                searchKey.text.clear()
+                views.findViewById<TextView>(R.id.research_key_status)
+                    .setText(R.string.research_key_absent)
+            }
+        }
         render(views, app.chatGpt.state.value)
         return views
     }
@@ -182,8 +204,7 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
                             }
                         })
                 }
-                status.text = if (catalog.isEmpty()) getString(R.string.chatgpt_no_models)
-                else getString(R.string.chatgpt_models_loaded, catalog.size)
+                status.text = if (catalog.isEmpty()) getString(R.string.chatgpt_no_models) else ""
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
@@ -316,11 +337,14 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
             app.chatGpt.reload()
             views.findViewById<TextView>(R.id.runtime_key_status)
                 .setText(if (withContext(Dispatchers.IO) { app.credentials.hasSavedKey() }) R.string.runtime_key_saved else R.string.runtime_key_absent)
+            views.findViewById<TextView>(R.id.research_key_status)
+                .setText(if (withContext(Dispatchers.IO) { app.searchCredentials.hasSavedKey() }) R.string.research_key_saved else R.string.research_key_absent)
         }
     }
 
     override fun onHidden() {
         pageView?.findViewById<EditText>(R.id.runtime_key)?.text?.clear()
+        pageView?.findViewById<EditText>(R.id.research_key)?.text?.clear()
         activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
         dialog?.dismiss(); dialog = null
         scope?.cancel(); scope = null

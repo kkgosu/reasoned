@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="session_learning">Learning</string>
+    <string name="session_practice">Practice</string>
+    <string name="practice_intro">Practice topic</string>
+    <string name="practice_targets">Knowledge (%1$d selected)</string>
+    <string name="practice_choose">Practice material · choose up to 8</string>
+    <string name="practice_targets_note">Optional. Leave empty to practise your topic.</string>
+    <string name="practice_empty">No saved propositions yet. Enter a topic to practise without the graph.</string>
+    <string name="practice_limit">Choose at most 8 propositions.</string>
+    <string name="practice_working">Practice · work on the current problem; ask for a hint or submit your reasoning</string>
+    <string name="practice_paused">Practice · discuss the result, or choose Next problem</string>
+    <string name="practice_next">Next problem</string>
+    <string name="practice_dismiss">Dismiss problem without revealing solution</string>
+    <string name="practice_dismiss_warning">End this problem locally without revealing the solution? Your submitted work and unsent draft stay saved. No model request is made.</string>
+    <string name="practice_dismissed">Problem dismissed without revealing the solution.</string>
+    <string name="practice_solution">Committed model solution</string>
+    <string name="practice_verdict_notice">Model assessment · not independent verification or mastery certification</string>
+    <string name="practice_thinking_hint">Your thinking, answer, or request for a hint…</string>
+    <string name="research_allow">Web research</string>
+    <string name="research_permission">Queries go to Brave; public-page text goes to the selected model. Search and model charges may apply. Websites receive no account cookies. Sources stay on-device. Avoid sensitive queries and links.</string>
+    <string name="research_settings">Brave Search</string>
+    <string name="research_key_hint">Brave Search API key</string>
+    <string name="research_key_note">Optional. Without a key, known links only. Brave bills searches separately.</string>
+    <string name="research_save_key">Save Brave key</string>
+    <string name="research_forget_key">Remove Brave key</string>
+    <string name="research_key_saved">Key saved</string>
+    <string name="research_key_absent">No key saved</string>
+    <string name="research_report_label">RESEARCH · SOURCE-DERIVED, NOT VERIFIED</string>
+    <string name="research_enable_warning">Enable web research?</string>
+    <string name="research_enable">Enable research</string>
+    <string name="research_sources">Research reports &amp; saved sources</string>
+    <string name="research_no_reports">No completed research reports in this session.</string>
+    <string name="research_source_meta">%1$s\nRetrieved: %2$s\nExcerpt SHA-256: %3$s\nSaved excerpt (may be truncated; not an independent fact check):</string>
+</resources>
