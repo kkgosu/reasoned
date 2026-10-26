@@ -60,8 +60,8 @@ class MainActivity : FragmentStackActivity() {
         }
     }
 
-    fun openSession(id: String, start: Boolean = false) = navigate(RuntimeSessionFragment().apply {
-        arguments = Bundle().apply { putString("session", id); putBoolean("start_session", start) }
+    fun openSession(id: String, start: Boolean = false, message: Long? = null) = navigate(RuntimeSessionFragment().apply {
+        arguments = Bundle().apply { putString("session", id); putBoolean("start_session", start); message?.let { putLong("message", it) } }
     })
 
     private fun loadDrawerSessions() {
@@ -86,6 +86,11 @@ class MainActivity : FragmentStackActivity() {
     override fun onDestroy() {
         drawerScope.cancel()
         super.onDestroy()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        (application as ReasonedApplication).extraction.foreground = true
     }
 
     override fun onStop() {

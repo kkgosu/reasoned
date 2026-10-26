@@ -71,8 +71,10 @@ class RuntimeTest {
                 3 -> response(tool = "finish_probe", args = JSONObject().put("summary", "Subtraction is familiar; negative values remain uncertain.").put("steps", JSONArray().put("Predict movement on a number line")))
                 4 -> {
                     assertEquals(AgentInstructions.compose(app.assets, "teacher"), request.getString("instructions"))
-                    response("Take one step left from two.", "ask_question", JSONObject().put("question", "Where do you land, and why?").put("choices", JSONArray().put("One").put("Three")))
+                    response(tool = "plan_init", args = StudyPlan(listOf(StudyPlan.Node("number-line", "Number-line movement", "Predict one subtraction step")), emptyList()).json().apply { remove("version") })
                 }
+                5 -> response("Take one step left from two.", "ask_question", JSONObject().put("question", "Where do you land, and why?")
+                    .put("choices", JSONArray().put("One").put("Three")).put("nodeId", "number-line"))
                 else -> response(tool = "finish_lesson", args = JSONObject().put("summary", "Covered one-step subtraction; transfer is still untested."))
             }
             val text = result.getJSONArray("output").objects().filter { it.optString("type") == "message" }
@@ -112,23 +114,62 @@ class RuntimeTest {
             assertEquals(runtime.state.value, saved)
             store.writableDatabase.delete("messages", "session=? AND role=?", arrayOf(id, "QUESTION"))
             val legacy = store.load(id)!!
-            assertEquals(1, legacy.pastQuestions.size)
-            assertEquals("Why does subtraction move left?", legacy.displayItems.single { it.role == LessonDisplayItem.Role.QUESTION }.text)
+            assertEquals(1, legacy.answerCards.size)
+            assertEquals("Why does subtraction move left?", legacy.displayItems.filterIsInstance<LessonDisplayItem.AnsweredDisplayItem>().single().question)
+            assertTrue(legacy.displayItems.filterIsInstance<LessonDisplayItem.AnsweredDisplayItem>().single().correctAnswer.isEmpty())
             store.save(saved)
             join(runtime.approveRoute())
             assertEquals("teacher", runtime.state.value!!.phase)
+            assertEquals("plan", runtime.state.value!!.status)
+            assertNotNull(store.load(id)!!.plan)
+            assertTrue(store.knowledge().nodes.isEmpty())
+            join(runtime.approveRoute())
+            assertEquals("question", runtime.state.value!!.status)
             assertFalse(runtime.state.value!!.expanded)
             edit(runtime, "Two minus one is one", 0)
             join(runtime.send())
             assertEquals("complete", runtime.state.value!!.status)
-            assertEquals(5, calls)
+            assertEquals(6, calls)
             assertEquals("", runtime.failure.value)
             store.readableDatabase.rawQuery("SELECT count(*) FROM answers WHERE session=?", arrayOf(id)).use { it.moveToFirst(); assertEquals(2, it.getInt(0)) }
             store.readableDatabase.rawQuery("SELECT sum(input_tokens),sum(output_tokens) FROM runs WHERE session=?", arrayOf(id)).use {
-                it.moveToFirst(); assertEquals(50L, it.getLong(0)); assertEquals(25L, it.getLong(1))
+                it.moveToFirst(); assertEquals(60L, it.getLong(0)); assertEquals(30L, it.getLong(1))
             }
             SessionStore(app, name).use { reopened -> assertEquals(runtime.state.value, reopened.load(id)) }
         } finally { join(withContext(Dispatchers.Main) { runtime.stop() }); store.close(); app.deleteDatabase(name) }
+    }
+
+    @Test fun committedAnswersAndPublicThinkingRenderWithoutLeakingPendingKeys() {
+        val question = RuntimeQuestion("fixture-call", "Which direction?", listOf("Left", "Right"), "Left", "Subtracting moves left.", "probe")
+        val answer = JSONObject().put("answer", "Left").put("reasoning", "Reverse addition").put("confidence_self_report", 80)
+        val item = question.answered(4, answer)
+        assertFalse(question.transcript().contains(question.explanation))
+        assertEquals(item, LessonDisplayItem.restore(item.save()))
+        val args = JSONObject().put("question", question.text).put("choices", JSONArray(question.choices))
+            .put("explanation", question.explanation).put("correctAnswer", question.correctAnswer)
+        val result = response(tool = "ask_question", args = args)
+        result.getJSONArray("output").put(JSONObject().put("type", "reasoning").put("encrypted_content", "NEVER_RENDER_OPAQUE")
+            .put("summary", JSONArray().put(JSONObject().put("type", "summary_text").put("text", "A public reasoning summary."))))
+        assertEquals("A public reasoning summary.", RuntimeTools.validate(result, RuntimeSession(goal = "Fixture", model = "fake")).thinking)
+        try {
+            RuntimeTools.validate(response(tool = "ask_question", args = JSONObject(args.toString()).put("correctAnswer", "Unknown option")), RuntimeSession(goal = "Fixture", model = "fake"))
+            fail("Invalid answer key accepted")
+        } catch (error: ProviderFailure) { assertEquals("invalid_answer_key", error.reason) }
+        ActivityScenario.launch(MainActivity::class.java).use { scenario -> scenario.onActivity { activity ->
+            val adapter = LessonAdapter(lessonMarkdown(activity))
+            adapter.submit(listOf(item))
+            val parent = android.widget.FrameLayout(activity)
+            val holder = adapter.onCreateViewHolder(parent, adapter.getItemViewType(0))
+            adapter.onBindViewHolder(holder, 0)
+            assertTrue(holder.itemView.findViewById<android.widget.TextView>(R.id.answered_label).text.contains("CORRECT"))
+            assertEquals(View.GONE, holder.itemView.findViewById<View>(R.id.answered_why).visibility)
+            holder.itemView.findViewById<View>(R.id.answered_why_toggle).performClick()
+            assertEquals(View.VISIBLE, holder.itemView.findViewById<View>(R.id.answered_why).visibility)
+            assertEquals(80, holder.itemView.findViewById<android.widget.ProgressBar>(R.id.answered_confidence).progress)
+            val home = activity.fragmentManager.fragments.filterIsInstance<HomeFragment>().single()
+            home.invalidateOptionsMenu()
+            assertFalse(activity.findViewById<android.widget.Toolbar>(me.grishka.appkit.R.id.toolbar).menu.findItem(R.id.graph_stop_update).isVisible)
+        } }
     }
 
     @Test fun legacySessionsAdoptOriginalInstructionsWithoutLosingTheirTranscript() = runBlocking {
@@ -244,6 +285,8 @@ class RuntimeTest {
             join(runtime.create("Fixture", "fake-model")); join(runtime.retry())
             assertEquals("idle", runtime.state.value!!.status)
             assertEquals("Canonical final text", runtime.state.value!!.items.last().text)
+            assertEquals(setOf(runtime.state.value!!.items.last().id), runtime.state.value!!.proseIds)
+            assertEquals("Canonical final text", runtime.state.value!!.passages().single().text)
         } finally { withContext(Dispatchers.Main) { runtime.stop() }.join(); store.close(); app.deleteDatabase(name) }
         val started = JSONObject().put("type", "response.output_item.added").put("output_index", 0).put("item", message)
         val completed = JSONObject().put("type", "response.completed").put("response", response("Must not commit"))

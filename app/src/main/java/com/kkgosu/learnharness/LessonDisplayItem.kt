@@ -12,7 +12,19 @@ sealed class LessonDisplayItem(open val id: Long) {
         val confidence: Int?,
     ) : LessonDisplayItem(id)
 
-    enum class Role { TITLE, PROSE, LEARNER, QUESTION }
+    data class AnsweredDisplayItem(
+        override val id: Long,
+        val question: String,
+        val choices: List<String>,
+        val answer: String,
+        val thinking: String,
+        val confidence: Int,
+        val correctAnswer: String = "",
+        val explanation: String = "",
+        val phase: String = "",
+    ) : LessonDisplayItem(id)
+
+    enum class Role { TITLE, PROSE, LEARNER, QUESTION, THINKING }
 
     fun save(): Bundle = Bundle().apply {
         putLong("id", id)
@@ -21,6 +33,17 @@ sealed class LessonDisplayItem(open val id: Long) {
                 putString("type", "text")
                 putString("text", item.text)
                 putString("role", item.role.name)
+            }
+            is AnsweredDisplayItem -> {
+                putString("type", "answered")
+                putString("question", item.question)
+                putStringArrayList("choices", ArrayList(item.choices))
+                putString("answer", item.answer)
+                putString("thinking", item.thinking)
+                putInt("confidence", item.confidence)
+                putString("correctAnswer", item.correctAnswer)
+                putString("explanation", item.explanation)
+                putString("phase", item.phase)
             }
             is FormulaDisplayItem -> {
                 putString("type", "formula")
@@ -39,6 +62,9 @@ sealed class LessonDisplayItem(open val id: Long) {
     companion object {
         fun restore(bundle: Bundle): LessonDisplayItem = with(bundle) {
             when (getString("type")) {
+                "answered" -> AnsweredDisplayItem(getLong("id"), getString("question").orEmpty(), getStringArrayList("choices").orEmpty(),
+                    getString("answer").orEmpty(), getString("thinking").orEmpty(), getInt("confidence"),
+                    getString("correctAnswer").orEmpty(), getString("explanation").orEmpty(), getString("phase").orEmpty())
                 "formula" -> FormulaDisplayItem(getLong("id"), getString("text").orEmpty(), getString("spoken").orEmpty())
                 "question" -> QuestionDisplayItem(
                     getLong("id"), getString("answer").orEmpty(), getString("thinking").orEmpty(),

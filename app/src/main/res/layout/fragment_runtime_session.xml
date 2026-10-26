@@ -18,6 +18,17 @@
         android:accessibilityLiveRegion="polite"
         android:textAppearance="@style/TextAppearance.Harness.Label" />
 
+    <TextView
+        android:id="@+id/knowledge_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="@dimen/space_24"
+        android:paddingEnd="@dimen/space_24"
+        android:paddingBottom="@dimen/space_8"
+        android:accessibilityLiveRegion="polite"
+        android:visibility="gone"
+        android:textAppearance="@style/TextAppearance.Harness.Meta" />
+
     <me.grishka.appkit.views.UsableRecyclerView
         android:id="@+id/lesson_list"
         android:layout_width="match_parent"

@@ -54,6 +54,15 @@
         <item name="android:paddingStart">8dp</item>
         <item name="android:paddingEnd">8dp</item>
     </style>
+    <style name="Widget.Harness.Disclosure" parent="Widget.Harness.Button.Secondary">
+        <item name="android:background">?android:attr/selectableItemBackground</item>
+        <item name="android:textAppearance">@style/TextAppearance.Harness.Label</item>
+        <item name="android:textSize">@dimen/text_11</item>
+        <item name="android:textColor">@color/muted_foreground</item>
+        <item name="android:gravity">center_vertical|start</item>
+        <item name="android:paddingStart">0dp</item>
+        <item name="android:paddingEnd">0dp</item>
+    </style>
     <style name="Widget.Harness.Navigation" parent="Widget.Harness.Button.Secondary">
         <item name="android:background">?android:attr/selectableItemBackground</item>
         <item name="android:gravity">center_vertical|start</item>

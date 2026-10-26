@@ -1,6 +1,6 @@
 # Reference and licensing ledger
 
-Research baseline: 2026-10-25. Scope: phases 0–4. **Reasoned** is an independent prototype name, not an official LearnHarness client. Reference checkouts were inspected outside this repository. Selected LearnHarness sources are now vendored, and the search transition adapts Mastodon's native pattern; see the reuse notices below.
+Research baseline: 2026-10-25. Scope: phases 0–5. **Reasoned** is an independent prototype name, not an official LearnHarness client. Reference checkouts were inspected outside this repository. Selected LearnHarness sources are now vendored, and the search transition adapts Mastodon's native pattern; see the reuse notices below.
 
 ## Pinned repositories
 
@@ -12,6 +12,12 @@ Links below use immutable revisions. Source descriptions apply to these revision
 | [LiteX](https://github.com/grishka/LiteX/tree/1cc74ad2b2c30e2cce6441212b5ed373c7ecb8ab) | `1cc74ad2b2c30e2cce6441212b5ed373c7ecb8ab` | Lightweight Android libraries; Apache-2.0, `LICENSE.txt` |
 | [AppKit](https://github.com/grishka/appkit/tree/2f69cf481eaf398327e0c3e5dbbffd74314b0f63) | `2f69cf481eaf398327e0c3e5dbbffd74314b0f63` | Native fragment stack and widgets; published 1.5.3 POM declares The Unlicense |
 | [Mastodon Android](https://github.com/mastodon/mastodon-android/tree/24e8cdbc1f2bc9a4164d911f2a20894f39e6268b) | `24e8cdbc1f2bc9a4164d911f2a20894f39e6268b` | Engineering patterns/search-transition adaptation; GPL-3.0 license text in `LICENSE` |
+
+## Phase-5 reference checks
+
+At the same pinned revision, inspected `src/agent/tools/plan.ts`, `src/core/plan-tree.ts`, and `src/core/contracts/plan.ts` for stable session-only dependency DAGs, whole-plan rewrites, learner approval and call-derived positional status. Android uses structured JSON/native dependency lists rather than porting Mermaid parsing.
+
+Inspected `src/agent/subagents/extraction.ts`, `src/core/contracts/graph.ts`, `src/core/coverage.ts`, `src/server/turn-service.ts`, `src/server/chat-handler.ts`, and `components/extraction-coverage.tsx` for teacher-prose-only coverage, exact message anchors, same-source digest continuation, Extractor/Auditor separation, identity-only verdicts, joint-premise chains, atomic coverage and hybrid dispatch. The code's factory threshold is 4096 estimated tokens; stale comments mentioning 8192 were not treated as authoritative. Android uses the existing SQLite owner and one foreground job, not the desktop/server process pool, JSONL stores or separate model-role settings. The original extraction source remains byte-preserved; a local generator projects its active prompt constants into native assets, with an independent compatibility appendix.
 
 ## LearnHarness inspection map
 

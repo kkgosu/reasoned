@@ -7,6 +7,14 @@
     <color name="muted_foreground">#8D8D8D</color>
     <color name="border">#434343</color>
     <color name="accent_surface">#2A2A2A</color>
+    <color name="confidence_0">#EF4444</color>
+    <color name="confidence_1">#F97316</color>
+    <color name="confidence_2">#EAB308</color>
+    <color name="confidence_3">#84CC16</color>
+    <color name="confidence_4">#22C55E</color>
+    <color name="confidence_5">#10B981</color>
+    <color name="answer_correct">#22C55E</color>
+    <color name="answer_incorrect">#EF4444</color>
     <color name="primary">@color/foreground</color>
     <color name="primary_foreground">@color/background</color>
     <!-- Semantic cluster tints only; low-alpha, soft regions on the unchanged dark canvas. -->

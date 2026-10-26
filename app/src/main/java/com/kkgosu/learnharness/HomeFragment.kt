@@ -9,6 +9,9 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
+import android.widget.TextView
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.collectIndexed
 import androidx.core.view.OneShotPreDrawListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +26,8 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
     private var pageView: View? = null
     private var visibleScope: CoroutineScope? = null
     private var pendingSelection: String? = null
+    private val sample get() = arguments?.getBoolean("sample") == true
+    private val app get() = activity.application as ReasonedApplication
 
     override fun wantsCustomNavigationIcon() = true
     override fun getNavigationIconDrawableResource() = R.drawable.ic_menu
@@ -34,7 +39,11 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
         setHasOptionsMenu(true)
     }
 
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) { inflater.inflate(R.menu.home, menu) }
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.home, menu)
+        menu.findItem(R.id.graph_sample)?.setTitle(if (sample) R.string.knowledge_real else R.string.knowledge_sample)
+        menu.findItem(R.id.graph_stop_update)?.isVisible = app.extraction.state.value.running
+    }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         val graph = pageView?.findViewById<KnowledgeGraphView>(R.id.knowledge_graph) ?: return super.onOptionsItemSelected(item)
@@ -43,6 +52,8 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
             R.id.graph_zoom_in -> graph.zoomBy(1.5f)
             R.id.graph_zoom_out -> graph.zoomBy(1 / 1.5f)
             R.id.open_sample_lesson -> Nav.go(activity, LearningSessionFragment::class.java, null)
+            R.id.graph_sample -> Nav.go(activity, HomeFragment::class.java, Bundle().apply { putBoolean("sample", !sample) })
+            R.id.graph_stop_update -> app.extraction.stop()
             R.id.style_reference -> Nav.go(activity, StyleReferenceFragment::class.java, null)
             else -> return super.onOptionsItemSelected(item)
         }
@@ -53,13 +64,14 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
         setTitle(R.string.app_name)
         val views = inflater.inflate(R.layout.fragment_home, container, false)
         pageView = views
-        views.findViewById<Button>(R.id.graph_search_open).setOnClickListener { Nav.go(activity, GraphSearchFragment::class.java, null) }
+        views.findViewById<TextView>(R.id.graph_caption).setText(if (sample) R.string.graph_preview else R.string.knowledge_caption)
+        views.findViewById<Button>(R.id.graph_search_open).setOnClickListener { Nav.go(activity, GraphSearchFragment::class.java, Bundle().apply { putBoolean("sample", sample) }) }
         views.findViewById<KnowledgeGraphView>(R.id.knowledge_graph).onSelection = ::renderSelection
         val details = views.findViewById<Button>(R.id.graph_details)
         details.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> positionTooltip() }
         details.setOnClickListener {
             views.findViewById<KnowledgeGraphView>(R.id.knowledge_graph).selectedId?.let { id ->
-                Nav.go(activity, GraphNodeFragment::class.java, Bundle().apply { putString("node", id) })
+                Nav.go(activity, GraphNodeFragment::class.java, Bundle().apply { putString("node", id); putBoolean("sample", sample) })
             }
         }
         return views
@@ -127,15 +139,33 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
         val graph = views.findViewById<KnowledgeGraphView>(R.id.knowledge_graph)
         renderSelection(graph.snapshot?.nodes?.firstOrNull { it.node.id == graph.selectedId }?.node)
         visibleScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).also { scope ->
-            if (graph.snapshot == null) scope.launch {
-                val data = SampleGraph.create(views.resources)
-                val snapshot = withContext(Dispatchers.Default) { GraphLayout.compute(data) }
-                graph.setSnapshot(snapshot)
-                pendingSelection?.let(::selectNode)
-                views.findViewById<View>(R.id.graph_loading).visibility = View.GONE
-            }
+            loadGraph(views, scope)
+            scope.launch { app.extraction.state.collectIndexed { index, status ->
+                views.findViewById<TextView>(R.id.knowledge_status).apply {
+                    text = activity.extractionStatus(status)
+                    visibility = if (status.phase == "idle" || sample) View.GONE else View.VISIBLE
+                }
+                invalidateOptionsMenu()
+                if (index > 0 && !sample && !status.running) loadGraph(views, scope)
+            } }
         }
     }
+
+    private fun loadGraph(views: View, scope: CoroutineScope) { scope.launch {
+        val loading = views.findViewById<TextView>(R.id.graph_loading)
+        try {
+            val data = withContext(Dispatchers.IO) { if (sample) SampleGraph.create(views.resources) else app.sessions.knowledge().data() }
+            val snapshot = withContext(Dispatchers.Default) { GraphLayout.compute(data) }
+            val graph = views.findViewById<KnowledgeGraphView>(R.id.knowledge_graph)
+            val emptyBefore = graph.snapshot?.nodes.isNullOrEmpty()
+            graph.setSnapshot(snapshot)
+            if (emptyBefore) graph.fit()
+            pendingSelection?.let(::selectNode)
+            loading.setText(R.string.knowledge_empty)
+            loading.visibility = if (data.nodes.isEmpty()) View.VISIBLE else View.GONE
+        } catch (cancelled: CancellationException) { throw cancelled }
+        catch (_: Exception) { loading.setText(R.string.runtime_storage_error); loading.visibility = View.VISIBLE }
+    } }
 
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString("selection", pendingSelection)

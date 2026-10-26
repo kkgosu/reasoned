@@ -1,0 +1,17 @@
+<resources>
+    <string name="transcript_your_thinking">YOUR THINKING</string>
+    <string name="transcript_agent_thinking">AGENT’S THINKING · SUMMARY</string>
+    <string name="transcript_open">%1$s ▾</string>
+    <string name="transcript_close">%1$s ▴</string>
+    <string name="transcript_expanded">Expanded</string>
+    <string name="transcript_collapsed">Collapsed</string>
+    <string name="transcript_correct">CORRECT</string>
+    <string name="transcript_incorrect">INCORRECT</string>
+    <string name="transcript_check">CHECK</string>
+    <string name="transcript_probe">PROBE</string>
+    <string name="transcript_confidence">Confidence (self-report) · %1$d%%</string>
+    <string name="transcript_why">Why</string>
+    <string name="transcript_reference">Reference answer</string>
+    <string name="transcript_selected">Selected answer: %1$s</string>
+    <string name="transcript_key">Correct answer: %1$s</string>
+</resources>

@@ -55,7 +55,7 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
                 .setOnDismissListener { dialog = null }.show()
         }
         views.findViewById<Button>(R.id.chatgpt_sign_out).setOnClickListener { action {
-            app.runtime.stop().join()
+            app.runtime.stop().join(); app.extraction.stop()?.join()
             val connection = app.chatGpt.state.value.active
             val confirmed = app.chatGpt.signOut(connection)
             app.modelCatalog.forget(connection)
@@ -65,7 +65,7 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
             dialog = AlertDialog.Builder(activity).setTitle(R.string.chatgpt_reset)
                 .setMessage(R.string.chatgpt_reset_warning).setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(R.string.chatgpt_reset) { _, _ -> action {
-                    app.runtime.stop().join()
+                    app.runtime.stop().join(); app.extraction.stop()?.join()
                     val connections = app.chatGpt.state.value.accounts.map { it.id }
                     app.chatGpt.resetLocal()
                     connections.forEach(app.modelCatalog::forget)
@@ -84,13 +84,14 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
             val value = key.text.toString().trim()
             if (value.length !in 16..512 || value.any { it.code !in 33..126 }) key.error = getString(R.string.runtime_key_invalid)
             else action {
+                app.extraction.stop()?.join()
                 withContext(Dispatchers.IO) { app.credentials.save(value); app.modelCatalog.forget("api") }
                 key.text.clear()
                 views.findViewById<TextView>(R.id.runtime_key_status).setText(R.string.runtime_key_saved)
             }
         }
         views.findViewById<Button>(R.id.runtime_forget_key).setOnClickListener { action {
-            app.runtime.stop().join()
+            app.runtime.stop().join(); app.extraction.stop()?.join()
             withContext(Dispatchers.IO) { app.credentials.forget(); app.modelCatalog.forget("api") }
             key.text.clear()
             views.findViewById<TextView>(R.id.runtime_key_status).setText(R.string.runtime_key_absent)

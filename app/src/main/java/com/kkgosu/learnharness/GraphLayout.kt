@@ -4,8 +4,9 @@ import kotlin.math.cos
 import kotlin.math.hypot
 import kotlin.math.min
 import kotlin.math.sin
+import kotlin.math.sqrt
 
-/** Authored propositions, not an extraction result or a learner's demonstrated knowledge. */
+/** Renderer projection shared by authored samples and source-backed knowledge; never a mastery score. */
 data class GraphNode(val id: String, val label: String, val statement: String, val reasoning: String, val cluster: Int) {
     override fun toString() = "$label. $statement"
 }
@@ -26,18 +27,19 @@ data class GraphSnapshot(
 }
 
 object GraphLayout {
-    // ponytail: deterministic cluster placement for this small fixture; real data needs a bounded layout worker.
+    // ponytail: bounded deterministic birth-session placement; use a graph-layout engine if larger graphs need it.
     fun compute(data: GraphData): GraphSnapshot {
         require(data.nodes.map { it.id }.distinct().size == data.nodes.size)
         require(data.nodes.all { it.cluster in data.clusters.indices })
+        val extra = if (data.nodes.size > 30) ((sqrt(data.nodes.groupBy { it.cluster }.values.maxOfOrNull { it.size }?.toFloat() ?: 0f) * 50 + 60) - 230).coerceAtLeast(0f) else 0f
         val regions = data.clusters.mapIndexed { index, label ->
-            GraphRegion(label, (index % 2) * 510f, (index / 2) * 440f, 230f)
+            GraphRegion(label, (index % 2) * (510f + extra * 2), (index / 2) * (440f + extra * 2), 230f + extra)
         }
         val points = data.nodes.groupBy { it.cluster }.flatMap { (cluster, members) ->
             val region = regions[cluster]
             members.mapIndexed { index, node ->
-                val angle = index * (Math.PI * 2 / members.size) - Math.PI / 2 + cluster * 0.23
-                val radius = if (index % 2 == 0) 155f else 105f
+                val angle = if (members.size > 12) index * Math.PI * (3 - sqrt(5.0)) else index * (Math.PI * 2 / members.size) - Math.PI / 2 + cluster * 0.23
+                val radius = if (members.size > 12) sqrt(index + 1f) * 50 else if (index % 2 == 0) 155f else 105f
                 GraphPoint(node, region.x + cos(angle).toFloat() * radius, region.y + sin(angle).toFloat() * radius)
             }
         }

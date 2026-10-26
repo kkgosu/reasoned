@@ -24,6 +24,13 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ListView
 import android.widget.Toolbar
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.grishka.appkit.Nav
 import me.grishka.appkit.fragments.CustomTransitionsFragment
 import me.grishka.appkit.fragments.ToolbarFragment
@@ -38,6 +45,9 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
     private var pageView: View? = null
     private var search: EditText? = null
     private lateinit var navigation: LayerDrawable
+    private var adapter: ArrayAdapter<GraphNode>? = null
+    private var scope: CoroutineScope? = null
+    private val sample get() = arguments?.getBoolean("sample") == true
 
     override fun wantsCustomNavigationIcon() = true
     override fun getNavigationIconDrawable(): Drawable? = if (::navigation.isInitialized) navigation else super.getNavigationIconDrawable()
@@ -55,13 +65,13 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
         super.onViewCreated(view, savedInstanceState)
         val views = pageView ?: return
         val results = views.findViewById<ListView>(R.id.graph_search_results)
-        val adapter = ArrayAdapter(activity, R.layout.item_graph_search, R.id.graph_result_text, SampleGraph.create(resources).nodes)
+        val adapter = ArrayAdapter<GraphNode>(activity, R.layout.item_graph_search, R.id.graph_result_text, mutableListOf()).also { this.adapter = it }
         results.emptyView = views.findViewById(R.id.graph_search_empty)
         results.adapter = adapter
         results.setOnItemClickListener { _, _, position, _ ->
             val node = adapter.getItem(position) ?: return@setOnItemClickListener
             results.onItemClickListener = null
-            fragmentManager.fragments.filterIsInstance<HomeFragment>().lastOrNull()?.selectNode(node.id)
+            fragmentManager.fragments.filterIsInstance<HomeFragment>().lastOrNull { (it.arguments?.getBoolean("sample") == true) == sample }?.selectNode(node.id)
             Nav.finish(this)
         }
         val bar = layoutInflater.inflate(R.layout.view_graph_search_toolbar, toolbar, false)
@@ -100,10 +110,19 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
 
     override fun onShown() {
         super.onShown()
+        scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).also { visible -> visible.launch {
+            try {
+                val data = withContext(Dispatchers.IO) { if (sample) SampleGraph.create(resources) else (activity.application as ReasonedApplication).sessions.knowledge().data() }
+                adapter?.apply { clear(); addAll(data.nodes); filter.filter(search?.text?.toString().orEmpty()) }
+            } catch (cancelled: CancellationException) { throw cancelled }
+            catch (_: Exception) { pageView?.findViewById<android.widget.TextView>(R.id.graph_search_empty)?.setText(R.string.runtime_storage_error) }
+        } }
         search?.let { edit -> edit.post {
             if (search === edit && isVisible) activity.getSystemService(InputMethodManager::class.java).showSoftInput(edit, InputMethodManager.SHOW_IMPLICIT)
         } }
     }
+
+    override fun onHidden() { scope?.cancel(); scope = null; super.onHidden() }
 
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putString("query", search?.text?.toString())
@@ -167,6 +186,8 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
 
     override fun onDestroyView() {
         if (Build.VERSION.SDK_INT >= 30) view?.setWindowInsetsAnimationCallback(null)
+        scope?.cancel(); scope = null
+        adapter = null
         search = null
         pageView = null
         super.onDestroyView()

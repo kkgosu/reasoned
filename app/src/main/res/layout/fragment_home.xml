@@ -7,6 +7,7 @@
     android:focusable="true"
     android:focusableInTouchMode="true">
     <TextView
+        android:id="@+id/graph_caption"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingStart="@dimen/space_16"
@@ -14,6 +15,9 @@
         android:paddingTop="@dimen/space_8"
         android:textAppearance="@style/TextAppearance.Harness.Label"
         android:text="@string/graph_preview" />
+    <TextView android:id="@+id/knowledge_status" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:paddingStart="@dimen/space_16" android:paddingEnd="@dimen/space_16" android:visibility="gone"
+        android:accessibilityLiveRegion="polite" android:textAppearance="@style/TextAppearance.Harness.Meta" />
     <Button
         android:id="@+id/graph_search_open"
         style="@style/Widget.Harness.Navigation"

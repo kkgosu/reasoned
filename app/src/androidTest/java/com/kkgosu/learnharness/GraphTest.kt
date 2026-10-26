@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.os.Bundle
 import android.os.Parcel
 import android.os.Parcelable
 import android.os.SystemClock
@@ -71,6 +72,7 @@ class GraphTest {
     @Test
     fun nativePanPinchPickingAndParcelledCamera() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { it.showFragmentClearingBackStack(HomeFragment().apply { arguments = Bundle().apply { putBoolean("sample", true) } }) }
             settle()
             scenario.onActivity { activity ->
                 val graph = activity.findViewById<KnowledgeGraphView>(R.id.knowledge_graph)
@@ -145,6 +147,7 @@ class GraphTest {
     @Test
     fun scaledLabelsAndAnchoredFadingTooltip() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { it.showFragmentClearingBackStack(HomeFragment().apply { arguments = Bundle().apply { putBoolean("sample", true) } }) }
             settle()
             fun watchFade(alpha: Float): CountDownLatch {
                 val latch = CountDownLatch(1)
@@ -232,6 +235,7 @@ class GraphTest {
     @androidx.test.filters.SdkSuppress(minSdkVersion = 30)
     fun searchDetailsRelatedNavigationAndRecreation() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            scenario.onActivity { it.showFragmentClearingBackStack(HomeFragment().apply { arguments = Bundle().apply { putBoolean("sample", true) } }) }
             settle()
             scenario.onActivity { it.findViewById<Button>(R.id.graph_search_open).performClick() }
             settle()

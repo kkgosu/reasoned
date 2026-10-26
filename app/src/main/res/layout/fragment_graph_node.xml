@@ -47,7 +47,9 @@
             android:layout_marginTop="@dimen/space_8"
             android:textAppearance="@style/TextAppearance.Harness.Prose"
             android:lineSpacingMultiplier="1.5"
+            android:id="@+id/graph_provenance_text"
             android:text="@string/graph_fixture_source" />
+        <LinearLayout android:id="@+id/graph_sources" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" />
         <Button
             android:id="@+id/graph_open_lesson"
             style="@style/Widget.Harness.Button"
