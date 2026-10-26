@@ -67,14 +67,45 @@ class RuntimeTest {
             assertEquals("high", request.getJSONObject("reasoning").getString("effort"))
             val result = when (++calls) {
                 1 -> response(tool = "learning_context")
-                2 -> response("Let's diagnose your reasoning.", "ask_question", JSONObject().put("question", "Why does subtraction move left?").put("choices", JSONArray()))
-                3 -> response(tool = "finish_probe", args = JSONObject().put("summary", "Subtraction is familiar; negative values remain uncertain.").put("steps", JSONArray().put("Predict movement on a number line")))
+                2 -> response(
+                    "Let's diagnose your reasoning.",
+                    "ask_user_question",
+                    JSONObject().put("question", "Why does subtraction move left?")
+                        .put("details", "").put("multiSelect", false).put("options", JSONArray())
+                )
+
+                3 -> response(
+                    tool = "finish_probe", args = JSONObject().put(
+                        "assessment", ProbeAssessment(
+                            listOf(
+                                ProbeAssessment.Strand(
+                                    "Number-line movement",
+                                    "Floor: subtraction reverses addition. Ceiling: negative values uncertain. Build from one-step movement."
+                                )
+                            ),
+                            "Subtraction is familiar; negative values remain uncertain."
+                        ).json()
+                    )
+                )
                 4 -> {
                     assertEquals(AgentInstructions.compose(app.assets, "teacher"), request.getString("instructions"))
                     response(tool = "plan_init", args = StudyPlan(listOf(StudyPlan.Node("number-line", "Number-line movement", "Predict one subtraction step")), emptyList()).json().apply { remove("version") })
                 }
-                5 -> response("Take one step left from two.", "ask_question", JSONObject().put("question", "Where do you land, and why?")
-                    .put("choices", JSONArray().put("One").put("Three")).put("nodeId", "number-line"))
+                5 -> response(
+                    "Take one step left from two.",
+                    "quiz",
+                    JSONObject().put("question", "Where do you land, and why?")
+                        .put("details", "").put("multiSelect", false)
+                        .put(
+                            "options",
+                            JSONArray(listOf("One", "Three").map {
+                                JSONObject().put("label", it).put("value", it)
+                            })
+                        )
+                        .put("nodeId", "number-line").put("type", "check")
+                        .put("correctAnswer", "One")
+                        .put("explanation", "One step left from two is one.")
+                )
                 else -> response(tool = "finish_lesson", args = JSONObject().put("summary", "Covered one-step subtraction; transfer is still untested."))
             }
             val text = result.getJSONArray("output").objects().filter { it.optString("type") == "message" }
@@ -101,10 +132,17 @@ class RuntimeTest {
             assertEquals("Subtracting one reverses adding one", runtime.state.value!!.draft)
             store.writableDatabase.execSQL("DROP TRIGGER deny_checkpoint")
             join(runtime.send())
-            assertEquals("route", runtime.state.value!!.status)
-            assertEquals(1, runtime.state.value!!.answers)
-            assertEquals(30L, runtime.state.value!!.inputTokens)
-            assertEquals(15L, runtime.state.value!!.outputTokens)
+            assertEquals("plan", runtime.state.value!!.status)
+            assertEquals("teacher", runtime.state.value!!.phase)
+            assertEquals(0, runtime.state.value!!.answers)
+            assertEquals(4, calls) // Probe handoff immediately prepares the first plan.
+            assertNotNull(store.load(id)!!.assessment)
+            assertEquals(
+                "Number-line movement",
+                store.load(id)!!.assessment!!.strands.single().strand
+            )
+            assertEquals(40L, runtime.state.value!!.inputTokens)
+            assertEquals(20L, runtime.state.value!!.outputTokens)
             assertEquals(10L, runtime.state.value!!.contextTokens) // Last input, not accumulated billing usage.
             assertEquals(80, runtime.state.value!!.confidence)
             val answer = runtime.state.value!!.items.single { it.role == LessonDisplayItem.Role.LEARNER }.text
@@ -118,7 +156,6 @@ class RuntimeTest {
             assertEquals("Why does subtraction move left?", legacy.displayItems.filterIsInstance<LessonDisplayItem.AnsweredDisplayItem>().single().question)
             assertTrue(legacy.displayItems.filterIsInstance<LessonDisplayItem.AnsweredDisplayItem>().single().correctAnswer.isEmpty())
             store.save(saved)
-            join(runtime.approveRoute())
             assertEquals("teacher", runtime.state.value!!.phase)
             assertEquals("plan", runtime.state.value!!.status)
             assertNotNull(store.load(id)!!.plan)
@@ -145,14 +182,26 @@ class RuntimeTest {
         val item = question.answered(4, answer)
         assertFalse(question.transcript().contains(question.explanation))
         assertEquals(item, LessonDisplayItem.restore(item.save()))
-        val args = JSONObject().put("question", question.text).put("choices", JSONArray(question.choices))
+        val args =
+            JSONObject().put("question", question.text).put("details", "").put("multiSelect", false)
+                .put(
+                    "options",
+                    JSONArray(question.choices.map {
+                        JSONObject().put("label", it).put("value", it)
+                    })
+                )
             .put("explanation", question.explanation).put("correctAnswer", question.correctAnswer)
-        val result = response(tool = "ask_question", args = args)
+        val result = response(tool = "probe", args = args)
         result.getJSONArray("output").put(JSONObject().put("type", "reasoning").put("encrypted_content", "NEVER_RENDER_OPAQUE")
             .put("summary", JSONArray().put(JSONObject().put("type", "summary_text").put("text", "A public reasoning summary."))))
         assertEquals("A public reasoning summary.", RuntimeTools.validate(result, RuntimeSession(goal = "Fixture", model = "fake")).thinking)
         try {
-            RuntimeTools.validate(response(tool = "ask_question", args = JSONObject(args.toString()).put("correctAnswer", "Unknown option")), RuntimeSession(goal = "Fixture", model = "fake"))
+            RuntimeTools.validate(
+                response(
+                    tool = "probe",
+                    args = JSONObject(args.toString()).put("correctAnswer", "Unknown option")
+                ), RuntimeSession(goal = "Fixture", model = "fake")
+            )
             fail("Invalid answer key accepted")
         } catch (error: ProviderFailure) { assertEquals("invalid_answer_key", error.reason) }
         ActivityScenario.launch(MainActivity::class.java).use { scenario -> scenario.onActivity { activity ->
@@ -166,6 +215,42 @@ class RuntimeTest {
             holder.itemView.findViewById<View>(R.id.answered_why_toggle).performClick()
             assertEquals(View.VISIBLE, holder.itemView.findViewById<View>(R.id.answered_why).visibility)
             assertEquals(80, holder.itemView.findViewById<android.widget.ProgressBar>(R.id.answered_confidence).progress)
+            val check = question.copy(phase = "teacher", type = "check")
+            val gap = check.answered(
+                5,
+                check.answer("Question thinking", -1, 60, "Reading thinking", true)
+            )
+            assertEquals(gap, LessonDisplayItem.restore(gap.save()))
+            adapter.submit(listOf(gap)); adapter.onBindViewHolder(holder, 0)
+            val label =
+                holder.itemView.findViewById<android.widget.TextView>(R.id.answered_label).text.toString()
+            assertTrue(label.contains(activity.getString(R.string.runtime_dont_know)))
+            assertFalse(label.contains("INCORRECT"))
+            assertEquals(
+                View.GONE,
+                holder.itemView.findViewById<View>(R.id.answered_confidence).visibility
+            )
+            assertEquals(
+                View.GONE,
+                holder.itemView.findViewById<View>(R.id.answered_confidence_label).visibility
+            )
+            assertEquals(
+                View.GONE,
+                holder.itemView.findViewById<View>(R.id.answered_reading).visibility
+            )
+            holder.itemView.findViewById<View>(R.id.answered_reading_toggle).performClick()
+            assertEquals(
+                "Reading thinking",
+                holder.itemView.findViewById<android.widget.TextView>(R.id.answered_reading).text.toString()
+            )
+            assertEquals(
+                View.VISIBLE,
+                holder.itemView.findViewById<View>(R.id.answered_reading).visibility
+            )
+            assertEquals(
+                "Question thinking",
+                holder.itemView.findViewById<android.widget.TextView>(R.id.answered_thinking).text.toString()
+            )
             val home = activity.fragmentManager.fragments.filterIsInstance<HomeFragment>().single()
             home.invalidateOptionsMenu()
             assertFalse(activity.findViewById<android.widget.Toolbar>(me.grishka.appkit.R.id.toolbar).menu.findItem(R.id.graph_stop_update).isVisible)
@@ -236,8 +321,27 @@ class RuntimeTest {
         fun rejected(body: JSONObject) {
             try { RuntimeTools.validate(body, session); fail("Malformed model output accepted") } catch (_: ProviderFailure) { }
         }
-        rejected(response(tool = "ask_question", args = JSONObject().put("question", "?").put("choices", JSONArray().put("Only one"))))
-        rejected(response(tool = "ask_question", args = JSONObject().put("question", "?").put("choices", JSONArray()).put("extra", true)))
+        rejected(
+            response(
+                tool = "ask_user_question",
+                args = JSONObject().put("question", "?").put("details", "")
+                    .put("multiSelect", false)
+                    .put(
+                        "options",
+                        JSONArray().put(
+                            JSONObject().put("label", "Only one").put("value", "one")
+                                .put("description", "")
+                        )
+                    )
+            )
+        )
+        rejected(
+            response(
+                tool = "ask_user_question",
+                args = JSONObject().put("question", "?").put("details", "")
+                    .put("multiSelect", false).put("options", JSONArray()).put("extra", true)
+            )
+        )
         rejected(response(tool = "finish_probe", args = JSONObject().put("summary", "No evidence").put("steps", JSONArray().put("Guess"))))
         rejected(response(tool = "finish_lesson", args = JSONObject().put("summary", "Wrong role")))
         val duplicate = response(tool = "learning_context", call = "same-call")
@@ -258,7 +362,7 @@ class RuntimeTest {
         val runtime = SessionRuntime(app, store, ModelProvider { _, _ -> calls++; response(tool = "learning_context") })
         try {
             join(runtime.create("Step limit", "fake-model")); join(runtime.retry())
-            assertEquals(4, calls)
+            assertEquals(8, calls)
             assertEquals("step_limit", runtime.state.value!!.error)
         } finally { join(withContext(Dispatchers.Main) { runtime.stop() }); store.close(); app.deleteDatabase(name) }
     }
@@ -395,7 +499,11 @@ class RuntimeTest {
         val calls = java.util.concurrent.atomic.AtomicInteger()
         val runtime = SessionRuntime(app, store, ModelProvider { _, _ ->
             calls.incrementAndGet()
-            response(tool = "ask_question", args = JSONObject().put("question", "Why choose a small step?").put("choices", JSONArray()))
+            response(
+                tool = "ask_user_question",
+                args = JSONObject().put("question", "Why choose a small step?").put("details", "")
+                    .put("multiSelect", false).put("options", JSONArray())
+            )
         })
         val delegate = ReasonedApplication::class.java.getDeclaredField("runtimeDelegate").apply { isAccessible = true }
         val previous = delegate.get(app)

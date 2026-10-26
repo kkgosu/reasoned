@@ -122,7 +122,10 @@ private class InlineMathSpan(theme: MarkwonTheme, private val original: AsyncDra
 
 /** Registered before the library's $$ processor so single-dollar math cannot swallow later text. */
 private class DollarMathProcessor : InlineProcessor() {
-    private val math = Pattern.compile("^(\\${'$'}{1,2})(?=\\S)(.*?\\S)\\1(?!\\${'$'})")
+    private val math = Pattern.compile(
+        "^(\\${'$'}{1,2})(?=\\S|[\\x08\\t\\x0b\\f\\r\\n][A-Za-z])(.*?\\S)\\1(?!\\${'$'})",
+        Pattern.DOTALL
+    )
     override fun specialCharacter() = '$'
     override fun parse(): Node {
         val source = match(math) ?: run { index++; return Text("\$") }

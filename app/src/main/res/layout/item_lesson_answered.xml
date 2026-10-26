@@ -70,6 +70,23 @@
         android:visibility="gone" />
 
     <Button
+        android:id="@+id/answered_reading_toggle"
+        style="@style/Widget.Harness.Disclosure"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/answered_reading"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textAppearance="@style/TextAppearance.Harness.Prose"
+        android:textColor="@color/muted_foreground"
+        android:textIsSelectable="true"
+        android:textStyle="italic"
+        android:visibility="gone" />
+
+    <Button
         android:id="@+id/answered_why_toggle"
         style="@style/Widget.Harness.Disclosure"
         android:layout_width="match_parent"

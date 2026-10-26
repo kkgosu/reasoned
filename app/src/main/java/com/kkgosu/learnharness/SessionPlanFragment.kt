@@ -41,6 +41,15 @@ class SessionPlanFragment : ToolbarFragment(R.layout.fragment_shell) {
                     val plan = session?.plan
                     if (plan == null) paragraph(getString(R.string.plan_missing))
                     else {
+                        val diagram = TextView(inflater.context).apply {
+                            setTextAppearance(R.style.TextAppearance_Harness_Prose)
+                            setPadding(0, resources.getDimensionPixelSize(R.dimen.space_24), 0, 0)
+                        }
+                        list.addView(diagram)
+                        lessonMarkdown(inflater.context).setMarkdown(
+                            diagram,
+                            plan.diagramMarkdown()
+                        )
                         val (current, visited) = plan.positions(session.protocol)
                         plan.nodes.forEach { node ->
                             val status = getString(
@@ -51,7 +60,7 @@ class SessionPlanFragment : ToolbarFragment(R.layout.fragment_shell) {
                             val requires = plan.edges.filter { it.second == node.id }
                                 .map { edge -> plan.nodes.first { it.id == edge.first }.title }
                             paragraph(
-                                "${node.title} · $status\n${node.summary}\n" + if (requires.isEmpty()) getString(
+                                "${node.title}\n$status\n${node.summary}\n" + if (requires.isEmpty()) getString(
                                     R.string.plan_foundation
                                 ) else getString(
                                     R.string.plan_requires,

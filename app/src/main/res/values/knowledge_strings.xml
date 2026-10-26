@@ -1,6 +1,6 @@
 <resources>
     <string name="learning_plan">Learning plan</string>
-    <string name="plan_ready">Plan ready · details in Learning plan. Request changes below, or approve to start teaching.</string>
+    <string name="plan_ready">Review the plan. Request changes below, or approve to start teaching.</string>
     <string name="plan_change_hint">What would you like to change in the plan?</string>
     <string name="plan_send_changes">Send plan changes</string>
     <string name="plan_approve">Approve plan</string>
@@ -14,10 +14,10 @@
     <string name="knowledge_update">Update knowledge graph</string>
     <string name="knowledge_stop">Stop graph update</string>
     <string name="knowledge_no_pending">No new completed teaching passages to extract. Questions, your answers and the session plan are not graph nodes. Previously processed passages are already covered.</string>
-    <string name="knowledge_extracting">Graph · extracting propositions…</string>
-    <string name="knowledge_auditing">Graph · checking proposition identities…</string>
-    <string name="knowledge_merging">Graph · saving evidence…</string>
-    <string name="knowledge_complete">Graph updated · %1$d new propositions · %2$d new arguments</string>
+    <string name="knowledge_extracting">Extracting propositions…</string>
+    <string name="knowledge_auditing">Checking proposition identities…</string>
+    <string name="knowledge_merging">Saving graph evidence…</string>
+    <string name="knowledge_complete">Graph updated: %1$d new propositions, %2$d new arguments</string>
     <string name="knowledge_interrupted">Graph update stopped. Saved batches remain; pending messages can be processed later.</string>
     <string name="knowledge_error">Graph update stopped (%1$s). Teaching is unaffected; unprocessed messages remain pending.</string>
     <string name="knowledge_source">%1$s · message %2$d\n%3$s</string>

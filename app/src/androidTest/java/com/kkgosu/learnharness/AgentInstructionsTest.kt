@@ -20,6 +20,19 @@ class AgentInstructionsTest {
         }
     }
 
+    @Test
+    fun compactionPromptIsProjectedExactlyFromPinnedSource() {
+        val source = assets.open("learnharness/src/core/compaction.ts").bufferedReader()
+            .use { it.readText() }
+        val expected = source.substringAfter("export function buildCompactionPrompt(")
+            .substringAfter("return `").substringBefore("`;")
+            .replace("\${planSection}", "{{PLAN}}")
+            .replace("\${input.spanText}", "{{TRANSCRIPT}}") + "\n"
+        assertEquals(
+            expected,
+            assets.open("agents/compaction.md").bufferedReader().use { it.readText() })
+    }
+
     @Test fun compositionMatchesEveryUpstreamRoleWithSeparateAndroidAppendix() {
         val compatibility = assets.open("agents/android-compatibility.md").bufferedReader().use { it.readText().trim() }
         val appendix = "\n\n---\n\n$compatibility"

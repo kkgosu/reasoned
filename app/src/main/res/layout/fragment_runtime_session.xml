@@ -60,6 +60,7 @@
             android:gravity="center_vertical">
 
             <TextView
+                android:id="@+id/question_heading"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -95,40 +96,21 @@
                     android:textAppearance="@style/TextAppearance.Harness.Prose"
                     android:textIsSelectable="true" />
 
-                <RadioGroup
+                <LinearLayout
                     android:id="@+id/question_options"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
-                    android:orientation="vertical">
+                    android:orientation="vertical" />
 
-                    <RadioButton
-                        android:id="@+id/option_left"
-                        style="@style/Widget.Harness.Choice"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content" />
-
-                    <RadioButton
-                        android:id="@+id/option_right"
-                        style="@style/Widget.Harness.Choice"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_8" />
-
-                    <RadioButton
-                        android:id="@+id/option_stay"
-                        style="@style/Widget.Harness.Choice"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_8" />
-
-                    <RadioButton
-                        android:id="@+id/option_unknown"
-                        style="@style/Widget.Harness.Choice"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="@dimen/space_8" />
-                </RadioGroup>
+                <CheckBox
+                    android:id="@+id/question_dont_know"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_8"
+                    android:minHeight="@dimen/touch_target"
+                    android:text="@string/runtime_dont_know"
+                    android:textAppearance="@style/TextAppearance.Harness.Prose" />
 
                 <TextView
                     android:id="@+id/confidence_label"
@@ -163,6 +145,18 @@
         android:background="@drawable/composer_background"
         android:orientation="vertical"
         android:padding="@dimen/space_8">
+
+        <EditText
+            android:id="@+id/question_reading_thinking"
+            style="@style/Widget.Harness.Input"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@android:color/transparent"
+            android:gravity="center_vertical|start"
+            android:hint="@string/runtime_reading_thinking_hint"
+            android:maxLines="3"
+            android:minLines="1"
+            android:visibility="gone" />
 
         <Button
             android:id="@+id/reveal_question"

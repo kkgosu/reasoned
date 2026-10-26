@@ -16,13 +16,14 @@
     <string name="runtime_create">Start session</string>
     <string name="runtime_session_title">Learning session</string>
     <string name="runtime_ready">Ready</string>
-    <string name="runtime_waiting">%1$s · waiting for your answer</string>
+    <string name="runtime_waiting">%1$s\nWaiting for your answer</string>
     <string name="runtime_prober">Prober</string>
     <string name="runtime_teacher">Teacher</string>
-    <string name="runtime_interrupted">Interrupted · partial text is not a completed answer. Retry makes a new request and may incur another charge.</string>
-    <string name="runtime_error">Request stopped (%1$s). Check settings or retry explicitly; no automatic retry.</string>
-    <string name="runtime_route">Provisional route · review it before starting the Teacher</string>
-    <string name="runtime_complete">Session ended · not a mastery certification</string>
+    <string name="runtime_interrupted">Interrupted. Partial text is not a completed answer. Retry makes a new request and may incur another charge.</string>
+    <string name="runtime_error">Request stopped (%1$s). Check settings or retry explicitly; no automatic transport retry.</string>
+    <string name="runtime_route">Review the route. Request changes below, or approve to continue.</string>
+    <string name="runtime_route_change_hint">What would you like to change in the route?</string>
+    <string name="runtime_complete">Session ended. Not a mastery certification.</string>
     <string name="runtime_start">Start</string>
     <string name="runtime_retry">Retry</string>
     <string name="runtime_approve">Approve route</string>
@@ -32,6 +33,17 @@
     <string name="runtime_partial">[Interrupted response — not accepted into model context]\n%1$s</string>
     <string name="runtime_storage_error">Local storage unavailable. No new request was sent. Retry after checking device storage.</string>
     <string name="runtime_question">Question</string>
+    <string name="runtime_mechanic">Question format</string>
+    <string name="runtime_mechanic_choice">Multiple choice</string>
+    <string name="runtime_mechanic_recall">Answer in your own words</string>
+    <string name="runtime_mechanic_note">Format for future questions</string>
+    <string name="runtime_compacting">Summarizing earlier context…</string>
+    <string name="runtime_context_compacted">Earlier context summarized at %1$s. Full history remains on this device.</string>
+    <string name="runtime_prediction">Your prediction</string>
+    <string name="runtime_check_reveal">Check your understanding</string>
+    <string name="runtime_dont_know">I don’t know</string>
+    <string name="runtime_reading_thinking_hint">Your thoughts while reading (optional)</string>
+    <string name="runtime_probe_assessment">PROBE ASSESSMENT</string>
     <string name="runtime_confidence_steps">Confidence: 0, 20, 40, 60, 80 or 100 percent</string>
     <string name="runtime_thinking">Thinking level</string>
     <string name="runtime_thinking_auto">Auto</string>
@@ -57,7 +69,7 @@
     <string name="runtime_context_unreported">Last request: no usage reported</string>
     <string name="runtime_context_capacity">Model limit: %1$d tokens (catalog estimate)</string>
     <string name="runtime_context_capacity_unknown">Model limit: unknown</string>
-    <string name="runtime_context_local_limit">Local history limit: 120,000 UTF-8 bytes. No auto-compaction.</string>
+    <string name="runtime_context_local_limit">Earlier context is summarized automatically using this session’s model and connection, with extra usage. Full history is retained, up to local safety bounds of 10,000 blocks, 16 million text characters and 16 MB of protocol. Summaries can lose nuance; recent exchanges and the exact current plan remain available.</string>
     <string name="runtime_context_connection">Connection: %1$s</string>
     <string name="runtime_models_error">Could not load this connection’s model list. The current model and connection were kept.\n\n%1$s</string>
 </resources>

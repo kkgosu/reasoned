@@ -8,8 +8,8 @@
     <string name="practice_targets_note">Optional. Leave empty to practise your topic.</string>
     <string name="practice_empty">No saved propositions yet. Enter a topic to practise without the graph.</string>
     <string name="practice_limit">Choose at most 8 propositions.</string>
-    <string name="practice_working">Practice · work on the current problem; ask for a hint or submit your reasoning</string>
-    <string name="practice_paused">Practice · discuss the result, or choose Next problem</string>
+    <string name="practice_working">Work on the current problem. Ask for a hint or submit your reasoning.</string>
+    <string name="practice_paused">Discuss the result, or choose Next problem.</string>
     <string name="practice_next">Next problem</string>
     <string name="practice_dismiss">Dismiss problem without revealing solution</string>
     <string name="practice_dismiss_warning">End this problem locally without revealing the solution? Your submitted work and unsent draft stay saved. No model request is made.</string>

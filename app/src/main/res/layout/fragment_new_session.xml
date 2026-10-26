@@ -48,6 +48,43 @@
                 android:text="@string/session_practice" />
         </RadioGroup>
 
+        <LinearLayout
+            android:id="@+id/session_mechanic_section"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24"
+            android:layout_marginTop="@dimen/space_16"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/runtime_mechanic"
+                android:textAppearance="@style/TextAppearance.Harness.Meta" />
+
+            <RadioGroup
+                android:id="@+id/session_mechanic"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:checkedButton="@id/mechanic_choice"
+                android:orientation="vertical">
+
+                <RadioButton
+                    android:id="@+id/mechanic_choice"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="@dimen/touch_target"
+                    android:text="@string/runtime_mechanic_choice" />
+
+                <RadioButton
+                    android:id="@+id/mechanic_recall"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="@dimen/touch_target"
+                    android:text="@string/runtime_mechanic_recall" />
+            </RadioGroup>
+        </LinearLayout>
+
         <Button
             android:id="@+id/practice_targets"
             style="@style/Widget.Harness.Navigation"

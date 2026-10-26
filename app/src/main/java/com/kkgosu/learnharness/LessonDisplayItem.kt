@@ -25,13 +25,21 @@ sealed class LessonDisplayItem(open val id: Long) {
         val choices: List<String>,
         val answer: String,
         val thinking: String,
-        val confidence: Int,
+        val confidence: Int?,
         val correctAnswer: String = "",
         val explanation: String = "",
         val phase: String = "",
+        val questionType: String = "",
+        val dontKnow: Boolean = false,
+        val readingThinking: String = "",
+        val values: List<String> = choices,
+        val selectedValues: List<String> = listOf(answer).filter { it in values },
+        val correctValues: List<String> = listOf(correctAnswer).filter { it.isNotBlank() && it in values },
+        val details: String = "",
+        val descriptions: List<String> = emptyList(),
     ) : LessonDisplayItem(id)
 
-    enum class Role { TITLE, PROSE, LEARNER, QUESTION, THINKING, FIGURE, RESEARCH }
+    enum class Role { TITLE, PROSE, LEARNER, QUESTION, THINKING, FIGURE, RESEARCH, PLAN, ASSESSMENT, PRACTICE }
 
     fun save(): Bundle = Bundle().apply {
         putLong("id", id)
@@ -48,10 +56,18 @@ sealed class LessonDisplayItem(open val id: Long) {
                 putStringArrayList("choices", ArrayList(item.choices))
                 putString("answer", item.answer)
                 putString("thinking", item.thinking)
-                putInt("confidence", item.confidence)
+                putInt("confidence", item.confidence ?: -1)
+                putString("questionType", item.questionType)
+                putBoolean("dontKnow", item.dontKnow)
+                putString("readingThinking", item.readingThinking)
                 putString("correctAnswer", item.correctAnswer)
                 putString("explanation", item.explanation)
                 putString("phase", item.phase)
+                putStringArrayList("values", ArrayList(item.values))
+                putStringArrayList("selectedValues", ArrayList(item.selectedValues))
+                putStringArrayList("correctValues", ArrayList(item.correctValues))
+                putString("details", item.details)
+                putStringArrayList("descriptions", ArrayList(item.descriptions))
             }
 
             is FormulaDisplayItem -> {
@@ -78,10 +94,23 @@ sealed class LessonDisplayItem(open val id: Long) {
                     getStringArrayList("choices").orEmpty(),
                     getString("answer").orEmpty(),
                     getString("thinking").orEmpty(),
-                    getInt("confidence"),
+                    getInt("confidence", -1).takeIf { it in 0..100 },
                     getString("correctAnswer").orEmpty(),
                     getString("explanation").orEmpty(),
-                    getString("phase").orEmpty()
+                    getString("phase").orEmpty(),
+                    getString("questionType").orEmpty(),
+                    getBoolean("dontKnow"),
+                    getString("readingThinking").orEmpty(),
+                    getStringArrayList("values") ?: getStringArrayList("choices").orEmpty(),
+                    getStringArrayList("selectedValues")
+                        ?: listOf(getString("answer").orEmpty()).filter { it in getStringArrayList("choices").orEmpty() },
+                    getStringArrayList("correctValues")
+                        ?: listOf(getString("correctAnswer").orEmpty()).filter {
+                            it.isNotBlank() && it in getStringArrayList(
+                                "choices"
+                            ).orEmpty()
+                        },
+                    getString("details").orEmpty(), getStringArrayList("descriptions").orEmpty()
                 )
 
                 "formula" -> FormulaDisplayItem(

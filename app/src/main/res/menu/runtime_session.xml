@@ -1,4 +1,8 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/session_mechanic"
+        android:showAsAction="never"
+        android:title="@string/runtime_mechanic" />
     <item android:id="@+id/session_plan" android:title="@string/learning_plan" android:showAsAction="never" />
     <item android:id="@+id/session_update_graph" android:title="@string/knowledge_update" android:showAsAction="never" />
     <item

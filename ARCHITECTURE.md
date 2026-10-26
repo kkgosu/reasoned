@@ -163,15 +163,21 @@ Extraction reads bounded transcript evidence. An Auditor proposes identity match
 
 `StudyPlan` stores stable lowercase node IDs, titles/summaries, prerequisite edges and a monotonic
 version in the session checkpoint; old plan tool arguments remain in protocol history. `plan_init`
-uses structured JSON, validates duplicates/endpoints/self-loops/DAG cycles before committing, and
-pauses for explicit plan approval. Rewrites replace the structure, not a completion ledger.
+uses structured JSON and validates duplicates/endpoints/self-loops/DAG cycles before committing.
+The first plan pauses for explicit approval; persisted `planApproved` lets mid-lesson rewrites
+continue teaching without another barrier. Rewrites replace structure, not a completion ledger.
 Current/visited positions derive only from tagged question calls and are never mastery assessments.
-The native Learning plan page lists dependencies; Approve plan confirms directly without a second
-dialog. While awaiting approval, the existing composer accepts revision requests and switches its
-action from approval to Send plan changes. A persisted `planPending` flag survives
-generation/reopening/interruption: revised plans and plain clarification replies still require
-approval, unsent edits cannot be approved, and question/figure/finish tools are denied until
-approval. Retry after an interrupted revision restores plan review without replaying generation.
+Each accepted `plan_init` also appends a persisted PLAN row with a Mermaid diagram generated from
+its validated nodes/edges, not from optional model prose. Labels are escaped and node IDs are
+app-generated; PLAN rows are not teaching evidence. The native Learning plan page renders the same
+structure (including older saved plans) and keeps the textual dependency list as an accessible
+fallback. Approve plan confirms directly without a second dialog. While awaiting approval, the
+existing composer accepts revision requests and switches its
+action from approval to Send plan changes. Before the first approval, persisted `planPending`
+survives generation/reopening/interruption: revised plans and plain clarification replies still
+require approval, unsent edits cannot be approved, and question/figure/finish tools are denied.
+Older checkpoints infer prior approval from an existing plan without pending approval. Retry after
+an interrupted revision restores plan review without replaying generation.
 Plan/revision prose is excluded from canonical teaching evidence; there is no automatic
 plan→knowledge conversion.
 
@@ -187,7 +193,25 @@ Validation: APK/test-APK compilation and lint, pinned-source hashes and an offli
 
 ## Agent runtime and prompts: phase 4 implemented
 
-`ReasonedApplication` lazily owns one `SessionRuntime`, a concrete SQLite store and a Keystore credential store. The graph/mock screens do not initialize the runtime or send requests. A native DrawerLayout wraps AppKit's existing stack/inset owner, with New session, Knowledge graph, recent sessions and a pinned Settings entry; the library handles drawer scrim, gestures and back. Settings opens focused Providers & models, Learning preferences and About & privacy pages. New session collects the goal; the explicitly disclosed Start session action creates its local checkpoint and requests the first teaching step in one tap. An argument consumed before loading triggers that first request only after the checkpoint opens successfully; saved-session navigation and activity recreation never replay it. The underlying runtime create operation remains local for callers that only need a checkpoint. Only Start session, Start on a previously idle session, Send, explicit Retry or route approval sends learning content to OpenAI. Account/model discovery can make separate authenticated requests. API model IDs are user-entered; ChatGPT connections automatically load the active account's model catalog on the Providers screen and show full-width radio rows with display names, saving selected slugs per connection. Refresh is explicit; account changes cancel the previous load and discard its rows. No catalog request is required to create a local session, and there is no assumed default or unverified account-access claim. The newest 30 saved sessions are browsable; full history management is later work.
+`ReasonedApplication` lazily owns one `SessionRuntime`, a concrete SQLite store and a Keystore
+credential store. The graph/mock screens do not initialize the runtime or send requests. A native
+DrawerLayout wraps AppKit's existing stack/inset owner, with New session, Knowledge graph, recent
+sessions and a pinned Settings entry; the library handles drawer scrim, gestures and back. Settings
+opens focused Providers & models, Learning preferences and About & privacy pages. New session
+collects the goal; the explicitly disclosed Start session action creates its local checkpoint and
+requests the first teaching step in one tap. An argument consumed before loading triggers that first
+request only after the checkpoint opens successfully; saved-session navigation and activity
+recreation never replay it. The underlying runtime create operation remains local for callers that
+only need a checkpoint. Only Start session, Start on a previously idle session, Send, explicit
+Retry, first-plan approval or Next problem initiates learning generation. Within that foreground
+action, automatic Probe→Teacher handoff, bounded local tool correction and context summarization can
+make additional same-connection requests. Account/model discovery can make separate authenticated
+requests. API model IDs are user-entered; ChatGPT connections automatically load the active
+account's model catalog on the Providers screen and show full-width radio rows with display names,
+saving selected slugs per connection. Refresh is explicit; account changes cancel the previous load
+and discard its rows. No catalog request is required to create a local session, and there is no
+assumed default or unverified account-access claim. The newest 30 saved sessions are browsable; full
+history management is later work.
 
 `RuntimeSessionFragment` uses its own native composer layout with the shared `LessonAdapter`, not
 `MockLesson` or a parallel renderer. Native Markwon spans render standard Markdown and
@@ -196,54 +220,155 @@ image loader; only fenced diagrams use the isolated offline rasterizer described
 blocks have monotonically allocated IDs; streaming replaces only the current block, at most once per
 100 ms. Accepted questions and answers both enter history; older missing questions are reconstructed
 from SQLite evidence without rewriting protocol context. Written answers are displayed once, not
-duplicated as answer plus reasoning. One pending question holds free-response or 2–4 choices,
-reasoning, confidence in 20-percent steps and collapse state. Prober questions open automatically;
-Teacher checks wait for reveal. The transcript remains visible when editing; a separate scrollable
+duplicated as answer plus reasoning. One pending question holds free-response or 2–32 choices,
+question reasoning, optional reading thoughts, explicit `dontKnow`, applicable confidence in
+20-percent steps and collapse state. Prober questions open automatically. Teacher `type: predict`
+opens before teaching; `type: check` arrives collapsed after teaching. A check's separate
+`thinkingWhileReading` field remains available while its question is collapsed; question-answer
+reasoning appears on reveal. Ungraded `type: ask` opens immediately with no plan tag or key.
+Legacy saved questions without a type preserve their previous arrival/collapse state. The transcript
+remains visible when editing; a separate scrollable
 question panel leaves a persistent answer/Send dock above the IME. An ephemeral native progress row
 after the last transcript message shows generation, including while waiting for first text; it is
 not stored as lesson content. The question panel keeps the existing rounded outline, and question
 arrival uses bounds/fade motion and API-30+ IME frames resize the viewport. This refinement is
 build-checked, not device-verified.
 
-Answered questions render as one typed native card reconstructed from the existing question/answer evidence, including legacy sessions: question, outlined options, selected/correct marks, a six-color confidence rail, learner thinking and Why disclosures. New `ask_question` calls commit `explanation` and `correctAnswer` before submission; neither is rendered in the pending dock. Listed choices are compared to the exact key; free responses reveal the reference but receive no automatic semantic verdict. Legacy/explicitly ungraded questions have no correctness badge. Learner bands and thin separators distinguish authorship without chat bubbles. Reasoning-capable models request `reasoning.summary=auto` unless effort is off/none. Only completed provider `summary_text` enters collapsible THINKING rows; encrypted content remains opaque. THINKING rows never become graph evidence. AppKit toolbar state is applied in onCreateOptionsMenu and refreshed via the fragment's invalidateOptionsMenu, not the unused platform preparation hook; graph Stop is visible only while extraction actually runs. Manual extraction with no eligible passages reports why instead of implying a new graph was created. Build-only verification; UI/live acceptance remains pending.
+Answered questions render as one typed native card reconstructed from the existing question/answer
+evidence, including legacy sessions: question, outlined options, selected/correct marks, a six-color
+confidence rail, learner thinking and Why disclosures. The learner selects multiple choice (`probe`/
+`quiz`) or free recall (`recall`/`explain`), at creation or from Question format for future
+questions. Pending questions retain their original mechanic/commitment. Graded tools commit the
+explanation/reference and exact answer key before submission; neither is rendered in the pending
+dock. `ask_user_question` is separate and ungraded, with a written Other response allowed; graded
+choices require selection or explicit don’t-know. `QuestionContract` separates option labels from
+stable values, supports single/multiple selection, additional details and clarification
+descriptions. The dock creates native radios or checkboxes for every option, not four fixed views.
+Selected values survive drafts/reopening; returned selections carry original value, label and
+one-based index. Grading uses exact set equality with committed values, independent of labels/order;
+saved label-only questions retain their original identities. Free responses reveal the reference but
+receive no automatic semantic verdict. Legacy/explicitly ungraded questions have no correctness
+badge. Learner bands and thin separators distinguish authorship without chat bubbles.
+Reasoning-capable models request `reasoning.summary=auto` unless effort is off/none. Only completed
+provider `summary_text` enters collapsible THINKING rows; encrypted content remains opaque. THINKING
+rows never become graph evidence. AppKit toolbar state is applied in onCreateOptionsMenu and
+refreshed via the fragment's invalidateOptionsMenu, not the unused platform preparation hook; graph
+Stop is visible only while extraction actually runs. Manual extraction with no eligible passages
+reports why instead of implying a new graph was created. Build-only verification; UI/live acceptance
+remains pending.
 
-The rounded runtime composer exposes Send/Stop, session model, thinking level and context snapshot. Model discovery stays on the session's saved connection; selection never generates or changes billing. The API picker intersects the fetched IDs with known Responses capabilities; an existing/manual model remains usable. ChatGPT uses its account-scoped model names/slugs. Capability metadata (42 exact IDs, context windows and supported wire reasoning efforts) is generated from pi-ai 1.4.0 with `scripts/update-model-catalog.mjs`, not guessed from model-name prefixes. The asset records its source version and SHA-256. The generator reads flattened model.id values, not pi-ai's internal chat:-prefixed catalog keys; exact API IDs therefore resolve their levels and capacity, including gpt-6.1-sol. Unknown models offer only Auto and unknown capacity. Successful model lists are cached in local preferences by connection and shared between session/Providers pickers; opening a picker reuses the cache, while Refresh models explicitly fetches/replaces it. Failed refresh preserves the prior cache; replacing/forgetting an API key or signing out/resetting plan connections invalidates the associated UI cache. It contains names/IDs only, never credentials. Auto omits reasoning.effort; an explicit supported level is checkpointed and sent on the next request. The context ring uses last completed request input usage divided by catalog capacity, not accumulated billing tokens or an invented live tokenizer; its dialog also shows saved input/output token totals and explains the snapshot, unknowns and independent 120,000-byte local history cap. Composer ripples use a bounded rounded-button mask with a transparent resting background, so the overlaid context button does not hide the ring. Account details/Manage usage moved into this dialog instead of an always-visible plan button.
+`ToolContentPresentation` repairs a fresh native CommonMark/LaTeX presentation tree for
+tool-authored questions/options/references and newly revealed practice solutions only. It uses the
+installed renderer's command vocabulary for recognized swallowed JSON prefixes/extra escaping, and
+conservatively recovers document newlines with corroborating evidence. Native code boundaries (
+including nested fenced/indented code), link destinations, TeX comments, native environment/substack
+rows and physical display newlines remain literal. Ordinary assistant prose and learner responses
+are not passed through this recovery. This is bounded best-effort recovery, not a full upstream
+content-reader port; unsupported/ambiguous formulas may remain source. Saved tool arguments, option
+values, answer keys, learner facts and grading are never rewritten. Historical answer cards use
+their saved question contract, not a join by rendered labels. Build/lint and fixture compilation
+only; no device/live acceptance has been run for this refinement.
 
-The Prober diagnoses before `finish_probe` proposes 1–8 provisional textual steps. Learner approval
-supplies the suspended tool result and switches to the Teacher. This probe route is not itself a
-dependency-validated plan or extracted knowledge. The Teacher separately writes a validated
+The rounded runtime composer exposes Send/Stop, session model, thinking level and context snapshot.
+Model discovery stays on the session's saved connection; selection never generates or changes
+billing. The API picker intersects the fetched IDs with known Responses capabilities; an
+existing/manual model remains usable. ChatGPT uses its account-scoped model names/slugs. Capability
+metadata (42 exact IDs, context windows and supported wire reasoning efforts) is generated from
+pi-ai 1.4.0 with `scripts/update-model-catalog.mjs`, not guessed from model-name prefixes. The asset
+records its source version and SHA-256. The generator reads flattened model.id values, not pi-ai's
+internal chat:-prefixed catalog keys; exact API IDs therefore resolve their levels and capacity,
+including gpt-6.1-sol. Unknown models offer only Auto and unknown capacity. Successful model lists
+are cached in local preferences by connection and shared between session/Providers pickers; opening
+a picker reuses the cache, while Refresh models explicitly fetches/replaces it. Failed refresh
+preserves the prior cache; replacing/forgetting an API key or signing out/resetting plan connections
+invalidates the associated UI cache. It contains names/IDs only, never credentials. Auto omits
+reasoning.effort; an explicit supported level is checkpointed and sent on the next request. The
+context ring uses last completed request input usage divided by catalog capacity, not accumulated
+billing tokens or an invented live tokenizer; its dialog also shows saved input/output token totals
+and explains the snapshot, unknowns, automatic summary costs/date and independent archive safety
+bounds. Composer ripples use a bounded rounded-button mask with a transparent resting background, so
+the overlaid context button does not hide the ring. Account details/Manage usage moved into this
+dialog instead of an always-visible plan button.
+
+The Prober diagnoses before `finish_probe` commits the pinned structured `assessment`: one
+`{strand, assessment}` per dependency strand plus an optional overall summary. Assessments record
+reliable floor, ceiling, misconceptions and what teaching should build from, not a syllabus.
+They persist as ASSESSMENT rows/checkpoint data, never teaching evidence. The Teacher receives
+them in protocol history and `learning_context`. A successful `finish_probe` acknowledges the call,
+resets phase-local answer/context counters and immediately continues with Teacher instructions/tools
+within the same foreground action. There is no intermediate route approval. Legacy route checkpoints
+migrate locally on open without making a request; an interrupted handoff stays Teacher on retry.
+The assessment is not a dependency-validated plan or extracted knowledge. The Teacher writes a
+validated
 StudyPlan, pauses for explicit approval and tags later questions with its stable node IDs. The
 Teacher checks one reasoning step at a time, can repair via another question, and ends with a
-summary, never a mastery certification. `learning_context` reads the goal, route, current plan and a
-bounded goal-relevant preview of persistent propositions with source IDs; these are prior teaching
-content, not learner mastery. Teaching has no direct graph mutation tools; no filesystem, shell,
+summary, never a mastery certification. `dontKnow` answers contain neither confidence nor an
+incorrect verdict; free recall and ungraded answers also omit confidence. Answer cards retain
+question-thinking and reading-thinking as separate disclosures. Prediction references stay tucked
+behind Why after submission. `learning_context` reads current-session state and explicitly selected
+practice material, not an automatic preview of prior proposition statements. Probe/Practice can read
+saved graph organization through `list_sessions` (birth-session metadata/counts) and
+`list_propositions` (names born there only). No old transcripts, proposition statements or
+sample-graph contents are returned. Both are read-only, parameterized SQLite queries; prior coverage
+is not learner mastery. Teaching has no direct graph mutation tools; no filesystem, shell,
 arbitrary network, code-execution, graph-write or remote built-in tools are available.
 `AgentInstructions.kt` loads unmodified LearnHarness Prober/Teacher sources from
 `assets/learnharness/`, using upstream's base → sorted role fragments → sorted shared appendix
 order. A separate `agents/android-compatibility.md` maps current tool names and states unavailable
 tools/rendering; it does not rewrite source fragments. The independently written v1
-prompts/reasoning-check skill were removed. Practice and learning-data skill sources remain
-inactive. Extractor/Auditor constants are projected from the preserved specialist source into
+prompts/reasoning-check skill were removed. Practice uses its original role fragments; the
+learning-data skill remains inactive. Extractor/Auditor constants are projected from the preserved
+specialist source into
 separate active stage assets; TypeScript itself is never executed by Android. Runs record
-`learnharness-0795ef197cca-v5` for diagram capabilities (v4 introduced committed question answers);
-legacy `1` and v1–v4 sessions adopt it on the next generation without dropping their transcript.
+`learnharness-0795ef197cca-v9` adds stable question identities/multiple selection and read-only
+graph organization to the v8 continuity rules; legacy `1` and v1–v8 sessions adopt it on the next
+generation without dropping transcript or commitments.
 Local AGENTS.md preferences are editable in Settings → Learning preferences and snapshotted as a *
 *user** message at session creation, not elevated instructions or permissions.
 
 The Responses adapter uses the fixed HTTPS OpenAI endpoint, `store=false`, stateless input history and opaque completed reasoning items (`reasoning.encrypted_content`). Only a validated `response.completed` can commit model context/tool effects. The fixed-endpoint transport validates SSE framing rather than rejecting a valid stream because of its Content-Type label: only data, comments and standard event/id/retry fields are accepted; ordinary JSON/HTML responses are not a fallback. Partial arguments never execute. Native checks independently enforce tool/role allowlists, exact argument keys/types, choice/route bounds, one call per response and replay IDs; unknown output types, refusals, incomplete/EOF/malformed streams and over-budget responses stop visibly. A mutex serializes commands and checkpoints; the deterministic fake provider uses this same runner.
 
-Bounds: four teaching-provider steps and 180 seconds per learner action, including at most one
-foreground figure job with up to eight additional selected-model calls; 120-second HTTP call /
-45-second read / 15-second connect limits; 4,096 output tokens per API-key request (the ChatGPT
-preview rejects this parameter, so only local stream/time/character limits apply there); 2 MiB total
-SSE data, 256 KiB line/event/completed output, 24,000 visible characters per response, 120,000 bytes
-of protocol context, and 160 transcript blocks/120,000 text characters per session. No automatic
-context truncation or retry. At a limit, start a new local session; budgeted context selection
-beyond this bounded full-session policy is future work.
+Bounds: eight main-provider steps and 180 seconds per learner action, including handoff and at most
+two correction attempts for invalid local question/plan calls. These return fixed `ok:false` errors
+and valid node IDs without applying the call or retaining its provisional displayed prose.
+Permissions,
+replays, malformed provider envelopes and transport failures remain fatal, not automatically
+retried.
+One foreground figure and one research job per action retain their own bounded calls. HTTP limits
+remain 120-second call / 45-second read / 15-second connect; API requests cap output at 4,096 tokens
+(ChatGPT omits this unsupported parameter), SSE at 2 MiB, line/event/completed output at 256 KiB,
+and visible text at 24,000 characters per response.
+
+Long-session context uses the pinned upstream compaction prompt projected by
+`scripts/update-compaction-prompt.py`, preserving exact current-plan structure. Before a turn, an
+estimate based on reported usage plus new content (or characters/4 without usage) triggers at the
+smaller of 150,000 tokens and catalog window minus 16,384 reserve. Unknown windows use 150,000.
+One additional tool-free request uses the same model/effort/connection and records usage. A summary
+commits atomically only after a valid nonempty completed response. Failure/cancellation preserves
+the
+previous summary/cut; reopening never resumes it. Full protocol/transcript, source anchors,
+commitments
+and graph evidence are untouched. Model input alone becomes fallible historical summary + exact
+native
+state/learner preferences + recent complete exchanges (up to a 20,000-token target, reduced for
+small
+windows). Cuts never orphan tool results or separate reasoning from its call. Encrypted/public model
+reasoning is not summarized as learner evidence. Oversized uncuttable exchanges stop visibly rather
+than dropping pending work. Archive safety bounds are separate: 10,000 rendered blocks, 16 million
+text characters and 16 MB UTF-8 protocol. Compaction never creates teaching or graph evidence.
 
 Hiding the runtime screen or stopping the Activity cancels the foreground job; there is no service/background-execution promise. Cancellation closes the HTTP call/body, including blocked reads. Finally checkpoints run non-cancellably on IO; streamed partial text is marked interrupted and excluded from model context. Startup marks unfinished runs/sessions interrupted; Retry starts a new charged request rather than claiming token-level resume. Reported usage accumulates completed responses/runs; interrupted or rejected responses may have billed usage the client cannot report. Draft writes debounce 200 ms and flush on actions/hiding. Native saved state carries no real transcript or credentials.
 
-SQLite v2 preserves sessions, messages, questions, answers and runs, with an additive v1 migration for knowledge_nodes, knowledge_chains, knowledge_sources, knowledge_coverage and knowledge_runs. Checkpoints preserve model/prompt version, phase, wire history, pending tool, provisional route and input state. Accepted answers and their source message IDs commit transactionally with the checkpoint; `(session, call_id)` prevents duplicate answers. Replacing session or message rows is deliberately avoided so foreign-key cascades cannot erase evidence; checkpoint message writes now UPDATE/INSERT rather than REPLACE to retain knowledge source anchors. IO/storage failures are surfaced; no destructive migration or fabricated recovery is used.
+SQLite v2 preserves sessions, messages, questions, answers and runs, with an additive v1 migration
+for knowledge_nodes, knowledge_chains, knowledge_sources, knowledge_coverage and knowledge_runs.
+Checkpoints preserve model/prompt version, phase, wire history, pending tool, provisional route and
+input state. Accepted answers and their source message IDs commit transactionally with the
+checkpoint; `(session, call_id)` prevents duplicate answers. Replacing session or message rows is
+deliberately avoided so foreign-key cascades cannot erase evidence; checkpoint message writes
+UPDATE/INSERT only changed rows, retaining knowledge source anchors. Only a retracted provisional
+tail beyond the authoritative last row is removed. Large checkpoints are read through bounded SQLite
+substr slices so multi-megabyte Unicode history does not exceed Android CursorWindow row limits.
+IO/storage failures are surfaced; no destructive migration or fabricated recovery is used.
 
 Use coroutines, structured concurrency and Flow. A bounded multi-step loop yields model deltas, validated tool calls, results, usage and completion/errors. Provider and local tool outputs are untrusted inputs: enforce schemas, byte/token limits, allowed tools, timeouts and step budgets. Cancellation closes streaming responses and cancels child work; never convert cancellation into a successful answer.
 
@@ -257,7 +382,11 @@ Use coroutines, structured concurrency and Flow. A bounded multi-step loop yield
 
 BYOK uses Android Keystore AES-256-GCM with a fresh provider-generated IV and atomic ciphertext replacement in `noBackupFilesDir`. Key entry disables view-state/autofill saving and the entire Providers & models window is FLAG_SECURE; leaving clears the field. Keys are read only for the Authorization header, never inserted into model input, database checkpoints, logs or exports. Forget key removes both ciphertext and alias; missing/invalid Keystore keys require explicit reset/re-entry, never plaintext fallback. Model ID/settings are separate. Session content is private SQLite, not encrypted-at-rest beyond Android's storage protections. `store=false` is requested, not represented as a provider zero-retention guarantee. API billing and data transfer are disclosed before generating.
 
-Knowledge/evidence and dependency plans are implemented in phase 5. Documents/artifacts and jobs/practice tables remain later features. Additional providers, context compaction, specialized rich content beyond the native Markdown/LaTeX renderer, and background recovery remain deferred. Full release dependency/security review, API-26/device diversity and a real-key smoke test are not claimed by the deterministic emulator checks.
+Knowledge/evidence and dependency plans are implemented in phase 5. Documents/artifacts and
+jobs/practice tables remain later features. Context compaction is implemented as described above.
+Additional providers, remaining specialized rich content, and background recovery remain deferred.
+Full release dependency/security review, API-26/device diversity and a real-key smoke test are not
+claimed by the deterministic emulator checks.
 
 ### Optional ChatGPT plan connection
 

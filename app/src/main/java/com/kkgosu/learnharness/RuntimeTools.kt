@@ -6,7 +6,19 @@ import org.json.JSONObject
 internal object RuntimeTools {
     const val NAMESPACE = "learnharness"
 
-    data class Validated(val text: String, val call: JSONObject?, val thinking: String = "")
+    data class Validated(
+        val text: String,
+        val call: JSONObject?,
+        val thinking: String = "",
+        val toolError: String = ""
+    )
+
+    fun questionTool(phase: String, mechanic: String) = when {
+        mechanic == "recall" -> if (phase == "probe") "recall" else "explain"
+        else -> if (phase == "probe") "probe" else "quiz"
+    }
+
+    val questionNames = setOf("quiz", "probe", "explain", "recall", "ask_user_question")
 
     fun objectSchema(properties: JSONObject) =
         JSONObject().put("type", "object").put("properties", properties)
@@ -18,7 +30,12 @@ internal object RuntimeTools {
             .put("name", name).put("description", description).put("strict", true)
             .put("parameters", objectSchema(properties))
 
-    fun schemas(phase: String, researchAllowed: Boolean = false): JSONArray {
+    fun schemas(
+        phase: String,
+        researchAllowed: Boolean = false,
+        mechanic: String = "choice"
+    ): JSONArray {
+        require(mechanic in setOf("choice", "recall"))
         val tools = JSONArray()
         fun tool(name: String, description: String, properties: JSONObject) {
             tools.put(function(name, description, properties))
@@ -28,9 +45,21 @@ internal object RuntimeTools {
         fun strings() = JSONObject().put("type", "array").put("items", string())
         tool(
             "learning_context",
-            "Read the goal, session plan and bounded persistent propositions with source IDs. These are not mastery assessments.",
+            "Read this session's goal, plan, assessment and practice material. To explore prior learning use list_sessions then list_propositions; prior content is not mastery.",
             JSONObject()
         )
+        if (phase in setOf("probe", "practice")) {
+            tool(
+                "list_sessions",
+                "List all knowledge-graph birth sessions, newest first: IDs, names, kind, proposition counts and last-active dates. Read this before probing prior learning. No transcript or proposition statements.",
+                JSONObject()
+            )
+            tool(
+                "list_propositions",
+                "List the proposition NAMES born in a session returned by list_sessions. No statements or transcript; prior coverage is not proof of understanding.",
+                JSONObject().put("session", string())
+            )
+        }
         if (researchAllowed) tool(
             "research",
             "Research a self-contained question in an isolated foreground context. Requires this session's web permission. Extra selected-model usage and Brave search billing; sources and report persist. No PDFs.",
@@ -88,29 +117,65 @@ internal object RuntimeTools {
             return tools
         }
         tool(
-            "ask_question",
-            "Pause for a learner answer. Ask one question. choices must be empty for free response, or 2–4 distinct short options. Never put the answer in the question.",
-            JSONObject().put("question", string()).put("choices", strings())
-                .put(
-                    "explanation",
-                    string().put(
-                        "description",
-                        "For a knowledge check, reason out the answer here before committing correctAnswer. Hidden until the learner submits. Empty for ungraded questions."
+            "ask_user_question",
+            "One ungraded clarification, then wait. Empty options for text, or 2–32 options with stable values; allow a written Other response. multiSelect permits several selections. Empty details/description means none; empty value defaults to label. Never substitute this for a knowledge check.",
+            QuestionContract.properties("ask_user_question")
+        )
+        tool(
+            questionTool(phase, mechanic),
+            if (mechanic == "choice") "One multiple-choice knowledge question, then wait. options contain label and stable value (empty value defaults to label). Commit explanation BEFORE correctAnswer: one exact option value, or an array of exact values with multiSelect=true. Grade by exact set equality, not labels or positions. 2–32 options; empty details means none. Don't add a don't-know option: the UI provides it. Never reveal the key before submission."
+            else "One free-recall knowledge question, then wait. Commit the reference answer AND reasoning in correctAnswer before asking. Assess the learner's written answer against that commitment after submission; no automatic semantic grading.",
+            QuestionContract.properties(questionTool(phase, mechanic)).apply {
+                if (phase == "teacher") {
+                    put(
+                        "nodeId",
+                        string().put(
+                            "description",
+                            "A node ID in the current dependency plan; position, not mastery."
+                        )
                     )
-                )
-                .put(
-                    "correctAnswer",
-                    string().put(
-                        "description",
-                        "For a knowledge check, exact text of the ONE correct choice, or a committed reference answer for free response. Hidden until submission. Empty for ungraded preferences or exploratory questions."
+                    put(
+                        "type", string().put("enum", JSONArray(listOf("predict", "check")))
+                            .put(
+                                "description",
+                                "predict opens BEFORE teaching and ends the turn; resolve the learner's prediction in the next teaching. check arrives collapsed AFTER completed teaching; diagnose/repair a miss."
+                            )
                     )
-                )
-                .apply { if (phase == "teacher") put("nodeId", string()) })
+                }
+            })
         if (phase == "probe") {
             tool(
                 "finish_probe",
-                "After at least one learner answer, propose a short route for explicit learner approval. Not a knowledge or mastery claim.",
-                JSONObject().put("summary", string()).put("steps", strings())
+                "Conclude only when the goal is concrete and EVERY dependency strand is bracketed. Record one assessment per strand: reliable floor, ceiling, misconceptions and what teaching should build from, grounded in learner answers. At least one learner answer is only a validation minimum, not a stopping rule. The Teacher receives the structured assessment. No mastery claim.",
+                JSONObject().put(
+                    "assessment", objectSchema(
+                        JSONObject()
+                            .put(
+                                "strands",
+                                JSONObject().put("type", "array").put("minItems", 1)
+                                    .put("maxItems", 24)
+                                    .put(
+                                        "items", objectSchema(
+                                            JSONObject().put("strand", string())
+                                                .put(
+                                                    "assessment",
+                                                    string().put(
+                                                        "description",
+                                                        "Evidence-based floor, ceiling, misconceptions, what the lesson should build from on this dependency strand."
+                                                    )
+                                                )
+                                        )
+                                    )
+                            )
+                            .put(
+                                "summary",
+                                string().put(
+                                    "description",
+                                    "Overall goal and entry point; empty if unnecessary."
+                                )
+                            )
+                    )
+                )
             )
         } else {
             tool(
@@ -120,7 +185,7 @@ internal object RuntimeTools {
             )
             tool(
                 "plan_init",
-                "Write or rewrite the session dependency plan, not the knowledge graph. Stable lowercase slug IDs; edges from prerequisite to dependent. Wait for learner approval before teaching.",
+                "Write or rewrite the session dependency plan, not the knowledge graph. Stable lowercase slug IDs; edges from prerequisite to dependent. The app renders its Mermaid map, so do not repeat it in prose. The FIRST plan (including revisions before approval) ends the turn and requires learner approval. Mid-lesson rewrites after initial approval continue teaching without another approval barrier.",
                 JSONObject().put(
                     "nodes",
                     JSONObject().put("type", "array").put(
@@ -151,7 +216,8 @@ internal object RuntimeTools {
     fun validate(
         response: JSONObject,
         session: RuntimeSession,
-        tools: JSONArray = schemas(session.phase, session.researchAllowed)
+        tools: JSONArray = schemas(session.phase, session.researchAllowed, session.mechanic),
+        allowRepair: Boolean = false
     ): Validated {
         if (!response.isNull("error")) throw ProviderFailure(
             openAiErrorCode(response.toString()) ?: "incomplete"
@@ -170,6 +236,7 @@ internal object RuntimeTools {
         val text = StringBuilder()
         val thinking = StringBuilder()
         var call: JSONObject? = null
+        var toolError = ""
         output.objects().forEach { item ->
             when (item.getString("type")) {
                 "message" -> {
@@ -227,16 +294,18 @@ internal object RuntimeTools {
                     if (namespace.isNotEmpty() && (session.connection == "api" || namespace != NAMESPACE)) throw ProviderFailure(
                         "tool_denied"
                     )
-                    if (session.planPending && name in setOf(
-                            "ask_question",
+                    if (session.planPending && (name in questionNames - "ask_user_question" || name in setOf(
                             "visual",
                             "finish_lesson"
-                        )
+                        ))
                     )
                         throw ProviderFailure("plan_approval_required")
                     val schema = tools.objects().firstOrNull { it.getString("name") == name }
                         ?: throw ProviderFailure("tool_denied")
-                    val args = JSONObject(item.strictString("arguments", 24_000))
+                    // Envelope, permissions and replay checks above are NEVER recoverable tool errors.
+                    item.strictString("arguments", 24_000)
+                    try {
+                        val args = JSONObject(item.getString("arguments"))
                     val expected =
                         schema.getJSONObject("parameters").getJSONObject("properties").keys()
                             .asSequence().toSet()
@@ -245,14 +314,10 @@ internal object RuntimeTools {
                         "validating arguments: keys=${args.length()}; expected=${expected.size}"
                     )
                     val keys = args.keys().asSequence().toSet()
-                    // Older saved/fixture calls have no committed answer; they remain explicitly ungraded.
-                    if (keys != expected && !(name == "ask_question" && keys == expected - setOf(
-                            "correctAnswer",
-                            "explanation"
-                        ))
-                    )
+                        if (keys != expected)
                         throw ProviderFailure("invalid_tool_arguments")
                     when (name) {
+                        "list_propositions" -> args.strictString("session", 200)
                         "research" -> {
                             if (!session.researchAllowed || session.research.size >= 4) throw ProviderFailure(
                                 "research_not_allowed"
@@ -314,39 +379,26 @@ internal object RuntimeTools {
                             )
                                 throw ProviderFailure("practice_verdict")
                         }
-                        "ask_question" -> {
+                        "quiz", "probe", "explain", "recall", "ask_user_question" -> {
                             android.util.Log.d(
                                 "ReasonedRuntime",
                                 "question shape: textChars=${(args.opt("question") as? String)?.length ?: -1}; choices=${
                                     args.optJSONArray("choices")?.length() ?: -1
                                 }"
                             )
-                            args.strictString("question", 2000)
-                            if (session.phase == "teacher" && session.plan?.nodes?.none {
-                                    it.id == args.strictString(
-                                        "nodeId",
-                                        80
+                            val graded = name != "ask_user_question"
+                            if (session.phase == "teacher" && graded) {
+                                if (args.strictString("type", 10) !in setOf(
+                                        "predict",
+                                        "check"
                                     )
-                                } != false)
-                                throw ProviderFailure("invalid_plan_reference")
-                            val choices = args.optJSONArray("choices")
-                                ?: throw ProviderFailure("invalid_question_choices")
-                            if (choices.length() != 0 && choices.length() !in 2..4) throw ProviderFailure(
-                                "invalid_question_choices"
-                            )
-                            val labels = (0 until choices.length()).map {
-                                (choices.get(it) as? String)?.takeIf { label -> label.isNotBlank() && label.length <= 200 }
-                                    ?: throw ProviderFailure("invalid_question_choices")
+                                ) throw ProviderFailure("invalid_question_type")
+                                val node = args.strictString("nodeId", 80)
+                                if (session.plan?.nodes?.none { it.id == node } != false) throw ProviderFailure(
+                                    "invalid_plan_reference"
+                                )
                             }
-                            if (labels.toSet().size != labels.size) throw ProviderFailure("invalid_question_choices")
-                            if (args.has("correctAnswer")) {
-                                val key =
-                                    args.strictString("correctAnswer", 2000, allowEmpty = true)
-                                val explanation =
-                                    args.strictString("explanation", 4000, allowEmpty = true)
-                                if (key.isNotEmpty() && (key.isBlank() || explanation.isBlank() || (labels.isNotEmpty() && key !in labels)))
-                                    throw ProviderFailure("invalid_answer_key")
-                            }
+                            QuestionContract.parse(id, args, session.phase, name)
                         }
 
                         "visual" -> {
@@ -357,21 +409,38 @@ internal object RuntimeTools {
                         }
                         "plan_init" -> StudyPlan.parse(args)
                         "finish_probe" -> {
-                            if (session.answers < 1) throw ProviderFailure("invalid_probe_handoff")
-                            args.strictString("summary", 2000)
-                            val steps = args.getJSONArray("steps")
-                            if (steps.length() !in 1..8) throw ProviderFailure("invalid_output")
-                            (0 until steps.length()).forEach {
-                                val step = steps.get(it) as? String
-                                    ?: throw ProviderFailure("invalid_output")
-                                if (step.isBlank() || step.length > 400) throw ProviderFailure("invalid_output")
-                            }
+                            if (session.answers < 1 || session.question != null) throw ProviderFailure(
+                                "invalid_probe_handoff"
+                            )
+                            ProbeAssessment.parse(args.getJSONObject("assessment"))
                         }
 
                         "finish_lesson" -> {
                             if (session.answers < 1) throw ProviderFailure("invalid_lesson_finish")
                             args.strictString("summary", 2000)
                         }
+                    }
+                    } catch (error: Exception) {
+                        val code = when (error) {
+                            is ProviderFailure -> error.reason
+                            is org.json.JSONException -> "invalid_tool_arguments"
+                            else -> throw error
+                        }
+                        val local = name == "plan_init" || name in questionNames
+                        val repairable = code in setOf(
+                            "invalid_output",
+                            "invalid_tool_arguments",
+                            "invalid_plan_nodes",
+                            "invalid_plan_edges",
+                            "invalid_graph_reference",
+                            "graph_cycle",
+                            "invalid_plan_reference",
+                            "invalid_question_type",
+                            "invalid_question_choices",
+                            "invalid_answer_key"
+                        )
+                        if (!allowRepair || !local || !repairable) throw ProviderFailure(code)
+                        toolError = code
                     }
                 }
 
@@ -384,6 +453,6 @@ internal object RuntimeTools {
         if (usage != null && (usage.optLong("input_tokens") !in 0..1_000_000 || usage.optLong("output_tokens") !in 0..1_000_000)) throw ProviderFailure(
             "invalid_output"
         )
-        return Validated(text.toString(), call, thinking.toString())
+        return Validated(text.toString(), call, thinking.toString(), toolError)
     }
 }

@@ -42,4 +42,20 @@ fragments; native `problem`/`conclude`, local dismissal, explicit next-problem p
 attempts adapt its doctrine without adding mastery scores. The original 36 source hashes are
 unchanged. Additional native limits and per-session web permission remain Android-specific.
 
+Long-session continuity projects the original `buildCompactionPrompt` template from preserved
+`src/core/compaction.ts` into `assets/agents/compaction.md` with
+`scripts/update-compaction-prompt.py`; only its plan/transcript interpolation slots become runtime
+placeholders. `ContextCompaction.kt` / `SessionRuntime.kt` adapt the summary + kept-tail contract
+to native complete-exchange boundaries, exact current state, SQLite archives and foreground billing.
+Summaries do not replace stored evidence or claim mastery. The original 36 source hashes remain
+unchanged; the Android appendix and prompt version describe the native question/handoff/repair
+rules.
+
+Native question identities/multiple selection, graph-organization reads and display-only formula
+recovery follow the upstream contracts inspected at `3dc88472eea41eed0d5e5f29c2f16f8d063c415b` (
+v0.3.8). `QuestionContract.kt` and `ToolContentPresentation.kt` are bounded Kotlin adaptations using
+the existing native renderer, not the desktop content reader or a full runtime port. The 36-file
+embedded instruction/source inventory remains pinned to the revision above; none of its bytes were
+updated as part of this refinement.
+
 This vendored content is copyleft material, unlike the earlier reference-only use. Preserve attribution, license and applicable corresponding-source obligations when distributing. The application's first-party licensing and compatibility must be resolved before public binary release; this notice does not choose a license for unrelated code.

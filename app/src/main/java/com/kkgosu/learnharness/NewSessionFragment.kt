@@ -51,10 +51,20 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 ?.let { arrayListOf(it) }.orEmpty()
         )
         if (savedInstanceState == null) arguments?.getString("topic")?.let(goal::setText)
+        val mechanic = views.findViewById<RadioGroup>(R.id.session_mechanic)
+        if (savedInstanceState == null) mechanic.check(
+            if (preferences.getString(
+                    "mechanic",
+                    "choice"
+                ) == "recall"
+            ) R.id.mechanic_recall else R.id.mechanic_choice
+        )
         val mode = views.findViewById<RadioGroup>(R.id.session_mode)
         if (savedInstanceState == null && arguments?.getString("target") != null) mode.check(R.id.session_practice)
         fun modeChanged() {
             val practice = mode.checkedRadioButtonId == R.id.session_practice
+            views.findViewById<View>(R.id.session_mechanic_section).visibility =
+                if (practice) View.GONE else View.VISIBLE
             views.findViewById<View>(R.id.practice_targets).visibility =
                 if (practice) View.VISIBLE else View.GONE
             views.findViewById<View>(R.id.practice_targets_note).visibility =
@@ -110,9 +120,11 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                         connection,
                         practice = mode.checkedRadioButtonId == R.id.session_practice,
                         targets = if (mode.checkedRadioButtonId == R.id.session_practice) targets.toList() else emptyList(),
-                        researchAllowed = views.findViewById<CheckBox>(R.id.session_research).isChecked
+                        researchAllowed = views.findViewById<CheckBox>(R.id.session_research).isChecked,
+                        mechanic = if (mechanic.checkedRadioButtonId == R.id.mechanic_recall) "recall" else "choice"
                     ).join()
                     if (app.runtime.failure.value.isEmpty()) app.runtime.state.value?.let {
+                        preferences.edit().putString("mechanic", it.mechanic).apply()
                         (activity as MainActivity).openSession(
                             it.id,
                             start = true

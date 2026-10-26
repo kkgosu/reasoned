@@ -96,6 +96,17 @@
         <item name="android:maxLength">2000</item>
         <item name="android:lineSpacingMultiplier">1.25</item>
     </style>
+
+    <style name="Widget.Harness.MultiChoice" parent="android:Widget.CompoundButton.CheckBox">
+        <item name="android:fontFamily">@font/prose</item>
+        <item name="android:textSize">@dimen/text_16</item>
+        <item name="android:textColor">@color/foreground</item>
+        <item name="android:buttonTint">@color/foreground</item>
+        <item name="android:background">@drawable/button_secondary</item>
+        <item name="android:minHeight">@dimen/touch_target</item>
+        <item name="android:padding">@dimen/space_8</item>
+    </style>
+
     <style name="Widget.Harness.Choice" parent="android:Widget.CompoundButton.RadioButton">
         <item name="android:fontFamily">@font/prose</item>
         <item name="android:textSize">@dimen/text_16</item>

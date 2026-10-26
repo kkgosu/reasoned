@@ -18,12 +18,43 @@ internal data class StudyPlan(
         JSONArray(edges.map { (from, to) -> JSONObject().put("from", from).put("to", to) })
     )
 
+    /** Render validated structure ourselves; model prose is not the source of plan edges. */
+    fun diagramMarkdown(): String = buildString {
+        append("```mermaid\nflowchart TD\n")
+        val ids = nodes.mapIndexed { index, node -> node.id to "n$index" }.toMap()
+        nodes.forEach { node ->
+            val label = node.title.map { if (it.isISOControl()) ' ' else it }.joinToString("")
+                .replace(Regex("[\"&#<>`%{}\\\\]")) { "#${it.value.single().code};" }
+            append("  ${ids.getValue(node.id)}[\"$label\"]\n")
+        }
+        edges.forEach { (from, to) -> append("  ${ids.getValue(from)} --> ${ids.getValue(to)}\n") }
+        append("```")
+    }
+
     fun positions(protocol: String): Pair<String?, Set<String>> {
         val ids = nodes.map { it.id }.toSet()
-        val visits = JSONArray(protocol).objects()
-            .filter { it.optString("type") == "function_call" && it.optString("name") == "ask_question" }
+        val history = JSONArray(protocol).objects()
+        val rejected = history.filter {
+            it.optString("type") == "function_call_output" &&
+                    runCatching {
+                        JSONObject(it.getString("output")).optBoolean(
+                            "ok",
+                            true
+                        )
+                    }.getOrDefault(true) == false
+        }.map { it.optString("call_id") }.toSet()
+        val visits = history
+            .filter {
+                it.optString("type") == "function_call" && it.optString("name") in setOf(
+                    "ask_question",
+                    "quiz",
+                    "explain"
+                ) &&
+                        it.optString("call_id") !in rejected
+            }
             .mapNotNull {
-                JSONObject(it.getString("arguments")).optString("nodeId").takeIf(ids::contains)
+                runCatching { JSONObject(it.getString("arguments")).optString("nodeId") }.getOrNull()
+                    ?.takeIf(ids::contains)
             }
             .fold(emptyList<String>()) { result, id -> if (result.lastOrNull() == id) result else result + id }
         return visits.lastOrNull() to visits.dropLast(1).toSet()

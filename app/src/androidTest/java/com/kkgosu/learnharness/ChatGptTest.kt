@@ -332,8 +332,11 @@ class ChatGptTest {
             val call = JSONObject().put("type", "function_call").put("status", "completed").put("namespace", "learnharness")
                 .put("id", if (calls == 0) "fc_plan-context" else "fc_plan-question")
                 .put("call_id", if (calls == 0) "plan-context" else "plan-question")
-                .put("name", if (calls++ == 0) "learning_context" else "ask_question")
-                .put("arguments", if (calls == 1) "{}" else "{\"question\":\"Explain subtraction\",\"choices\":[]}")
+                .put("name", if (calls++ == 0) "learning_context" else "ask_user_question")
+                .put(
+                    "arguments",
+                    if (calls == 1) "{}" else "{\"question\":\"Explain subtraction\",\"details\":\"\",\"multiSelect\":false,\"options\":[]}"
+                )
             val reasoning = JSONObject().put("type", "reasoning").put("id", "rs_fixture")
                 .put("summary", JSONArray()).put("encrypted_content", "opaque-fixture-reasoning")
             val response = JSONObject().put("status", "completed").put("output", JSONArray().put(reasoning).put(call))

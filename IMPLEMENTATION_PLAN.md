@@ -16,6 +16,27 @@ Verification: `:app:assembleDebug :app:assembleDebugAndroidTest :app:lintDebug` 
 
 No live model, ChatGPT authorization, paid request, broader-device visual comparison or full TalkBack journey was used to validate these refinements; model adherence to the full original doctrine remains a live evaluation task.
 
+## Latest refinement — question identities, graph reads and formula presentation
+
+- `QuestionContract` now advertises stable `{label,value}` options, `multiSelect`, question details
+  and ungraded option descriptions. Up to 32 native radio/checkbox options replace the four fixed
+  runtime choices. Commitments, selected values and exact-set grading persist independently of
+  visible labels; old label-only questions remain compatible.
+- Probe/Practice read saved graph birth-session metadata with `list_sessions`, then proposition
+  names with `list_propositions`. Neither returns statements or old lesson transcripts; the
+  automatic proposition preview was removed from `learning_context`. These tools never write graph
+  data or claim mastery.
+- Tool-authored question/reference and practice-solution presentation uses a fresh native parse tree
+  to recover recognized damaged TeX/escaping without rewriting persisted arguments, answers,
+  identities or grading. Native code/link destinations, TeX rows/comments and physical display
+  newlines are protected. Recovery is bounded/best-effort, not full upstream renderer parity.
+- Prompt compatibility version v9 preserves v1–v8 sessions. The 36 embedded upstream sources remain
+  pinned and unchanged.
+- Regression fixtures cover identity/set grading, legacy questions, SQLite/reopen, six-option
+  checkbox rendering, graph-read isolation and presentation recovery boundaries. Validation is
+  build/lint and test-APK compilation only; device/emulator execution, screenshots and live requests
+  remain intentionally unperformed.
+
 ## Delivered
 
 ### Phase 0 — research and design extraction
@@ -358,6 +379,51 @@ emulator, screenshot, Brave search/page-fetch runtime request or live model requ
 Real hint quality, transfer/retest behavior, Brave service integration, redirects/cancellation on
 real sockets and large-text/accessibility/recreation acceptance remain unverified. PDF remains
 deferred.
+
+## LearnHarness learning-flow alignment — build-only
+
+- Teacher questions now persist validated `predict`/`check` roles: prediction opens before teaching;
+  a post-teaching check waits for reveal. Ungraded `ask` remains distinct and cannot impersonate a
+  check.
+- Probe handoff persists the upstream per-strand assessment contract (floor, ceiling,
+  misconceptions and teaching entry point), not generic route steps; Teacher context includes it.
+- Explicit **I don’t know** is a gap, not an incorrect attempt, with no confidence or verdict.
+  Free recall/ungraded answers omit confidence; graded choices retain the owner's 20-percent steps.
+- Check reading-thoughts and question-answer reasoning are separate persisted fields/disclosures.
+- First-time plan approval remains; approved mid-lesson plan rewrites update the map and continue.
+- Prompt version v7 changes only the Android appendix/contracts, not the pinned upstream sources.
+  Debug app/test APK compilation and lint pass. Regression fixtures cover the cycle, gap/channel
+  semantics, reopen/migration, first-plan approval and uninterrupted rewrites; **compiled, not run
+  **.
+  No device, installation, screenshots or live model requests. Scenario parity/educational quality
+  and enlarged-text/IME/accessibility acceptance are not claimed.
+
+## LearnHarness continuity alignment — v8, build-only
+
+- Probe→Teacher now continues in the same foreground action; no intermediate route approval. The
+  first dependency plan still pauses for explicit approval. Legacy route checkpoints migrate locally
+  without requests, and failures/reopening do not return a completed Probe to its old gate.
+- The learner chooses multiple choice (`probe`/`quiz`) or free recall (`recall`/`explain`) in New
+  session or the session menu. A pending question keeps its original commitment/format. Ungraded
+  `ask_user_question` stays separate; graded choices require selection or explicit don’t-know.
+- Invalid local question/plan arguments/references/DAGs receive fixed tool errors and at most TWO
+  correction attempts. Rejected calls do not change plan, question, position or evidence;
+  provisional
+  rejected text is removed. Permission/replay/envelope/transport failures are never auto-retried.
+- Long-session requests use a fallible summary plus recent complete exchanges, exact native state
+  and learner preferences. Full local protocol, answer keys, history and graph sources remain
+  intact.
+  A tool-free extra request uses the pinned upstream compaction prompt and the session's selected
+  model/connection/effort, with recorded usage and disclosure. Failed/interrupted summaries do not
+  replace the accepted summary, delete history or restart on reopen. Reserve/cut/archive bounds stop
+  visibly rather than dropping pending work. SQLite slices avoid CursorWindow limits for large
+  Unicode checkpoints; unchanged message rows are not rewritten on each streaming checkpoint.
+- Debug app/test APK compilation and lint pass. Fixtures cover automatic handoff, legacy migration,
+  mechanic switching, bounded correction/fatal failures, safe cuts, archive/evidence preservation,
+  multi-megabyte Unicode checkpoint reads, summary billing/cancellation/reopen and prompt
+  projection.
+  **Fixtures are compiled, not executed.** No device, install, screenshots or live requests used.
+  Long-session summary quality, scenario parity and native UI acceptance remain unverified.
 
 ## Remaining milestones and acceptance gates
 

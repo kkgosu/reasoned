@@ -8,6 +8,8 @@
     <string name="transcript_correct">CORRECT</string>
     <string name="transcript_incorrect">INCORRECT</string>
     <string name="transcript_check">CHECK</string>
+    <string name="transcript_predict">PREDICT</string>
+    <string name="transcript_reading_thinking">THOUGHTS WHILE READING</string>
     <string name="transcript_probe">PROBE</string>
     <string name="transcript_confidence">Confidence (self-report) · %1$d%%</string>
     <string name="transcript_why">Why</string>

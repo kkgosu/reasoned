@@ -114,7 +114,7 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
             label.visibility =
                 if (learner || thinking || item.role in setOf(
                         Role.QUESTION,
-                        Role.FIGURE, Role.RESEARCH
+                        Role.FIGURE, Role.RESEARCH, Role.ASSESSMENT
                     )
                 ) View.VISIBLE else View.GONE
             text.visibility = View.VISIBLE
@@ -130,16 +130,21 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
             else {
                 label.setText(
                     when (item.role) {
-                        Role.FIGURE -> R.string.diagram_reviewed; Role.RESEARCH -> R.string.research_report_label; else -> R.string.runtime_question
+                        Role.FIGURE -> R.string.diagram_reviewed; Role.RESEARCH -> R.string.research_report_label
+                        Role.ASSESSMENT -> R.string.runtime_probe_assessment
+                        else -> R.string.runtime_question
                     }
                 )
                 label.setOnClickListener(null)
                 label.isEnabled = false
             }
-            if (markdown != null && item.role != Role.TITLE) markdown.setMarkdown(
-                text,
-                item.text
-            ) else text.text = item.text
+            if (markdown != null && item.role != Role.TITLE) {
+                if (item.role in setOf(Role.QUESTION, Role.PRACTICE)) markdown.setToolMarkdown(
+                    text,
+                    item.text
+                )
+                else markdown.setMarkdown(text, item.text)
+            } else text.text = item.text
         }
     }
 
@@ -170,12 +175,22 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
     private inner class AnsweredHolder(view: View) : RecyclerView.ViewHolder(view) {
         fun bind(item: AnsweredDisplayItem) = with(itemView) {
             val label = findViewById<TextView>(R.id.answered_label)
-            val graded = item.correctAnswer.isNotBlank() && item.answer in item.choices
-            val correct = item.answer == item.correctAnswer
-            val title =
-                context.getString(if (item.phase == "probe") R.string.transcript_probe else R.string.transcript_check)
-            label.text =
-                if (graded) "$title · ${context.getString(if (correct) R.string.transcript_correct else R.string.transcript_incorrect)}" else title
+            val graded =
+                !item.dontKnow && item.correctValues.isNotEmpty() && item.selectedValues.isNotEmpty()
+            val correct = item.selectedValues.toSet() == item.correctValues.toSet()
+            val title = context.getString(
+                when {
+                    item.phase == "probe" -> R.string.transcript_probe
+                    item.questionType == "predict" -> R.string.transcript_predict
+                    item.questionType == "ask" -> R.string.runtime_question
+                    else -> R.string.transcript_check
+                }
+            )
+            label.text = when {
+                item.dontKnow -> "$title · ${context.getString(R.string.runtime_dont_know)}"
+                graded -> "$title · ${context.getString(if (correct) R.string.transcript_correct else R.string.transcript_incorrect)}"
+                else -> title
+            }
             label.setTextColor(
                 context.getColor(
                     if (graded) {
@@ -183,15 +198,20 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
                     } else R.color.muted_foreground
                 )
             )
-            fun text(view: TextView, source: String) {
-                if (markdown == null) view.text = source else markdown.setMarkdown(view, source)
+            fun text(view: TextView, source: String, authored: Boolean = true) {
+                if (markdown == null) view.text =
+                    source else if (authored) markdown.setToolMarkdown(view, source)
+                else markdown.setMarkdown(view, source)
             }
-            text(findViewById(R.id.answered_question), item.question)
+            text(
+                findViewById(R.id.answered_question),
+                listOf(item.question, item.details).filter { it.isNotBlank() }.joinToString("\n\n")
+            )
             val choices = findViewById<LinearLayout>(R.id.answered_choices)
             choices.removeAllViews()
-            item.choices.forEach { choice ->
-                val selected = choice == item.answer
-                val key = choice == item.correctAnswer && item.correctAnswer.isNotBlank()
+            item.choices.forEachIndexed { index, choice ->
+                val selected = !item.dontKnow && item.values[index] in item.selectedValues
+                val key = item.values[index] in item.correctValues
                 val color = context.getColor(
                     when {
                         key -> R.color.answer_correct; selected && graded -> R.color.answer_incorrect; selected -> R.color.foreground; else -> R.color.border
@@ -220,7 +240,11 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
                     }
                     text(
                         this,
-                        (if (key) "✓  " else if (selected && graded) "✗  " else if (selected) "•  " else "") + choice
+                        (if (key) "✓  " else if (selected && graded) "✗  " else if (selected) "•  " else "") +
+                                listOf(
+                                    choice,
+                                    item.descriptions.getOrNull(index).orEmpty()
+                                ).filter { it.isNotBlank() }.joinToString("\n\n")
                     )
                     contentDescription = when {
                         key -> context.getString(
@@ -234,17 +258,27 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
                 })
             }
             findViewById<TextView>(R.id.answered_text).apply {
-                visibility = if (item.answer in item.choices) View.GONE else View.VISIBLE
-                text(this, item.answer)
+                visibility =
+                    if (!item.dontKnow && item.selectedValues.isNotEmpty()) View.GONE else View.VISIBLE
+                text(
+                    this,
+                    if (item.dontKnow) context.getString(R.string.runtime_dont_know) else item.answer,
+                    authored = false
+                )
             }
+            val confidence = item.confidence?.takeUnless { item.dontKnow }
             findViewById<ProgressBar>(R.id.answered_confidence).apply {
-                progress = item.confidence
-                progressTintList = ColorStateList.valueOf(context.confidenceColor(item.confidence))
+                visibility = if (confidence == null) View.GONE else View.VISIBLE
+                progress = confidence ?: 0
+                progressTintList = ColorStateList.valueOf(context.confidenceColor(confidence ?: 0))
             }
-            findViewById<TextView>(R.id.answered_confidence_label).text =
-                context.getString(R.string.transcript_confidence, item.confidence)
+            findViewById<TextView>(R.id.answered_confidence_label).apply {
+                visibility = if (confidence == null) View.GONE else View.VISIBLE
+                text = confidence?.let { context.getString(R.string.transcript_confidence, it) }
+                    .orEmpty()
+            }
             val thinking = findViewById<TextView>(R.id.answered_thinking)
-            text(thinking, item.thinking)
+            text(thinking, item.thinking, authored = false)
             findViewById<TextView>(R.id.answered_thinking_toggle).apply {
                 visibility = if (item.thinking.isBlank()) View.GONE else View.VISIBLE
                 disclosure(
@@ -256,10 +290,27 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
                 )
                 if (item.thinking.isBlank()) thinking.visibility = View.GONE
             }
+            val reading = findViewById<TextView>(R.id.answered_reading)
+            text(reading, item.readingThinking, authored = false)
+            findViewById<TextView>(R.id.answered_reading_toggle).apply {
+                visibility = if (item.readingThinking.isBlank()) View.GONE else View.VISIBLE
+                disclosure(
+                    this,
+                    reading,
+                    item.id,
+                    "reading",
+                    context.getString(R.string.transcript_reading_thinking)
+                )
+                if (item.readingThinking.isBlank()) reading.visibility = View.GONE
+            }
             val why = findViewById<TextView>(R.id.answered_why)
             text(
                 why,
-                listOf(item.correctAnswer, item.explanation).filter { it.isNotBlank() }.distinct()
+                listOf(
+                    if (item.choices.isEmpty()) item.correctAnswer else item.values.indices.filter { item.values[it] in item.correctValues }
+                    .joinToString("\n") { item.choices[it] },
+                    item.explanation
+                ).filter { it.isNotBlank() }.distinct()
                     .joinToString("\n\n")
             )
             findViewById<TextView>(R.id.answered_why_toggle).apply {
@@ -270,7 +321,7 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
                     item.id,
                     "why",
                     context.getString(if (item.choices.isEmpty()) R.string.transcript_reference else R.string.transcript_why),
-                    initiallyOpen = item.choices.isEmpty()
+                    initiallyOpen = item.choices.isEmpty() && item.questionType != "predict"
                 )
                 if (item.correctAnswer.isBlank()) why.visibility = View.GONE
             }

@@ -94,6 +94,19 @@ class DiagramTest {
         assertTrue(rendered.toString().contains("Before")); assertTrue(
             rendered.toString().contains("After")
         )
+        val plan = StudyPlan(
+            listOf(
+                StudyPlan.Node("end", "Основа \"[A]\" & <B> `C` %%{init: {}}", ""),
+                StudyPlan.Node("next", "Следующий шаг", "")
+            ), listOf("end" to "next")
+        )
+        val planMarkdown = plan.diagramMarkdown()
+        assertTrue(planMarkdown.contains("n0 --> n1"))
+        assertTrue(planMarkdown.contains("#34;[A]#34; #38; #60;B#62;"))
+        assertFalse(planMarkdown.contains("%%{"))
+        validateDiagram("mermaid", planMarkdown.removePrefix("```mermaid\n").removeSuffix("```"))
+        val planSpans = markdown.toMarkdown(planMarkdown)
+        assertEquals(1, planSpans.getSpans(0, planSpans.length, AsyncDrawableSpan::class.java).size)
         val code = markdown.toMarkdown("```kotlin\nval answer = 42\n```")
         assertTrue(code.toString().contains("val answer = 42"))
         assertTrue(code.getSpans(0, code.length, AsyncDrawableSpan::class.java).isEmpty())
@@ -111,6 +124,17 @@ class DiagramTest {
             targetPixels = 2048
         )
         assertEquals(2048, maxOf(graph.width, graph.height)); graph.recycle()
+        val plan = StudyPlan(
+            listOf(
+                StudyPlan.Node("end", "Основа \"[A]\" & <B>", ""),
+                StudyPlan.Node("next", "Next", "")
+            ), listOf("end" to "next")
+        )
+        val planImage = renderer.render(
+            "mermaid",
+            plan.diagramMarkdown().removePrefix("```mermaid\n").removeSuffix("```")
+        )
+        assertTrue(planImage.width > 0 && planImage.height > 0); planImage.recycle()
     }
 
     @Test

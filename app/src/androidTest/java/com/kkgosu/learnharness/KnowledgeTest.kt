@@ -63,6 +63,83 @@ class KnowledgeTest {
     }
 
     @Test
+    fun legacyRouteMigratesLocallyAndTeacherCanRetryWithoutApprovingTheOldRoute() = runBlocking {
+        val name = "route-edit-${UUID.randomUUID()}.db"
+        try {
+            SessionStore(app, name).use { store ->
+                val oldCall = "old-route"
+                val saved = session().copy(
+                    status = "route", answers = 1, route = "Old route", routeCall = oldCall,
+                    protocol = JSONArray().put(
+                        JSONObject().put("type", "function_call").put("name", "finish_probe")
+                            .put("call_id", oldCall).put(
+                                "arguments", JSONObject().put("summary", "Old route")
+                                    .put("steps", JSONArray().put("Old step")).toString()
+                            )
+                    ).toString()
+                )
+                store.save(saved)
+                var calls = 0
+                val provider = ModelProvider { request, _ ->
+                    calls++
+                    val input = request.getJSONArray("input").objects()
+                    assertEquals(
+                        1,
+                        input.count {
+                            it.optString("type") == "function_call_output" && it.optString("call_id") == oldCall
+                        })
+                    assertTrue(input.any {
+                        it.optString("role") == "user" && it.toString()
+                            .contains("Start with the basics")
+                    })
+                    assertEquals(
+                        AgentInstructions.compose(app.assets, "teacher"),
+                        request.getString("instructions")
+                    )
+                    when (calls) {
+                        1 -> throw ProviderFailure("fixture_offline")
+                        else -> response(
+                            "plan_init",
+                            StudyPlan(
+                                listOf(StudyPlan.Node("basics", "Basics", "Start here")),
+                                emptyList()
+                            )
+                                .json().apply { remove("version") })
+                    }
+                }
+                val runtime = SessionRuntime(app, store, provider)
+                runtime.open(saved.id).join()
+                assertEquals(0, calls)
+                assertEquals("teacher", runtime.state.value!!.phase)
+                assertEquals("idle", runtime.state.value!!.status)
+                runtime.edit("Start with the basics", -1, 60, false)
+                runtime.approveRoute().join()
+                assertEquals(0, calls)
+                runtime.send().join()
+                val interrupted = store.load(saved.id)!!
+                assertEquals("error", interrupted.status)
+                assertEquals("teacher", interrupted.phase)
+                assertEquals("", interrupted.routeCall)
+                assertEquals("Old route", interrupted.route)
+                assertEquals(
+                    1,
+                    interrupted.items.count { it.role == LessonDisplayItem.Role.LEARNER && it.text == "Start with the basics" })
+                runtime.stop().join()
+                val reopened = SessionRuntime(app, store, provider)
+                reopened.open(saved.id).join()
+                assertEquals(1, calls)
+                reopened.retry().join()
+                assertEquals(2, calls)
+                assertEquals("teacher", reopened.state.value!!.phase)
+                assertEquals("plan", reopened.state.value!!.status)
+                reopened.stop().join()
+            }
+        } finally {
+            app.deleteDatabase(name)
+        }
+    }
+
+    @Test
     fun planChangesStayUnapprovedAcrossRepliesInterruptionAndReopening() = runBlocking {
         val name = "plan-edit-${UUID.randomUUID()}.db"
         try {
@@ -117,6 +194,11 @@ class KnowledgeTest {
                 assertEquals(1, calls); assertEquals("plan", runtime.state.value!!.status)
                 assertEquals(2, runtime.state.value!!.plan!!.version)
                 assertTrue(store.load(saved.id)!!.planPending)
+                assertFalse(store.load(saved.id)!!.planApproved)
+                val planRow =
+                    store.load(saved.id)!!.items.single { it.role == LessonDisplayItem.Role.PLAN }
+                assertEquals(runtime.state.value!!.plan!!.diagramMarkdown(), planRow.text)
+                assertTrue(planRow.text.contains("n0 --> n1"))
                 runtime.edit("Explain that prerequisite", -1, 60, false)
                 runtime.send().join()
                 val pending = runtime.state.value!!
@@ -143,6 +225,7 @@ class KnowledgeTest {
                 reopened.approveRoute().join()
                 assertEquals(3, calls); assertEquals("idle", reopened.state.value!!.status)
                 assertFalse(store.load(saved.id)!!.planPending)
+                assertTrue(store.load(saved.id)!!.planApproved)
                 reopened.stop().join()
             }
         } finally {
