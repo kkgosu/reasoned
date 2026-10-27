@@ -12,6 +12,10 @@
         <item name="android:textColorSecondary">@color/muted_foreground</item>
         <item name="android:textColorHint">@color/muted_foreground</item>
         <item name="android:colorControlNormal">@color/muted_foreground</item>
+        <!-- The native base toolbar uses a bounded navigation ripple; title styling lives in fragment_shell. -->
+        <item name="android:toolbarStyle">@android:style/Widget.Toolbar</item>
+        <item name="android:actionBarItemBackground">@drawable/button_composer</item>
+        <item name="android:actionModeCloseButtonStyle">@style/Widget.Harness.ActionModeClose</item>
         <item name="android:textViewStyle">@style/Widget.Harness.TextView</item>
         <item name="android:statusBarColor">@color/background</item>
         <item name="android:navigationBarColor">@color/background</item>

@@ -58,4 +58,8 @@ the existing native renderer, not the desktop content reader or a full runtime p
 embedded instruction/source inventory remains pinned to the revision above; none of its bytes were
 updated as part of this refinement.
 
-This vendored content is copyleft material, unlike the earlier reference-only use. Preserve attribution, license and applicable corresponding-source obligations when distributing. The application's first-party licensing and compatibility must be resolved before public binary release; this notice does not choose a license for unrelated code.
+This vendored content is copyleft material, unlike the earlier reference-only use. Preserve
+attribution, license and applicable corresponding-source obligations when distributing. The
+application's first-party code is licensed AGPL-3.0-only (see the repository-root LICENSE).
+Third-party code retains its own notices/licenses; corresponding-source and distribution obligations
+still apply.

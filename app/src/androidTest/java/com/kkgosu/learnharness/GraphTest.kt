@@ -70,6 +70,44 @@ class GraphTest {
     }
 
     @Test
+    fun jointPremiseJunctionsAreGeometryNotSelectableKnowledge() {
+        val data = KnowledgeSnapshot(
+            listOf(
+                KnowledgeNode("a", "A", "A holds.", emptyList(), "chat"),
+                KnowledgeNode("b", "B", "B holds.", emptyList(), "chat"),
+                KnowledgeNode("c", "C", "C follows.", emptyList(), "chat")
+            ),
+            listOf(
+                KnowledgeChain("direct", listOf("a"), "b"),
+                KnowledgeChain("joint", listOf("a", "b"), "c")
+            ),
+            emptyMap()
+        ).data()
+        assertEquals(listOf("a", "b", "c"), data.nodes.filterNot { it.implication }.map { it.id })
+        assertEquals(listOf("a" to "b", "a" to "joint", "b" to "joint", "joint" to "c"), data.edges)
+        val snapshot = GraphLayout.compute(data)
+        val junction = snapshot.nodes.single { it.node.implication }
+        assertNull(snapshot.pick(junction.x, junction.y, 1f))
+        instrumentation.runOnMainSync {
+            val graph = KnowledgeGraphView(instrumentation.targetContext)
+            graph.setSnapshot(snapshot)
+            graph.select("a")
+            assertEquals("a", graph.selectedId)
+            graph.select("joint")
+            assertNull(graph.selectedId)
+            val restored = KnowledgeGraphView.SavedState(View.BaseSavedState.EMPTY_STATE).apply {
+                hasCamera = true; zoom = 1f; selectedId = "joint"
+            }
+            graph.layout(0, 0, 800, 1000)
+            graph.restoreHierarchyState(SparseArray<Parcelable>().apply {
+                graph.id = 1234
+                put(graph.id, restored)
+            })
+            assertNull(graph.selectedId)
+        }
+    }
+
+    @Test
     fun nativePanPinchPickingAndParcelledCamera() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { it.showFragmentClearingBackStack(HomeFragment().apply { arguments = Bundle().apply { putBoolean("sample", true) } }) }
@@ -233,7 +271,7 @@ class GraphTest {
 
     @Test
     @androidx.test.filters.SdkSuppress(minSdkVersion = 30)
-    fun searchDetailsRelatedNavigationAndRecreation() {
+    fun searchSummaryNavigationAndRecreation() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity { it.showFragmentClearingBackStack(HomeFragment().apply { arguments = Bundle().apply { putBoolean("sample", true) } }) }
             settle()
@@ -307,20 +345,32 @@ class GraphTest {
             scenario.onActivity { it.findViewById<Button>(R.id.graph_details).performClick() }
             settle()
             scenario.onActivity { activity ->
-                assertTrue(activity.findViewById<TextView>(R.id.graph_statement).text.contains("positive derivative"))
-                activity.findViewById<View>(R.id.graph_related).let { view ->
-                    val links = view as android.widget.LinearLayout
-                    assertTrue(links.childCount > 0)
-                    links.getChildAt(0).performClick()
-                }
+                val node =
+                    SampleGraph.create(activity.resources).nodes.first { it.id == "positive" }
+                assertEquals(
+                    node.label,
+                    activity.findViewById<TextView>(R.id.graph_node_name).text.toString()
+                )
+                assertEquals(
+                    node.statement,
+                    activity.findViewById<TextView>(R.id.graph_statement).text.toString()
+                )
+                assertEquals(
+                    activity.getString(R.string.graph_no_sessions),
+                    activity.findViewById<TextView>(R.id.graph_sources_label).text.toString()
+                )
+                assertEquals(
+                    0,
+                    activity.findViewById<android.widget.LinearLayout>(R.id.graph_sources).childCount
+                )
+                val menu =
+                    activity.findViewById<android.widget.Toolbar>(me.grishka.appkit.R.id.toolbar).menu
+                assertEquals(
+                    activity.getString(R.string.open_sample_lesson),
+                    menu.getItem(0).title.toString()
+                )
+                assertTrue(menu.performIdentifierAction(menu.getItem(0).itemId, 0))
             }
-            settle()
-            scenario.onActivity { activity ->
-                assertNotNull(activity.findViewById<TextView>(R.id.graph_reasoning))
-                Nav.finish(activity.fragmentManager.fragments.filterIsInstance<GraphNodeFragment>().last())
-            }
-            settle()
-            scenario.onActivity { activity -> activity.findViewById<Button>(R.id.graph_open_lesson).performClick() }
             settle()
             scenario.onActivity { activity -> assertNotNull(activity.findViewById<View>(R.id.lesson_list)) }
         }

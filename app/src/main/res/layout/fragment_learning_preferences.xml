@@ -23,7 +23,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="@dimen/space_16"
-            android:contentDescription="@string/settings_learning"
             android:hint="@string/runtime_instructions_hint"
             android:maxLength="4000"
             android:maxLines="10"

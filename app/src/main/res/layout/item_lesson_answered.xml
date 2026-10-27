@@ -9,6 +9,7 @@
 
     <TextView
         android:id="@+id/answered_label"
+        android:gravity="center_vertical|start"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textAppearance="@style/TextAppearance.Harness.Label" />
@@ -48,6 +49,7 @@
 
     <TextView
         android:id="@+id/answered_confidence_label"
+        android:gravity="center_vertical|start"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/space_8"

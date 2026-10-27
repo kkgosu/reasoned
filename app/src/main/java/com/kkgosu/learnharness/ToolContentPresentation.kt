@@ -138,7 +138,7 @@ internal object ToolContentPresentation {
             var end = i + 1
             while (end < text.length && text[end] == '\\') end++
             val count = end - i
-            val marker = Regex("^(begin|end)\\s*\\{([^{}]+)}").find(text.substring(end))
+            val marker = Regex("^(begin|end)\\s*\\{([^{}]+)\\}").find(text.substring(end))
             if (marker != null) {
                 val factor = if (count % 2 == 1) 1 else count
                 val name = marker.groupValues[2]

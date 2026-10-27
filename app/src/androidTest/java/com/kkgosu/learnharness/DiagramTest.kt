@@ -173,6 +173,7 @@ class DiagramTest {
                 var clicks = 0
                 text.setOnClickListener { clicks++ }
                 DiagramPlugin.cache.evictAll() // Visible images can survive eviction: a tap must retain this exact bitmap.
+                val selection = android.text.Selection.getSelectionStart(text.text)
                 for (action in listOf(
                     android.view.MotionEvent.ACTION_DOWN,
                     android.view.MotionEvent.ACTION_UP
@@ -190,7 +191,7 @@ class DiagramTest {
                     } finally {
                         event.recycle()
                     }
-                    assertEquals(-1, android.text.Selection.getSelectionStart(text.text))
+                    assertEquals(selection, android.text.Selection.getSelectionStart(text.text))
                 }
                 assertEquals(1, clicks)
                 assertSame(bitmap, DiagramPlugin.cache.get(span.drawable.destination))
@@ -214,7 +215,13 @@ class DiagramTest {
             ModelProvider { request, _ ->
                 requests++
                 assertFalse(request.toString().contains("NEVER_SEND_SESSION_CONTEXT"))
-                if (requests >= 3) assertTrue(request.toString().contains("data:image/png;base64,"))
+                if (requests >= 3) assertTrue(
+                    request.getJSONArray("input").objects().any { message ->
+                        message.optJSONArray("content")?.objects()?.any {
+                            it.optString("type") == "input_image" &&
+                                    it.optString("image_url").startsWith("data:image/png;base64,")
+                        } == true
+                    })
                 when (requests) {
                     1 -> completed(
                         name = "write_svg",

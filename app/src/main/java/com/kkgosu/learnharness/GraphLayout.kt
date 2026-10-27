@@ -12,7 +12,8 @@ data class GraphNode(
     val label: String,
     val statement: String,
     val reasoning: String,
-    val cluster: Int
+    val cluster: Int,
+    val implication: Boolean = false
 ) {
     override fun toString() = "$label. $statement"
 }
@@ -32,7 +33,8 @@ data class GraphSnapshot(
     val regions: List<GraphRegion>,
     val bounds: GraphBounds,
 ) {
-    fun pick(x: Float, y: Float, radius: Float): GraphPoint? = nodes
+    fun pick(x: Float, y: Float, radius: Float): GraphPoint? = nodes.asSequence()
+        .filterNot { it.node.implication }
         .minByOrNull { (it.x - x) * (it.x - x) + (it.y - y) * (it.y - y) }
         ?.takeIf { hypot(it.x - x, it.y - y) <= radius }
 }

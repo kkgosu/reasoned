@@ -9,6 +9,7 @@
 
     <TextView
         android:id="@+id/lesson_status"
+        android:gravity="center_vertical|start"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:accessibilityLiveRegion="polite"
@@ -61,6 +62,8 @@
 
             <TextView
                 android:id="@+id/question_heading"
+                android:gravity="center_vertical|start"
+                android:paddingHorizontal="@dimen/space_8"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -105,6 +108,7 @@
 
                 <CheckBox
                     android:id="@+id/question_dont_know"
+                    style="@style/Widget.Harness.CheckRow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_8"
@@ -114,6 +118,7 @@
 
                 <TextView
                     android:id="@+id/confidence_label"
+                    android:gravity="center_vertical|start"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space_12"
@@ -152,7 +157,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@android:color/transparent"
-            android:gravity="center_vertical|start"
+            android:gravity="top|start"
             android:hint="@string/runtime_reading_thinking_hint"
             android:maxLines="3"
             android:minLines="1"
@@ -172,7 +177,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@android:color/transparent"
-            android:gravity="center_vertical|start"
+            android:gravity="top|start"
             android:hint="@string/runtime_answer_hint"
             android:maxLines="4"
             android:minLines="1"
@@ -184,7 +189,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@android:color/transparent"
-            android:gravity="center_vertical|start"
+            android:gravity="top|start"
             android:hint="@string/runtime_composer_hint"
             android:maxLines="4"
             android:minLines="1" />

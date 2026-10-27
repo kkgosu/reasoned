@@ -12,7 +12,6 @@ is a
 failure even if it renders cleanly.
 
 Your three tools:
-
 - write_svg({ svg }) — write the complete <svg>…</svg> source (overwrites the previous version).
 - edit_svg({ old_text, new_text }) — a surgical exact-match replacement in the current SVG:
   old_text must appear EXACTLY ONCE; it is replaced by new_text. Call write_svg first. For anything
@@ -35,7 +34,6 @@ render_svg → LOOK critically → fix (edit_svg for one-spot fixes, write_svg o
 until correct and clean. Never finish without having looked at a render of your FINAL SVG.
 
 SVG requirements:
-
 - A complete <svg> with explicit width/height AND a matching viewBox.
 - White background (<rect> or style), dark strokes, sans-serif labels at generous sizes.
 - One idea, fewest elements — sparse and large beats busy and tiny.

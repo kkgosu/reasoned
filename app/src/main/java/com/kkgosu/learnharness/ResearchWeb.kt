@@ -27,6 +27,12 @@ internal fun publicResearchUrl(raw: String): HttpUrl {
         ) && !url.host.contains(':'))
     )
         throw ProviderFailure("web_url_denied")
+    // Reject ambiguous numeric hosts without asking the platform to resolve them (e.g. 127.1).
+    if (url.host.matches(Regex("[0-9.]+"))) {
+        val octets = url.host.split('.')
+        if (octets.size != 4 || octets.any { it.toIntOrNull() !in 0..255 })
+            throw ProviderFailure("web_address_denied")
+    }
     // OkHttp bypasses Dns for IP literals: validate those here, not only in the socket DNS hook.
     if ((url.host.contains(':') || url.host.matches(Regex("[0-9.]+"))) && !publicResearchAddress(
             InetAddress.getByName(url.host)

@@ -9,7 +9,9 @@
         android:layout_height="match_parent"
         android:clipToPadding="false"
         android:divider="@color/border"
-        android:dividerHeight="1dp" />
+        android:dividerHeight="1dp"
+        android:drawSelectorOnTop="true"
+        android:listSelector="?android:attr/selectableItemBackground" />
 
     <TextView
         android:id="@+id/graph_search_empty"
@@ -17,7 +19,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:accessibilityLiveRegion="polite"
-        android:gravity="center"
+        android:gravity="top|start"
         android:padding="@dimen/space_24"
         android:text="@string/graph_no_matches"
         android:textAppearance="@style/TextAppearance.Harness"

@@ -1,6 +1,8 @@
 <resources>
     <string name="graph_search">Search propositions…</string>
     <string name="graph_browse">Browse</string>
+    <string name="graph_sessions">Sessions</string>
+    <string name="graph_no_sessions">No sessions recorded.</string>
     <string name="graph_loading">Arranging sample knowledge…</string>
     <string name="graph_zoom_out">Zoom out</string>
     <string name="graph_zoom_in">Zoom in</string>
@@ -10,13 +12,7 @@
     <string name="graph_search_clear">Clear search</string>
     <string name="graph_sample_lesson">Sample lesson</string>
     <string name="graph_proposition">Proposition</string>
-    <string name="graph_missing">This sample proposition is no longer available.</string>
-    <string name="graph_reasoning">REASONING</string>
-    <string name="graph_provenance">SOURCE · AUTHORED ILLUSTRATION</string>
-    <string name="graph_fixture_source">This proposition and its relationships were written for the local graph preview. They were not extracted from your lessons or verified against learner answers. No learner evidence or confidence is recorded. Where relevant, the sample lesson below illustrates the idea; it is not proof of your understanding.</string>
-    <string name="graph_relationships">RELATED PROPOSITIONS · AUTHORED LINKS</string>
-    <string name="graph_premise">Premise: %1$s →</string>
-    <string name="graph_conclusion">Leads to: %1$s →</string>
+    <string name="graph_missing">This proposition is no longer available.</string>
     <string-array name="graph_clusters">
         <item>Functions</item><item>Differentiation</item><item>Optimization</item>
         <item>Probability</item><item>Statistics</item><item>Learning</item>

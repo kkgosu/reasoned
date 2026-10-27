@@ -13,6 +13,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="@dimen/space_24"
+            android:gravity="center_vertical|start"
             android:text="@string/app_name"
             android:textAppearance="@style/TextAppearance.Harness.Title" />
 
@@ -38,6 +39,7 @@
             android:layout_marginHorizontal="@dimen/space_24"
             android:layout_marginTop="@dimen/space_24"
             android:accessibilityHeading="true"
+            android:gravity="center_vertical|start"
             android:text="@string/settings_privacy_heading"
             android:textAppearance="@style/TextAppearance.Harness.Label" />
 

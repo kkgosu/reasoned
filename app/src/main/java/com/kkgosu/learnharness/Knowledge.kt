@@ -82,7 +82,7 @@ internal data class KnowledgeSnapshot(
                 }, births.indexOf(node.birth)
             )
         }
-        val arguments = chains.map { chain ->
+        val arguments = chains.filter { it.premises.size > 1 }.map { chain ->
             GraphNode(
                 chain.id, "∴", "Reasoning chain",
                 chain.premises.joinToString(
@@ -90,12 +90,15 @@ internal data class KnowledgeSnapshot(
                     "Premises used together:\n",
                     "\nTherefore: ${byId.getValue(chain.conclusion).statement}"
                 ) { "• ${byId.getValue(it).statement}" },
-                births.indexOf(byId.getValue(chain.conclusion).birth)
+                births.indexOf(byId.getValue(chain.conclusion).birth), implication = true
             )
         }
         return GraphData(
             propositions + arguments,
-            chains.flatMap { chain -> chain.premises.map { it to chain.id } + (chain.id to chain.conclusion) },
+            chains.flatMap { chain ->
+                if (chain.premises.size == 1) listOf(chain.premises.single() to chain.conclusion)
+                else chain.premises.map { it to chain.id } + (chain.id to chain.conclusion)
+            },
             clusters
         )
     }

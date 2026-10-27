@@ -250,7 +250,12 @@ class KnowledgeTest {
             assertEquals(0 to 0, store.mergeKnowledge(first.id, batch, parsed, emptyMap(), emptySet()))
             assertTrue(store.uncovered(first).isEmpty())
             val graph = store.knowledge()
-            assertEquals(3, graph.data().nodes.size) // Two propositions plus one derived argument junction.
+            assertEquals(
+                2,
+                graph.data().nodes.size
+            ) // A single-premise chain is a direct edge, not a selectable junction.
+            val chain = graph.chains.single()
+            assertEquals(listOf(chain.premises.single() to chain.conclusion), graph.data().edges)
             assertEquals(2L, graph.sources.getValue(graph.nodes.first().id).single().message)
             assertEquals(2L, graph.sources.getValue(graph.chains.single().id).single().message)
             store.save(first.copy(draft = "A later edit must not delete source rows"))

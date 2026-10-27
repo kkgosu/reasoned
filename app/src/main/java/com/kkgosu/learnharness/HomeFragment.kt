@@ -193,7 +193,7 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
                 }
                 val snapshot = withContext(Dispatchers.Default) { GraphLayout.compute(data) }
                 val graph = views.findViewById<KnowledgeGraphView>(R.id.knowledge_graph)
-                val emptyBefore = graph.snapshot?.nodes.isNullOrEmpty()
+                val emptyBefore = graph.snapshot?.nodes?.isEmpty() == true
                 graph.setSnapshot(snapshot)
                 if (emptyBefore) graph.fit()
                 pendingSelection?.let(::selectNode)

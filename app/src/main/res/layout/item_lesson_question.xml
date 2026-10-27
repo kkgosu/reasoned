@@ -8,6 +8,7 @@
 
     <TextView
         android:id="@+id/item_answer_label"
+        android:gravity="center_vertical|start"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textAppearance="@style/TextAppearance.Harness.Label" />

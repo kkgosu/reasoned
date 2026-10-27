@@ -35,12 +35,12 @@ class SessionManagementTest {
             .put("name", statement).put("statement", statement).put("aliases", JSONArray())
             .put("messageId", "2")
 
-        val propositions = JSONArray().put(proposition("a", "A holds."))
+        val propositions = JSONArray().put(proposition("p1", "A holds."))
         val chains = JSONArray()
         if (pair) {
-            propositions.put(proposition("b", "B follows."))
+            propositions.put(proposition("p2", "B follows."))
             chains.put(
-                JSONObject().put("premises", JSONArray().put("a")).put("conclusion", "b")
+                JSONObject().put("premises", JSONArray().put("p1")).put("conclusion", "p2")
                     .put("messageId", "2")
             )
         }
@@ -49,6 +49,91 @@ class SessionManagementTest {
             batch,
             emptySet()
         )
+    }
+
+    @Test
+    fun graphSummaryShowsTheClaimAndExplicitDeduplicatedSessionLinks() {
+        val statement = "A holds in fixture ${UUID.randomUUID()}."
+        val saved = session().copy(
+            proseIds = setOf(2, 3),
+            items = listOf(
+                LessonDisplayItem.TextDisplayItem(2, statement),
+                LessonDisplayItem.TextDisplayItem(3, "Repeated evidence: $statement")
+            )
+        )
+        app.sessions.save(saved)
+        try {
+            app.sessions.mergeKnowledge(
+                saved.id, saved.passages(), Findings(
+                    listOf(
+                        Finding("p1", "A", statement, emptyList(), 2),
+                        Finding("p2", "A", statement, emptyList(), 3)
+                    ), emptyList()
+                ), emptyMap(), emptySet()
+            )
+            app.sessions.rename(saved.id, "Source chat")
+            val node = app.sessions.knowledge().nodes.single { it.birth == saved.id }
+            ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+                scenario.onActivity { activity ->
+                    activity.showFragmentClearingBackStack(GraphNodeFragment().apply {
+                        arguments = android.os.Bundle().apply { putString("node", node.id) }
+                    })
+                }
+                InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(500, 5000)
+                scenario.onActivity { activity ->
+                    assertEquals(
+                        "A",
+                        activity.findViewById<android.widget.TextView>(R.id.graph_node_name).text.toString()
+                    )
+                    assertEquals(
+                        statement,
+                        activity.findViewById<android.widget.TextView>(R.id.graph_statement).text.toString()
+                    )
+                    val sources =
+                        activity.findViewById<android.widget.LinearLayout>(R.id.graph_sources)
+                    assertEquals(1, sources.childCount)
+                    val link = sources.getChildAt(0) as android.widget.Button
+                    assertEquals("Source chat", link.text.toString())
+                    assertEquals(
+                        android.view.Gravity.START,
+                        link.gravity and android.view.Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK
+                    )
+                    val ripple = link.background as android.graphics.drawable.RippleDrawable
+                    assertTrue(ripple.numberOfLayers > 0)
+                    assertEquals(
+                        android.graphics.Rect(0, 0, link.width, link.height),
+                        ripple.bounds
+                    )
+                    val viewport =
+                        activity.findViewById<android.widget.ScrollView>(R.id.graph_detail_scroll)
+                    assertEquals(viewport.width, link.width)
+                    val linkPosition = IntArray(2).also(link::getLocationInWindow)
+                    val viewportPosition = IntArray(2).also(viewport::getLocationInWindow)
+                    assertEquals(viewportPosition[0], linkPosition[0])
+                    val inset = activity.resources.getDimensionPixelSize(R.dimen.space_24)
+                    assertEquals(inset, link.paddingStart)
+                    assertEquals(inset, link.paddingEnd)
+                    assertEquals(
+                        activity.getString(R.string.session_practice),
+                        activity.findViewById<android.widget.Toolbar>(me.grishka.appkit.R.id.toolbar).menu.getItem(
+                            0
+                        ).title.toString()
+                    )
+                    link.performClick()
+                }
+                InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(500, 5000)
+                scenario.onActivity { activity ->
+                    val chat =
+                        activity.fragmentManager.fragments.filterIsInstance<RuntimeSessionFragment>()
+                            .last()
+                    assertEquals(saved.id, chat.arguments!!.getString("session"))
+                    assertFalse(chat.arguments!!.containsKey("message")) // Consumed by the saved-message scroll.
+                    assertEquals(saved.id, app.runtime.state.value!!.id)
+                }
+            }
+        } finally {
+            kotlinx.coroutines.runBlocking { app.runtime.delete(saved.id) }
+        }
     }
 
     @Test
@@ -204,7 +289,24 @@ class SessionManagementTest {
         app.sessions.save(saved)
         try {
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-                scenario.onActivity { it.openDrawer() }
+                val loaded = java.util.concurrent.CountDownLatch(1)
+                scenario.onActivity { activity ->
+                    val list = activity.findViewById<android.widget.ListView>(R.id.drawer_sessions)
+                    list.viewTreeObserver.addOnGlobalLayoutListener(object :
+                        android.view.ViewTreeObserver.OnGlobalLayoutListener {
+                        override fun onGlobalLayout() {
+                            if ((0 until list.count).any { list.getItemAtPosition(it) == saved.goal }) {
+                                list.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                                loaded.countDown()
+                            }
+                        }
+                    })
+                    activity.openDrawer()
+                }
+                assertTrue(
+                    "Wait for the asynchronous session list",
+                    loaded.await(5, java.util.concurrent.TimeUnit.SECONDS)
+                )
                 val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
                 automation.waitForIdle(300, 3000)
                 var position = -1
@@ -224,8 +326,12 @@ class SessionManagementTest {
                 scenario.onActivity { activity ->
                     val list = activity.findViewById<android.widget.ListView>(R.id.drawer_sessions)
                     val row = list.getChildAt(position - list.firstVisiblePosition)
-                    // Exercise AdapterContextMenuInfo, not a synthetic long-click/AlertDialog handler.
-                    assertTrue(list.showContextMenuForChild(row))
+                    // Use the native row long-press path, which supplies AdapterContextMenuInfo.
+                    assertTrue(
+                        row.performAccessibilityAction(
+                            android.view.accessibility.AccessibilityNodeInfo.ACTION_LONG_CLICK, null
+                        )
+                    )
                 }
                 automation.waitForIdle(300, 3000)
                 val root = automation.rootInActiveWindow

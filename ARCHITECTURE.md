@@ -2,11 +2,28 @@
 
 ## Scope and current implementation
 
-This document separates **implemented phases 0–4** from **future feature design**. The mock classroom and Canvas graph retain independently authored illustrative fixtures. Phase 4 adds an independent, opt-in OpenAI runtime and durable local sessions; it does not turn the sample graph into learner evidence. Phase 5 now implements dependency plans and persistent knowledge extraction/storage; it is a build-only handoff pending device/live acceptance checks. The owner's go-ahead after graph refinements clears the prior visual-review gate for this implementation; live-model smoke testing remains opt-in and was not performed.
+This document separates **implemented phases 0–4** from **future feature design**. The mock
+classroom and Canvas graph retain independently authored illustrative fixtures. Phase 4 adds an
+independent, opt-in OpenAI runtime and durable local sessions; it does not turn the sample graph
+into learner evidence. Phase 5 implements dependency plans and persistent knowledge
+extraction/storage. Its offline emulator regression fixtures now execute successfully; live-model
+and broader device acceptance remain pending (see `docs/RELEASE_CHECKLIST.md`). The owner's go-ahead
+after graph refinements clears the prior visual-review gate for this implementation; live-model
+smoke testing remains opt-in and was not performed.
 
-Phase 7 is now a build-only implementation: knowledge-aware Practice and isolated foreground
-Researcher with opt-in Brave/public-page tools; phase-6 PDF remains deferred. Runtime/device/live
-acceptance is not implied by successful assembly or compiled fixtures.
+Phase 7 implements knowledge-aware Practice and an isolated foreground Researcher with opt-in
+Brave/public-page tools; phase-6 PDF remains deferred. Release preparation executes the complete
+76-test offline suite on API 36, including native rendering and persistence. Shared native styles
+center only ordinary action-button text; navigation/disclosure rows, chat titles, labels, prose and
+input remain start-aligned. Multiline fields use top alignment; single-line fields use vertical
+centering. Styles also
+provide padded, bounded ripple hit areas, including toolbar icons and list rows. Layout fixtures
+exercise all 25 screen/row/dialog/toolbar layouts at 320/600 dp, up to 200% font scale and RTL.
+A second pass exposes initially hidden content and checks screen gutters and text height, accounting
+for lesson-list padding and horizontally scrolling formula/control viewports. These are structural
+checks, not screenshot-based visual acceptance; dynamic screen/source review coverage is recorded
+in `docs/RELEASE_CHECKLIST.md`. Live provider/web, minimum-API and full device acceptance remain
+separate gates.
 
 The app is standalone, Kotlin-first, traditional Views. It is not a web wrapper, LearnHarness client, Mastodon skin, or Pi host. It executes its own Kotlin learning runtime locally and can call OpenAI's Responses API directly with the learner's API key or an explicitly authorized ChatGPT plan connection. No custom backend, Node.js or remote agent runtime is part of the design.
 
@@ -20,7 +37,7 @@ app/src/main/java/com/kkgosu/learnharness/
   KnowledgeGraphView.kt       Canvas drawing, gestures, picking and saved camera
   GraphLayout.kt              Immutable geometry and camera mathematics
   SampleGraph.kt              Authored propositions and illustrative relationships
-  GraphNodeFragment.kt        Native proposition/reasoning/source/related details
+  GraphNodeFragment.kt        Concise proposition summary and named source-chat links
   LearningSessionFragment.kt  Native transcript/dock, visible-only mock collection
   LessonDisplayItem.kt        Typed text/formula/answered-question blocks
   LessonAdapter.kt            Stable-ID holders and targeted append/text updates
@@ -185,9 +202,30 @@ plan→knowledge conversion.
 
 Only completed canonical assistant text is eligible. New checkpoints explicitly mark validated rendered response-row IDs, including responses assembled from several final SSE message items. Legacy checkpoints recover only exact canonical text matches against protocol history; ambiguous older combined rows are not claimed as covered. Learner answers/confidence, question/tool records, interrupted deltas and plan JSON are excluded. SHA-256 passage coverage includes source message identity and exact text. The Extractor sees an uncovered batch plus previously extracted claims/arguments from that source. The Auditor sees findings and paginated graph-read tools, never the raw transcript; links must target existing nodes it actually read. Both stages use the source session's captured model/effort/connection. Per-stage completed-response usage is persisted separately and disclosed alongside teaching usage; interrupted usage remains potentially unreported. Stage errors never change the teaching session into an extraction error.
 
-The deterministic merger resolves only explicit audited identity links or exact statement equality, never fuzzy name similarity. First-created labels/statements remain unchanged; subsequent phrasings join aliases and provenance. Assertions retain exact `(session,message)` sources with SQLite foreign keys. Joint-premise reasoning chains are the stored structure; canvas implication nodes and premise→argument→conclusion arrows are derived. Endpoints and post-identity DAGs are validated independently of model output. A single SQLite transaction writes nodes, aliases, chains, source anchors and all batch coverage; duplicate coverage is a no-op. Bounds are 32 new propositions/48 chains per batch, 12 premises per chain, 2000 stored propositions/4000 arguments, 3 extractor or 16 auditor steps and 180 seconds per batch, with inherited transport/context limits. Oversize/invalid input fails visibly, not by dropping evidence.
+The deterministic merger resolves only explicit audited identity links or exact statement equality,
+never fuzzy name similarity. First-created labels/statements remain unchanged; subsequent phrasings
+join aliases and provenance. Assertions retain exact `(session,message)` sources with SQLite foreign
+keys. Reasoning chains are the stored structure. A single-premise chain projects to a direct
+premise→conclusion edge; multi-premise chains retain invisible, unpickable implication junctions.
+Junctions are excluded from search and summary navigation. Endpoints and post-identity DAGs are
+validated independently of model output. A single SQLite transaction writes nodes, aliases, chains,
+source anchors and all batch coverage; duplicate coverage is a no-op. Bounds are 32 new
+propositions/48 chains per batch, 12 premises per chain, 2000 stored propositions/4000 arguments, 3
+extractor or 16 auditor steps and 180 seconds per batch, with inherited transport/context limits.
+Oversize/invalid input fails visibly, not by dropping evidence.
 
-Home/search/details now read the persistent graph, with an honest empty state. The authored graph remains a separate menu destination. Existing Canvas/GraphLayout code projects bounded birth-session communities; denser clusters use deterministic sunflower placement off-main. Node/argument details expose source buttons opening the exact persisted message without starting another request. `learning_context` supplies up to 24 goal-ranked propositions and bounded source IDs for later sessions, explicitly without an inference of learner understanding. Manual correction/deletion UI, full-history management, specialized rich diagrams and separate model-role settings are not part of this phase.
+Home/search/details now read the persistent graph, with an honest empty state. The authored graph
+remains a separate menu destination. Existing Canvas/GraphLayout code projects bounded birth-session
+communities; denser clusters use deterministic sunflower placement off-main. Selecting a proposition
+and tapping its anchored label opens a native summary screen modeled on LearnHarness: name,
+statement and distinct source-chat titles. Source links open the first recorded evidence message for
+that chat without starting another request; excerpts and mechanical reasoning/related-node sections
+are not shown. No extraction disclaimers are displayed on this screen. Source-chat rows span the
+full viewport with bounded ripple feedback and 24-dp text gutters. Practice/sample-lesson actions
+remain in the summary toolbar menu. `learning_context` supplies up to 24 goal-ranked propositions
+and bounded source IDs for later sessions, explicitly without an inference of learner understanding.
+Manual correction/deletion UI, full-history management, specialized rich diagrams and separate
+model-role settings are not part of this phase.
 
 Validation: APK/test-APK compilation and lint, pinned-source hashes and an offline smoke check of the actual SQLite DDL pass. Instrumentation fixtures cover plan failures/position, additive migration, atomic/replay-safe merging, identity-collapse rollback, immutable evidence, hybrid dispatch, source privacy/billing, cancellation and coverage; these are compiled only, not device-executed. Live extraction accuracy, source-link/plan UI journeys and enlarged-text behavior remain unverified.
 
@@ -415,7 +453,11 @@ Sign-in is app-owned so it can continue while the system browser covers the acti
 
 ## Graph: phase 3 implemented
 
-`SampleGraph` supplies 30 stable-ID propositions, 32 illustrative directed relationships and six named clusters. Text lives in resources. These are not extracted facts, assessed mastery or a session plan. Detail screens show authored reasoning, an explicit no-learner-evidence notice, labeled incoming/outgoing links and relevant sample-lesson navigation. No source citation, confidence or learning history is fabricated.
+`SampleGraph` supplies 30 stable-ID propositions, 32 illustrative directed relationships and six
+named clusters. Text lives in resources. These are not extracted facts, assessed mastery or a
+session plan. Summary screens show the name and brief statement with no invented source-chat links.
+Relevant sample-lesson navigation remains in the toolbar menu. No source citation, confidence or
+learning history is fabricated.
 
 `HomeFragment` computes a deterministic cluster layout on `Dispatchers.Default` while shown, cancels view work when hidden/destroyed, and binds a separate read-only `GraphSnapshot` on the main thread. Layout is not simulated inside drawing. `KnowledgeGraphView` caches paints, radial region shaders, shortened labels and reusable collision rectangles. It draws light dots/fine lines/soft semantic regions, hides overlapping labels, and invalidates only on layout/data, camera, selection or search changes and finite native selection fades. Node and cluster text scale proportionally with relative fit zoom. Selection fades respect disabled system animations and finish/cancel when hidden/detached; there is no physics timer, animation coroutine or idle redraw loop.
 

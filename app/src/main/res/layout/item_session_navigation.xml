@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:background="@drawable/navigation_row"
     android:ellipsize="end"
-    android:gravity="center_vertical"
+    android:gravity="center_vertical|start"
     android:maxLines="2"
     android:minHeight="@dimen/touch_target"
     android:paddingStart="@dimen/space_24"

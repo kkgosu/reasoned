@@ -20,13 +20,9 @@
     <string name="knowledge_complete">Graph updated: %1$d new propositions, %2$d new arguments</string>
     <string name="knowledge_interrupted">Graph update stopped. Saved batches remain; pending messages can be processed later.</string>
     <string name="knowledge_error">Graph update stopped (%1$s). Teaching is unaffected; unprocessed messages remain pending.</string>
-    <string name="knowledge_source">%1$s · message %2$d\n%3$s</string>
     <string name="knowledge_empty">No propositions extracted yet. A session does not appear here until its teaching text is processed. Extraction starts automatically after about 4096 new tokens; use Update knowledge graph in the session menu to process a shorter passage. Questions, answers and plans are not added as graph nodes.</string>
     <string name="knowledge_sample">Sample graph</string>
     <string name="knowledge_real">My knowledge graph</string>
-    <string name="knowledge_source_notice">Extracted from the linked passages. Source-backed does not mean independently verified, and does not certify your understanding.</string>
-    <string name="knowledge_source_deleted">Extracted knowledge retained after its source chat was deleted. Original messages are no longer available. This is not independently verified and does not certify your understanding.</string>
-    <string name="knowledge_no_derivation">No reasoning chain has been extracted for this proposition.</string>
     <string name="knowledge_tokens">Graph usage (separate): %1$d input · %2$d output tokens</string>
     <string name="knowledge_pending">Graph pending: %1$d passages · ~%2$d tokens</string>
 </resources>

@@ -259,7 +259,8 @@ class QuestionGraphTest {
     }
 
     @Test
-    fun nativeMultiSelectRendersAllOptionsAndRestoresTheirValuesWithoutRequests() = runBlocking {
+    fun nativeMultiSelectRendersAllOptionsAndRestoresTheirValuesWithoutRequests(): Unit =
+        runBlocking {
         val q = QuestionContract.parse("ui-${UUID.randomUUID()}", question(), "probe", "probe")
         val session = RuntimeSession(
             goal = "Local multiselect fixture",
@@ -310,12 +311,20 @@ class QuestionGraphTest {
                     options.getChildAt(0).performClick(); options.getChildAt(5).performClick()
                     assertTrue((options.getChildAt(0) as CompoundButton).isChecked)
                     assertTrue((options.getChildAt(5) as CompoundButton).isChecked)
+                    assertEquals(
+                        listOf(q.values[0], q.values[5]),
+                        app.runtime.state.value!!.selectedValues
+                    )
                 }
                 scenario.recreate()
                 InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
                 scenario.onActivity { activity ->
                     val options = activity.findViewById<LinearLayout>(R.id.question_options)
                     assertEquals(6, options.childCount)
+                    assertEquals(
+                        listOf(q.values[0], q.values[5]),
+                        app.runtime.state.value!!.selectedValues
+                    )
                     assertTrue((options.getChildAt(0) as CompoundButton).isChecked)
                     assertTrue((options.getChildAt(5) as CompoundButton).isChecked)
                     activity.findViewById<CheckBox>(R.id.question_dont_know).performClick()

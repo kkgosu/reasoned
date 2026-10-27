@@ -156,7 +156,7 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
     }
 
     fun select(id: String?, focus: Boolean = false) {
-        val point = snapshot?.nodes?.firstOrNull { it.node.id == id }
+        val point = snapshot?.nodes?.firstOrNull { it.node.id == id && !it.node.implication }
         if (selectedId != point?.node?.id) {
             selectionAnimator?.cancel()
             fadingSelectionId = selectedId
@@ -206,7 +206,10 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
     }
 
     private fun updateSelection() {
-        onSelection?.invoke(snapshot?.nodes?.firstOrNull { it.node.id == selectedId }?.node)
+        val node =
+            snapshot?.nodes?.firstOrNull { it.node.id == selectedId && !it.node.implication }?.node
+        selectedId = node?.id
+        onSelection?.invoke(node)
         invalidate()
     }
 
@@ -279,6 +282,7 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
         labelPaint.textSize = labelSize * zoom
         regionLabelPaint.textSize = labelSize * zoom
         data.nodes.forEach { point ->
+            if (point.node.implication) return@forEach
             val x = camera.screenX(point.x, width)
             val y = camera.screenY(point.y, height)
             val selected = when (point.node.id) {
@@ -337,7 +341,7 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
         zoom: Float,
         opacity: Float
     ) {
-        if (opacity <= 0f) return
+        if (opacity <= 0f || point.node.implication) return
         val x = camera.screenX(point.x, width)
         val y = camera.screenY(point.y, height) + 14 * density * zoom
         val labelWidth = labelWidths[index] * zoom

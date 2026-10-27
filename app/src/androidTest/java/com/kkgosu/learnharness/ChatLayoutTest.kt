@@ -67,7 +67,7 @@ class ChatLayoutTest {
     @Suppress("DEPRECATION")
     @SdkSuppress(minSdkVersion = 30)
     @Test
-    fun imeFramesDoNotJumpToTheFinalInsetBeforeShowingOrHiding() = runBlocking {
+    fun imeFramesDoNotJumpToTheFinalInsetBeforeShowingOrHiding(): Unit = runBlocking {
         val saved = RuntimeSession(goal = "Local IME animation fixture", model = "fixture")
         app.sessions.save(saved)
         try {

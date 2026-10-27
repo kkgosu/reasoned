@@ -158,7 +158,7 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
                             .data()
                     }
                     adapter?.apply {
-                        clear(); addAll(data.nodes); filter.filter(
+                        clear(); addAll(data.nodes.filterNot { it.implication }); filter.filter(
                         search?.text?.toString().orEmpty()
                     )
                     }

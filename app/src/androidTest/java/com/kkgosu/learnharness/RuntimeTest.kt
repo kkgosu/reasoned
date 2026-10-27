@@ -217,7 +217,7 @@ class RuntimeTest {
             assertEquals(80, holder.itemView.findViewById<android.widget.ProgressBar>(R.id.answered_confidence).progress)
             val check = question.copy(phase = "teacher", type = "check")
             val gap = check.answered(
-                5,
+                item.id,
                 check.answer("Question thinking", -1, 60, "Reading thinking", true)
             )
             assertEquals(gap, LessonDisplayItem.restore(gap.save()))
@@ -386,7 +386,14 @@ class RuntimeTest {
         val store = SessionStore(app, name)
         val runtime = SessionRuntime(app, store, ModelProvider { _, delta -> delta("Provisional text"); assembled })
         try {
-            join(runtime.create("Fixture", "fake-model")); join(runtime.retry())
+            val session = RuntimeSession(
+                goal = "Fixture",
+                model = "fake-model",
+                phase = "teacher",
+                proseIds = emptySet()
+            )
+            store.save(session)
+            join(runtime.open(session.id)); join(runtime.retry())
             assertEquals("idle", runtime.state.value!!.status)
             assertEquals("Canonical final text", runtime.state.value!!.items.last().text)
             assertEquals(setOf(runtime.state.value!!.items.last().id), runtime.state.value!!.proseIds)
@@ -564,7 +571,10 @@ class RuntimeTest {
                     val composer = activity.findViewById<EditText>(R.id.lesson_composer)
                     val action = activity.findViewById<Button>(R.id.composer_action)
                     val row = action.parent as android.widget.LinearLayout
-                    assertEquals(android.view.Gravity.CENTER_VERTICAL, composer.gravity and android.view.Gravity.VERTICAL_GRAVITY_MASK)
+                    assertEquals(
+                        android.view.Gravity.TOP,
+                        composer.gravity and android.view.Gravity.VERTICAL_GRAVITY_MASK
+                    )
                     assertFalse(row.isBaselineAligned)
                     assertTrue("Action must fit inside its row", action.top >= 0 && action.bottom <= row.height)
                     val bounds = android.graphics.Rect()
@@ -670,7 +680,15 @@ class RuntimeTest {
         assertEquals("Explain why x moves.", formatted.toString())
         assertTrue(formatted.getSpans(0, formatted.length, io.noties.markwon.image.AsyncDrawableSpan::class.java).isNotEmpty())
         assertEquals("Cost \$5", renderer.toMarkdown("Cost \$5").toString())
-        assertEquals("\$x\$", renderer.toMarkdown("`\$x\$`").toString())
+        val code = renderer.toMarkdown("`\$x\$`")
+        assertEquals("\$x\$", code.toString().trim())
+        assertTrue(
+            code.getSpans(
+                0,
+                code.length,
+                io.noties.markwon.image.AsyncDrawableSpan::class.java
+            ).isEmpty()
+        )
         assertNull(app.modelCatalog["unknown-fixture"])
         val sol = requireNotNull(app.modelCatalog["gpt-6.1-sol"])
         assertTrue(sol.window > 0)

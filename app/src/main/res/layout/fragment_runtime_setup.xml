@@ -69,6 +69,7 @@
             <Button
                 android:id="@+id/runtime_chatgpt_account"
                 style="@style/Widget.Harness.Button.Secondary"
+                android:gravity="center_vertical|start"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/space_24"
@@ -101,6 +102,7 @@
 
             <TextView
                 android:id="@+id/runtime_key_label"
+                android:gravity="center_vertical|start"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/space_24"
@@ -115,7 +117,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/space_24"
                 android:layout_marginTop="@dimen/space_8"
-                android:gravity="center_vertical"
+                android:gravity="center_vertical|start"
                 android:hint="@string/runtime_key_hint"
                 android:importantForAutofill="no"
                 android:inputType="textPassword"
@@ -151,6 +153,7 @@
 
         <TextView
             android:id="@+id/runtime_model_label"
+            android:gravity="center_vertical|start"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="@dimen/space_24"
@@ -165,7 +168,7 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="@dimen/space_24"
             android:layout_marginTop="@dimen/space_8"
-            android:gravity="center_vertical"
+            android:gravity="center_vertical|start"
             android:hint="@string/runtime_model_hint"
             android:inputType="textVisiblePassword"
             android:maxLength="100"
@@ -212,6 +215,7 @@
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="@dimen/space_24"
             android:layout_marginTop="@dimen/space_24"
+            android:gravity="center_vertical|start"
             android:text="@string/research_settings"
             android:textAppearance="@style/TextAppearance.Harness.Title" />
 
@@ -225,6 +229,7 @@
         <EditText
             android:id="@+id/research_key"
             style="@style/Widget.Harness.Input"
+            android:gravity="center_vertical|start"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="@dimen/space_24"
@@ -242,6 +247,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="@dimen/space_24"
+            android:layout_marginTop="@dimen/space_8"
             android:text="@string/research_save_key" />
 
         <Button

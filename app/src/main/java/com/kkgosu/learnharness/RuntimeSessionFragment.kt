@@ -344,6 +344,8 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
 
     private fun saveDraft(views: View, state: RuntimeSession) {
         val options = views.findViewById<LinearLayout>(R.id.question_options)
+        // Framework text restoration can fire before this question's dynamic options are rendered.
+        if (state.question != null && options.tag != state.question.callId) return
         val selected = if (state.question == null) emptyList() else
             (0 until options.childCount).filter { (options.getChildAt(it) as CompoundButton).isChecked }
         runtime.edit(
