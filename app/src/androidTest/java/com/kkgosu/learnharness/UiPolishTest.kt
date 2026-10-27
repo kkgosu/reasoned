@@ -188,6 +188,15 @@ class UiPolishTest {
                         inflated.findViewById<View>(R.id.drawer_panel) else inflated
                     root.layoutDirection =
                         if (rtl) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
+                    if (layout == R.layout.item_lesson_answered) {
+                        for (id in listOf(
+                            R.id.answered_thinking_toggle,
+                            R.id.answered_reading_toggle,
+                            R.id.answered_why_toggle
+                        )) {
+                            root.findViewById<View>(id).visibility = View.VISIBLE
+                        }
+                    }
                     if (layout == R.layout.fragment_home) {
                         root.findViewById<TextView>(R.id.graph_loading).apply {
                             setText(R.string.knowledge_empty)
@@ -210,6 +219,36 @@ class UiPolishTest {
                     )
                     root.layout(0, 0, width, height)
                     check(root)
+                    if (layout == R.layout.item_lesson_answered) {
+                        val contentInset = context.resources.getDimensionPixelSize(R.dimen.space_16)
+                        for (id in listOf(
+                            R.id.answered_thinking_toggle,
+                            R.id.answered_reading_toggle,
+                            R.id.answered_why_toggle
+                        )) {
+                            val toggle = root.findViewById<Button>(id)
+                            assertEquals(
+                                "Disclosure must reach the card's start edge",
+                                0,
+                                toggle.left
+                            )
+                            assertEquals(
+                                "Disclosure must reach the card's end edge",
+                                root.width,
+                                toggle.right
+                            )
+                            assertEquals(contentInset, toggle.paddingStart)
+                            assertEquals(contentInset, toggle.paddingEnd)
+                        }
+                        assertEquals(
+                            contentInset,
+                            root.findViewById<TextView>(R.id.answered_question).left
+                        )
+                        assertEquals(
+                            contentInset,
+                            root.width - root.findViewById<TextView>(R.id.answered_question).right
+                        )
+                    }
                     if (layout == R.layout.fragment_learning_preferences || layout == R.layout.fragment_new_session) {
                         val field = root.findViewById<EditText>(
                             if (layout == R.layout.fragment_learning_preferences) R.id.runtime_instructions else R.id.runtime_goal

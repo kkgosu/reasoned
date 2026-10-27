@@ -33,6 +33,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import me.grishka.appkit.Nav
 import org.commonmark.node.FencedCodeBlock
+import org.commonmark.node.IndentedCodeBlock
+import org.commonmark.node.Node
 import java.util.IdentityHashMap
 
 /** Keep the native document renderer; only mermaid/svg fences become static image spans. */
@@ -148,16 +150,26 @@ internal class DiagramPlugin(private val context: Context) : AbstractMarkwonPlug
                     }
                 })
             } else {
-                // Preserve Markwon's ordinary fenced-code rendering, including syntax highlighting.
-                visitor.builder().append('\u00a0').append('\n').append(
-                    visitor.configuration().syntaxHighlight().highlight(node.info, node.literal)
-                )
-                visitor.ensureNewLine(); visitor.builder().append('\u00a0')
-                CoreProps.CODE_BLOCK_INFO.set(visitor.renderProps(), node.info)
-                visitor.setSpansForNodeOptional(node, start)
+                appendCode(visitor, node, node.literal, node.info)
             }
             visitor.blockEnd(node)
         }
+        builder.on(IndentedCodeBlock::class.java) { visitor, node ->
+            visitor.blockStart(node)
+            appendCode(visitor, node, node.literal, null)
+            visitor.blockEnd(node)
+        }
+    }
+
+    private fun appendCode(visitor: MarkwonVisitor, node: Node, source: String, language: String?) {
+        val start = visitor.length()
+        // Preserve native code spans/highlighting, not padding made from blank text lines.
+        visitor.builder().append(
+            visitor.configuration().syntaxHighlight().highlight(
+                language, source.removeSuffix("\n").ifEmpty { "\u00a0" })
+        )
+        CoreProps.CODE_BLOCK_INFO.set(visitor.renderProps(), language)
+        visitor.setSpansForNodeOptional(node, start)
     }
 
     private fun diagramLinkAt(view: TextView, event: MotionEvent): ClickableSpan? {

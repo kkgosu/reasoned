@@ -56,7 +56,8 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     private val sessionId get() = arguments!!.getString("session")!!
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState); setHasOptionsMenu(true)
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(true)
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {

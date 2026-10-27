@@ -7,7 +7,11 @@ import io.noties.markwon.image.AsyncDrawableSpan
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 
 /** Local fixtures only: no live provider, CDN, screenshot capture or credentials. */
@@ -108,8 +112,137 @@ class DiagramTest {
         val planSpans = markdown.toMarkdown(planMarkdown)
         assertEquals(1, planSpans.getSpans(0, planSpans.length, AsyncDrawableSpan::class.java).size)
         val code = markdown.toMarkdown("```kotlin\nval answer = 42\n```")
-        assertTrue(code.toString().contains("val answer = 42"))
+        assertEquals("val answer = 42", code.toString())
+        assertEquals(
+            1,
+            code.getSpans(
+                0,
+                code.length,
+                io.noties.markwon.core.spans.CodeBlockSpan::class.java
+            ).size
+        )
         assertTrue(code.getSpans(0, code.length, AsyncDrawableSpan::class.java).isEmpty())
+        assertEquals(
+            "  first();\n\n  second();\n",
+            markdown.toMarkdown("```glsl\n  first();\n\n  second();\n\n```").toString()
+        )
+        assertEquals(
+            "Before\n\nval answer = 42\n\nAfter",
+            markdown.toMarkdown("Before\n\n```kotlin\nval answer = 42\n```\n\nAfter").toString()
+        )
+        assertEquals("\u00a0", markdown.toMarkdown("```text\n```").toString())
+    }
+
+    @Test
+    fun inlineAndBlockCodeHaveEqualVisibleTopAndBottomInsets() {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            val markdown = lessonMarkdown(context)
+            val padding = context.resources.getDimensionPixelSize(R.dimen.space_4)
+            val samples = listOf(
+                ".xy", "vec2 position = gl_FragCoord.xy;", "one\ntwo",
+                List(12) { "position" }.joinToString(" "), "עברית xy", "Привет 世界"
+            )
+            for (source in samples) for (format in listOf(
+                "inline",
+                "inline-bold",
+                "fenced",
+                "indented"
+            )) {
+                val block = format == "fenced" || format == "indented"
+                if (!block && source.contains('\n')) continue
+                for (scale in listOf(1f, 2f)) for (width in listOf(
+                    360,
+                    720
+                )) for (standalone in listOf(false, true)) {
+                    val view = android.widget.TextView(context).apply {
+                        setTextColor(Color.WHITE)
+                        typeface = context.resources.getFont(R.font.prose)
+                        setTextSize(
+                            android.util.TypedValue.COMPLEX_UNIT_PX,
+                            context.resources.getDimension(R.dimen.text_16) * scale
+                        )
+                        setLineSpacing(0f, 1.5f)
+                        setTextIsSelectable(true)
+                    }
+                    val code = when (format) {
+                        "fenced" -> "```text\n$source\n```"
+                        "indented" -> "    " + source.replace("\n", "\n    ")
+                        "inline-bold" -> "**`$source`**"
+                        else -> "`$source`"
+                    }
+                    markdown.setMarkdown(view, if (standalone) code else "Before\n\n$code\n\nAfter")
+                    view.measure(
+                        android.view.View.MeasureSpec.makeMeasureSpec(
+                            width,
+                            android.view.View.MeasureSpec.EXACTLY
+                        ),
+                        android.view.View.MeasureSpec.makeMeasureSpec(
+                            0,
+                            android.view.View.MeasureSpec.UNSPECIFIED
+                        )
+                    )
+                    view.layout(0, 0, width, view.measuredHeight)
+                    val text = view.text as android.text.Spanned
+                    val span: Any = if (block) text.getSpans(
+                        0, text.length,
+                        io.noties.markwon.core.spans.CodeBlockSpan::class.java
+                    ).single()
+                    else text.getSpans(
+                        0,
+                        text.length,
+                        io.noties.markwon.core.spans.CodeSpan::class.java
+                    ).single()
+                    val firstLine = view.layout.getLineForOffset(text.getSpanStart(span))
+                    val lastLine = view.layout.getLineForOffset(text.getSpanEnd(span) - 1)
+                    val bitmap = Bitmap.createBitmap(width, view.height, Bitmap.Config.ARGB_8888)
+                    try {
+                        view.draw(android.graphics.Canvas(bitmap)) // In-memory fixture, not a device screenshot.
+                        var backgroundTop = bitmap.height
+                        var backgroundBottom = -1
+                        var inkTop = bitmap.height
+                        var inkBottom = -1
+                        for (y in maxOf(0, view.layout.getLineTop(firstLine) - padding) until minOf(
+                            bitmap.height,
+                            view.layout.getLineBottom(lastLine) + padding
+                        )) {
+                            for (x in 0 until width) {
+                                val alpha = Color.alpha(bitmap.getPixel(x, y))
+                                if (alpha == 25) {
+                                    backgroundTop = minOf(backgroundTop, y)
+                                    backgroundBottom = maxOf(backgroundBottom, y + 1)
+                                } else if (alpha >= 240) {
+                                    inkTop = minOf(inkTop, y)
+                                    inkBottom = maxOf(inkBottom, y + 1)
+                                }
+                            }
+                        }
+                        val label =
+                            "format=$format scale=$scale width=$width standalone=$standalone source=$source"
+                        assertTrue("Missing code glyphs: $label", inkBottom > inkTop)
+                        assertTrue(
+                            "Top code inset: $label got=${inkTop - backgroundTop}",
+                            kotlin.math.abs(inkTop - backgroundTop - padding) <= 2
+                        )
+                        assertTrue(
+                            "Bottom code inset: $label got=${backgroundBottom - inkBottom}",
+                            kotlin.math.abs(backgroundBottom - inkBottom - padding) <= 2
+                        )
+                        if (block && lastLine > firstLine) {
+                            for (y in view.layout.getLineBottom(firstLine) until view.layout.getLineTop(
+                                lastLine
+                            )) {
+                                assertTrue(
+                                    "Gap in multiline code background: $label",
+                                    Color.alpha(bitmap.getPixel(width - 1, y)) > 0
+                                )
+                            }
+                        }
+                    } finally {
+                        bitmap.recycle()
+                    }
+                }
+            }
+        }
     }
 
     @Test
