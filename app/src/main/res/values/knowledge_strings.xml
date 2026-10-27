@@ -25,6 +25,7 @@
     <string name="knowledge_sample">Sample graph</string>
     <string name="knowledge_real">My knowledge graph</string>
     <string name="knowledge_source_notice">Extracted from the linked passages. Source-backed does not mean independently verified, and does not certify your understanding.</string>
+    <string name="knowledge_source_deleted">Extracted knowledge retained after its source chat was deleted. Original messages are no longer available. This is not independently verified and does not certify your understanding.</string>
     <string name="knowledge_no_derivation">No reasoning chain has been extracted for this proposition.</string>
     <string name="knowledge_tokens">Graph usage (separate): %1$d input · %2$d output tokens</string>
     <string name="knowledge_pending">Graph pending: %1$d passages · ~%2$d tokens</string>

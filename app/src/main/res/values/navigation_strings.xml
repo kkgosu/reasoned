@@ -8,6 +8,12 @@
     <string name="navigation_sessions">Recent sessions</string>
     <string name="navigation_empty">Your sessions will appear here.</string>
     <string name="navigation_loading">Loading sessions…</string>
+    <string name="session_rename">Rename session</string>
+    <string name="session_delete">Delete session</string>
+    <string name="session_name">Session name</string>
+    <string name="session_name_invalid">Enter a name without line breaks or control characters.</string>
+    <string name="session_delete_notice">Delete “%1$s” and its history? This cannot be undone. Active work for this session will stop. Extracted knowledge and its group name stay in the graph, but links to this chat and its original messages will be removed.</string>
+    <string name="session_action_failed">Could not update the session. Please try again.</string>
     <string name="new_session">New session</string>
     <string name="new_session_intro">Learning topic</string>
     <string name="new_session_local">Sends your goal and context to OpenAI. Graph updates, figures and automatic context summaries may cost extra.</string>

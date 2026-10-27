@@ -393,6 +393,23 @@ internal class SessionRuntime(
         }
     }
 
+    suspend fun delete(id: String) {
+        initialization.join()
+        if (!storageReady) throw ProviderFailure("storage")
+        if (mutable.value?.id == id) stop().join()
+        (application as? ReasonedApplication)?.extraction?.stop(id)?.join()
+        mutex.withLock {
+            withContext(Dispatchers.IO) {
+                store.delete(id)
+                // Clear alongside the committed delete even if the initiating Activity is cancelled.
+                if (mutable.value?.id == id) {
+                    mutable.value = null
+                    failure.value = ""
+                }
+            }
+        }
+    }
+
     private suspend fun flushDraft() {
         draftWrite?.cancelAndJoin()
         draftWrite = null

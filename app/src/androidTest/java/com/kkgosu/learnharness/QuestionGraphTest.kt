@@ -12,7 +12,11 @@ import androidx.test.platform.app.InstrumentationRegistry
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.UUID
@@ -283,6 +287,21 @@ class QuestionGraphTest {
                     val options = activity.findViewById<LinearLayout>(R.id.question_options)
                     assertEquals(6, options.childCount)
                     assertTrue((0 until options.childCount).all { options.getChildAt(it) is CheckBox })
+                    val nextAppKitId = activity.generateViewId()
+                    (0 until options.childCount).forEach {
+                        val option = options.getChildAt(it)
+                        assertTrue(
+                            "Choices must use AppKit's shared ID sequence",
+                            option.id in 1 until nextAppKitId
+                        )
+                        assertSame(option, activity.findViewById<View>(option.id))
+                    }
+                    activity.fragmentManager.fragments.forEach {
+                        assertTrue(
+                            "Transition containers must resolve to ViewGroups",
+                            activity.findViewById<View>(it.id) is android.view.ViewGroup
+                        )
+                    }
                     assertFalse(
                         activity.findViewById<android.widget.TextView>(R.id.question_text).text.contains(
                             "COMMITTED_HIDDEN"

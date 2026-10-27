@@ -19,5 +19,6 @@
     <dimen name="text_32">32sp</dimen>
     <!-- Android accessibility adaptation, not a desktop design token. -->
     <dimen name="touch_target">48dp</dimen>
+    <dimen name="runtime_question_extra_height">50dp</dimen>
     <integer name="motion_short_ms">150</integer>
 </resources>

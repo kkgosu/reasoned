@@ -1,17 +1,22 @@
 package com.kkgosu.learnharness
 
+import android.app.AlertDialog
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.EditText
 import android.widget.ListView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -25,6 +30,8 @@ class MainActivity : FragmentStackActivity() {
 
     private lateinit var drawer: DrawerLayout
     private val drawerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var drawerLoad: Job? = null
+    private var sessionDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // AppKit may restore fragments inside super.onCreate; their state owner must exist first.
@@ -89,7 +96,8 @@ class MainActivity : FragmentStackActivity() {
         val list = drawer.findViewById<ListView>(R.id.drawer_sessions)
         status.setText(R.string.navigation_loading)
         status.visibility = View.VISIBLE
-        drawerScope.launch {
+        drawerLoad?.cancel()
+        drawerLoad = drawerScope.launch {
             try {
                 val sessions =
                     withContext(Dispatchers.IO) { (application as ReasonedApplication).sessions.list() }
@@ -104,6 +112,19 @@ class MainActivity : FragmentStackActivity() {
                 sessions.indexOfFirst { it.first == active }.takeIf { it >= 0 }
                     ?.let { list.setItemChecked(it, true) }
                 list.setOnItemClickListener { _, _, position, _ -> openSession(sessions[position].first) }
+                list.setOnCreateContextMenuListener { menu, _, info ->
+                    val position = (info as? AdapterView.AdapterContextMenuInfo)?.position
+                        ?: return@setOnCreateContextMenuListener
+                    val (id, title) = sessions[position]
+                    menu.add(R.string.session_rename).setOnMenuItemClickListener {
+                        renameSession(id, title)
+                        true
+                    }
+                    menu.add(R.string.session_delete).setOnMenuItemClickListener {
+                        deleteSession(id, title)
+                        true
+                    }
+                }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -112,7 +133,83 @@ class MainActivity : FragmentStackActivity() {
         }
     }
 
+    private fun renameSession(id: String, title: String) {
+        val body = layoutInflater.inflate(R.layout.dialog_session_name, null)
+        val input = body.findViewById<EditText>(R.id.session_name)
+        input.setText(title)
+        input.setSelection(input.length())
+        val dialog = AlertDialog.Builder(this).setTitle(R.string.session_rename)
+            .setView(body).setPositiveButton(android.R.string.ok, null)
+            .setNegativeButton(android.R.string.cancel, null).create()
+        dialog.setOnShowListener {
+            input.requestFocus()
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val name = input.text.toString().trim()
+                if (name.isEmpty() || name.any { it.isISOControl() }) input.error =
+                    getString(R.string.session_name_invalid)
+                else updateSessions(dialog) {
+                    withContext(Dispatchers.IO) {
+                        (application as ReasonedApplication).sessions.rename(
+                            id,
+                            name
+                        )
+                    }
+                }
+            }
+        }
+        sessionDialog = dialog
+        dialog.window?.setSoftInputMode(android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE)
+        dialog.show()
+    }
+
+    private fun deleteSession(id: String, title: String) {
+        val dialog = AlertDialog.Builder(this).setTitle(R.string.session_delete)
+            .setMessage(getString(R.string.session_delete_notice, title))
+            .setPositiveButton(R.string.session_delete, null)
+            .setNegativeButton(android.R.string.cancel, null).create()
+        dialog.setOnShowListener {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                updateSessions(dialog) {
+                    (application as ReasonedApplication).runtime.delete(id)
+                    if (fragmentManager.fragments.any {
+                            it is RuntimeSessionFragment && it.arguments?.getString(
+                                "session"
+                            ) == id
+                        })
+                        navigate(HomeFragment())
+                }
+            }
+        }
+        sessionDialog = dialog
+        dialog.show()
+    }
+
+    private fun updateSessions(dialog: AlertDialog, action: suspend () -> Unit) {
+        val button = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+        button.isEnabled = false
+        drawerScope.launch {
+            try {
+                action()
+                dialog.dismiss()
+                loadDrawerSessions()
+                fragmentManager.fragments.forEach {
+                    when (it) {
+                        is HomeFragment -> it.refreshGraph()
+                        is GraphNodeFragment -> it.refreshGraph()
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                button.isEnabled = true
+                Toast.makeText(this@MainActivity, R.string.session_action_failed, Toast.LENGTH_LONG)
+                    .show()
+            }
+        }
+    }
+
     override fun onDestroy() {
+        sessionDialog?.dismiss()
         drawerScope.cancel()
         super.onDestroy()
     }

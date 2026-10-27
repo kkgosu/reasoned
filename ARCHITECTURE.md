@@ -231,8 +231,13 @@ remains visible when editing; a separate scrollable
 question panel leaves a persistent answer/Send dock above the IME. An ephemeral native progress row
 after the last transcript message shows generation, including while waiting for first text; it is
 not stored as lesson content. The question panel keeps the existing rounded outline, and question
-arrival uses bounds/fade motion and API-30+ IME frames resize the viewport. This refinement is
-build-checked, not device-verified.
+arrival uses bounds/fade motion. On API 30+, final AppKit bottom padding is deferred while an IME
+animation is active; native animation-frame insets resize the viewport without an initial jump,
+and AppKit resumes ownership at animation end. No separately timed keyboard animator is used.
+`RuntimeSessionLayout` adds 50 dp to the expanded question panel by redistributing native weighted
+transcript/panel heights, capped by the available transcript space; total height and composer space
+remain unchanged. Collapsed layout is unchanged. Layout and synthetic IME show/hide regression
+fixtures are compiled; APK/test-APK compilation and lint pass, with device motion still unverified.
 
 Answered questions render as one typed native card reconstructed from the existing question/answer
 evidence, including legacy sessions: question, outlined options, selected/correct marks, a six-color
@@ -359,8 +364,18 @@ text characters and 16 MB UTF-8 protocol. Compaction never creates teaching or g
 
 Hiding the runtime screen or stopping the Activity cancels the foreground job; there is no service/background-execution promise. Cancellation closes the HTTP call/body, including blocked reads. Finally checkpoints run non-cancellably on IO; streamed partial text is marked interrupted and excluded from model context. Startup marks unfinished runs/sessions interrupted; Retry starts a new charged request rather than claiming token-level resume. Reported usage accumulates completed responses/runs; interrupted or rejected responses may have billed usage the client cannot report. Draft writes debounce 200 ms and flush on actions/hiding. Native saved state carries no real transcript or credentials.
 
-SQLite v2 preserves sessions, messages, questions, answers and runs, with an additive v1 migration
-for knowledge_nodes, knowledge_chains, knowledge_sources, knowledge_coverage and knowledge_runs.
+SQLite v3 preserves sessions, messages, questions, answers and runs, with additive migrations
+from v1/v2 for knowledge tables and separate display-title/deletion metadata. Drawer long-press
+opens a native context menu; rename input and delete confirmation use native dialogs. Renaming
+changes presentation in the drawer, graph groups,
+source links and graph metadata reads, never the original learning goal or wire transcript.
+Confirmed deletion stops that chat's foreground work and transactionally clears its checkpoint,
+messages, questions, answers, runs and graph source/coverage/run records. Propositions and reasoning
+chains remain; a non-openable origin row retains only its ID, group title, timestamp and deletion
+marker. Deleted chats are excluded from navigation/recovery, and stale saves cannot resurrect them.
+The graph keeps named groups without inventing source links; details disclose unavailable sources.
+Build/lint and test-APK compilation plus host SQLite DDL/migration/deletion checks pass; native
+management/cancellation/migration fixtures are compiled, not device-executed.
 Checkpoints preserve model/prompt version, phase, wire history, pending tool, provisional route and
 input state. Accepted answers and their source message IDs commit transactionally with the
 checkpoint; `(session, call_id)` prevents duplicate answers. Replacing session or message rows is

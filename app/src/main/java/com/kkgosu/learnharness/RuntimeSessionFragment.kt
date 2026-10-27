@@ -21,11 +21,11 @@ import android.view.WindowInsetsAnimation
 import android.view.inputmethod.InputMethodManager
 import android.widget.Button
 import android.widget.CheckBox
+import android.widget.CompoundButton
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.RadioButton
-import android.widget.CompoundButton
-import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -50,6 +50,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     private var markdown: Markwon? = null
     private var rendering = false
     private var loadingModels = false
+    private var imeAnimations = 0
     private val app get() = activity.application as ReasonedApplication
     private val runtime get() = app.runtime
     private val sessionId get() = arguments!!.getString("session")!!
@@ -227,12 +228,33 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         return views
     }
 
+    override fun onApplyWindowInsets(insets: WindowInsets) {
+        val root = view
+        val bottom = root?.paddingBottom ?: 0
+        super.onApplyWindowInsets(insets)
+        // AppKit receives the final IME inset before the animation's first frame. Keep the current
+        // bottom until onProgress supplies the actual frame, instead of jumping to the final layout.
+        if (imeAnimations > 0 && root != null)
+            root.setPadding(root.paddingLeft, root.paddingTop, root.paddingRight, bottom)
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         if (Build.VERSION.SDK_INT >= 30) {
             // Follow actual IME frames; AppKit owns the final system-bar/keyboard padding.
             view.setWindowInsetsAnimationCallback(object :
                 WindowInsetsAnimation.Callback(DISPATCH_MODE_CONTINUE_ON_SUBTREE) {
+                override fun onPrepare(animation: WindowInsetsAnimation) {
+                    if (animation.typeMask and WindowInsets.Type.ime() != 0) imeAnimations++
+                }
+
+                override fun onEnd(animation: WindowInsetsAnimation) {
+                    if (animation.typeMask and WindowInsets.Type.ime() != 0) {
+                        imeAnimations = (imeAnimations - 1).coerceAtLeast(0)
+                        if (imeAnimations == 0) view.requestApplyInsets()
+                    }
+                }
+
                 override fun onProgress(
                     insets: WindowInsets,
                     runningAnimations: MutableList<WindowInsetsAnimation>
@@ -312,6 +334,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         scope?.cancel(); scope = null
         dialog?.dismiss(); dialog = null
         if (Build.VERSION.SDK_INT >= 30) view?.setWindowInsetsAnimationCallback(null)
+        imeAnimations = 0
         pageView?.findViewById<RecyclerView>(R.id.lesson_list)?.adapter = null
         pageView = null
         adapter = LessonAdapter()
@@ -438,7 +461,8 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                                     !isChecked else super.toggle()
                             }
                         }
-                        option.id = View.generateViewId()
+                        // Share AppKit's ID allocator: platform-generated IDs can collide with stack containers.
+                        option.id = (activity as MainActivity).generateViewId()
                         option.layoutParams = LinearLayout.LayoutParams(
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT

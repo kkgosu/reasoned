@@ -178,6 +178,11 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
         }
     }
 
+    fun refreshGraph() {
+        val views = pageView ?: return
+        visibleScope?.let { loadGraph(views, it) }
+    }
+
     private fun loadGraph(views: View, scope: CoroutineScope) {
         scope.launch {
             val loading = views.findViewById<TextView>(R.id.graph_loading)

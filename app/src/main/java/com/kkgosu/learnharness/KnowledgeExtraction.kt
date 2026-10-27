@@ -47,6 +47,7 @@ internal class KnowledgeExtraction(
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var work: Job? = null
+    private var source: String? = null
     var foreground = false
         set(value) {
             field = value; if (!value) stop()
@@ -57,8 +58,12 @@ internal class KnowledgeExtraction(
         scope.coroutineContext.cancelChildren(); return work
     }
 
+    fun stop(session: String): Job? =
+        if (source == session && work?.isActive == true) stop() else null
+
     fun start(session: RuntimeSession, automatic: Boolean = false): Job = scope.launch {
         if (!foreground || work?.isActive == true) return@launch
+        source = session.id
         work = launch(Dispatchers.IO) {
             var nodes = 0;
             var chains = 0
@@ -138,10 +143,7 @@ internal class KnowledgeExtraction(
                                         .map { (id, members) ->
                                             JSONObject().put("id", id).put(
                                                 "title",
-                                                graph.sources.values.flatten()
-                                                    .firstOrNull { it.session == id }?.title?.take(
-                                                        160
-                                                    ).orEmpty()
+                                                graph.titles[id].orEmpty().take(160)
                                             ).put("propositions", members.size)
                                         })
                                 )

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingHorizontal="@dimen/space_24"
+    android:paddingTop="@dimen/space_16">
+
+    <EditText
+        android:id="@+id/session_name"
+        style="@style/Widget.Harness.Input"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical|start"
+        android:hint="@string/session_name"
+        android:importantForAutofill="no"
+        android:inputType="textCapSentences"
+        android:maxLength="2000"
+        android:singleLine="true" />
+</FrameLayout>

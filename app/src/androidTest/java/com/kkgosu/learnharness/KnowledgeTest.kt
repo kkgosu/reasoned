@@ -4,14 +4,17 @@ import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
 import org.json.JSONObject
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.UUID
@@ -275,11 +278,15 @@ class KnowledgeTest {
             SessionStore(app, name).use { it.save(saved) }
             SQLiteDatabase.openDatabase(app.getDatabasePath(name).path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
                 for (table in listOf("knowledge_sources", "knowledge_coverage", "knowledge_runs", "knowledge_chains", "knowledge_nodes")) db.execSQL("DROP TABLE $table")
+                db.execSQL("CREATE TABLE sessions_v1(id TEXT PRIMARY KEY, goal TEXT NOT NULL, model TEXT NOT NULL, checkpoint TEXT NOT NULL, updated INTEGER NOT NULL)")
+                db.execSQL("INSERT INTO sessions_v1 SELECT id,goal,model,checkpoint,updated FROM sessions")
+                db.execSQL("DROP TABLE sessions")
+                db.execSQL("ALTER TABLE sessions_v1 RENAME TO sessions")
                 db.version = 1
             }
             SessionStore(app, name).use { migrated ->
                 assertEquals(saved, migrated.load(saved.id))
-                assertEquals(2, migrated.readableDatabase.version)
+                assertEquals(3, migrated.readableDatabase.version)
                 assertTrue(migrated.knowledge().nodes.isEmpty())
             }
         } finally { app.deleteDatabase(name) }

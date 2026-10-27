@@ -20,13 +20,29 @@ import me.grishka.appkit.fragments.ToolbarFragment
 /** Persistent propositions/arguments link to exact saved messages; samples stay explicitly separate. */
 class GraphNodeFragment : ToolbarFragment(R.layout.fragment_shell) {
     private var scope: CoroutineScope? = null
+    private var pageView: View? = null
     override fun onCreateContentView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
         setTitle(R.string.graph_proposition)
-        val views = inflater.inflate(R.layout.fragment_graph_node, container, false)
+        return inflater.inflate(R.layout.fragment_graph_node, container, false)
+            .also { pageView = it }
+    }
+
+    override fun onShown() {
+        super.onShown()
+        refreshGraph()
+    }
+
+    fun refreshGraph() {
+        val views = pageView ?: return
+        if (!isVisible) return
+        val inflater = activity.layoutInflater
+        scope?.cancel()
+        views.findViewById<LinearLayout>(R.id.graph_sources).removeAllViews()
+        views.findViewById<LinearLayout>(R.id.graph_related).removeAllViews()
         val sample = arguments?.getBoolean("sample") == true
         val app = activity.application as ReasonedApplication
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).also { visible ->
@@ -48,8 +64,15 @@ class GraphNodeFragment : ToolbarFragment(R.layout.fragment_shell) {
                         node.reasoning.ifEmpty { getString(R.string.knowledge_no_derivation) })
                     views.findViewById<TextView>(R.id.graph_domain).text =
                         data.clusters[node.cluster]
-                    views.findViewById<TextView>(R.id.graph_provenance_text)
-                        .setText(if (sample) R.string.graph_fixture_source else R.string.knowledge_source_notice)
+                    views.findViewById<TextView>(R.id.graph_provenance_text).setText(
+                        when {
+                            sample -> R.string.graph_fixture_source
+                            knowledge?.sources?.get(node.id)
+                                .isNullOrEmpty() -> R.string.knowledge_source_deleted
+
+                            else -> R.string.knowledge_source_notice
+                        }
+                    )
                     fun button(list: LinearLayout, label: String, click: () -> Unit) {
                         list.addView(
                             Button(
@@ -134,7 +157,6 @@ class GraphNodeFragment : ToolbarFragment(R.layout.fragment_shell) {
                 }
             }
         }
-        return views
     }
 
     override fun onHidden() {
@@ -142,6 +164,6 @@ class GraphNodeFragment : ToolbarFragment(R.layout.fragment_shell) {
     }
 
     override fun onDestroyView() {
-        scope?.cancel(); scope = null; super.onDestroyView()
+        scope?.cancel(); scope = null; pageView = null; super.onDestroyView()
     }
 }

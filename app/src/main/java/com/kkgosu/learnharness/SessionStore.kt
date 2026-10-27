@@ -206,13 +206,13 @@ internal data class RuntimeSession(
 
 /** One concrete SQLite owner. Transactions couple rendered messages, tool state and learner evidence. */
 internal class SessionStore(context: Context, name: String = "sessions.db") :
-    SQLiteOpenHelper(context, name, null, 2) {
+    SQLiteOpenHelper(context, name, null, 3) {
     override fun onConfigure(db: SQLiteDatabase) {
         db.setForeignKeyConstraintsEnabled(true)
     }
 
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL("CREATE TABLE sessions(id TEXT PRIMARY KEY, goal TEXT NOT NULL, model TEXT NOT NULL, checkpoint TEXT NOT NULL, updated INTEGER NOT NULL)")
+        db.execSQL("CREATE TABLE sessions(id TEXT PRIMARY KEY, goal TEXT NOT NULL, model TEXT NOT NULL, checkpoint TEXT NOT NULL, updated INTEGER NOT NULL, title TEXT NOT NULL DEFAULT '', deleted INTEGER NOT NULL DEFAULT 0)")
         db.execSQL("CREATE TABLE messages(session TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, id INTEGER NOT NULL, role TEXT NOT NULL, text TEXT NOT NULL, PRIMARY KEY(session,id))")
         db.execSQL("CREATE TABLE questions(session TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, call_id TEXT NOT NULL, question TEXT NOT NULL, PRIMARY KEY(session,call_id))")
         db.execSQL("CREATE TABLE answers(session TEXT NOT NULL, call_id TEXT NOT NULL, message_id INTEGER NOT NULL, answer TEXT NOT NULL, PRIMARY KEY(session,call_id), FOREIGN KEY(session,call_id) REFERENCES questions(session,call_id))")
@@ -221,21 +221,61 @@ internal class SessionStore(context: Context, name: String = "sessions.db") :
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        check(oldVersion == 1 && newVersion == 2) { "Unsupported database migration" }
-        createKnowledgeTables(db)
+        check(oldVersion in 1..2 && newVersion == 3) { "Unsupported database migration" }
+        if (oldVersion == 1) createKnowledgeTables(db)
+        db.execSQL("ALTER TABLE sessions ADD COLUMN title TEXT NOT NULL DEFAULT ''")
+        db.execSQL("ALTER TABLE sessions ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0")
     }
 
     @Synchronized
     fun list(): List<Pair<String, String>> = readableDatabase.rawQuery(
-        "SELECT id,goal FROM sessions ORDER BY updated DESC LIMIT 30",
+        "SELECT id,coalesce(nullif(title,''),goal) FROM sessions WHERE deleted=0 ORDER BY updated DESC LIMIT 30",
         null
     ).use { cursor ->
         buildList { while (cursor.moveToNext()) add(cursor.getString(0) to cursor.getString(1)) }
     }
 
     @Synchronized
+    fun rename(id: String, title: String) {
+        val name = title.trim()
+        require(name.length in 1..2000 && name.none { it.isISOControl() })
+        check(
+            writableDatabase.update(
+                "sessions", ContentValues().apply { put("title", name) },
+                "id=? AND deleted=0", arrayOf(id)
+            ) == 1
+        ) { "Session missing" }
+    }
+
+    /** Keep only origin metadata for graph grouping; erase chat content and its source links atomically. */
+    @Synchronized
+    fun delete(id: String) {
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            db.execSQL(
+                "UPDATE sessions SET title=coalesce(nullif(title,''),goal),goal='',model='',checkpoint='',deleted=1 WHERE id=? AND deleted=0",
+                arrayOf(id)
+            )
+            for (table in listOf(
+                "knowledge_sources",
+                "knowledge_coverage",
+                "knowledge_runs",
+                "answers",
+                "questions",
+                "messages",
+                "runs"
+            ))
+                db.delete(table, "session=?", arrayOf(id))
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+    }
+
+    @Synchronized
     fun load(id: String): RuntimeSession? = readableDatabase.rawQuery(
-        "SELECT goal,model,length(checkpoint),substr(checkpoint,1,131072) FROM sessions WHERE id=?",
+        "SELECT goal,model,length(checkpoint),substr(checkpoint,1,131072) FROM sessions WHERE id=? AND deleted=0",
         arrayOf(id)
     ).use { cursor ->
         if (!cursor.moveToFirst()) return null
@@ -351,7 +391,7 @@ internal class SessionStore(context: Context, name: String = "sessions.db") :
             if (db.update(
                     "sessions",
                     values,
-                    "id=?",
+                    "id=? AND deleted=0",
                     arrayOf(state.id)
                 ) == 0
             ) db.insertOrThrow("sessions", null, values)

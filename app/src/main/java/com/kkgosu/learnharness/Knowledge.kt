@@ -60,12 +60,14 @@ internal data class KnowledgeChain(
 internal data class KnowledgeSnapshot(
     val nodes: List<KnowledgeNode>,
     val chains: List<KnowledgeChain>,
-    val sources: Map<String, List<KnowledgeSource>>
+    val sources: Map<String, List<KnowledgeSource>>,
+    val titles: Map<String, String> = emptyMap()
 ) {
     fun data(): GraphData {
         val births = nodes.map { it.birth }.distinct()
         val clusters = births.map { birth ->
-            sources.values.flatten().firstOrNull { it.session == birth }?.title ?: birth
+            titles[birth] ?: sources.values.flatten().firstOrNull { it.session == birth }?.title
+            ?: birth
         }
         val byId = nodes.associateBy { it.id }
         val propositions = nodes.map { node ->
@@ -206,7 +208,7 @@ internal fun SessionStore.knowledge(): KnowledgeSnapshot = synchronized(this) {
         }
     }
     val sources = readableDatabase.rawQuery(
-        "SELECT k.entity,k.session,k.message,s.goal,m.text FROM knowledge_sources k JOIN sessions s ON s.id=k.session JOIN messages m ON m.session=k.session AND m.id=k.message ORDER BY k.rowid",
+        "SELECT k.entity,k.session,k.message,coalesce(nullif(s.title,''),s.goal),m.text FROM knowledge_sources k JOIN sessions s ON s.id=k.session JOIN messages m ON m.session=k.session AND m.id=k.message ORDER BY k.rowid",
         null
     ).use { c ->
         val result = linkedMapOf<String, MutableList<KnowledgeSource>>()
@@ -214,13 +216,19 @@ internal fun SessionStore.knowledge(): KnowledgeSnapshot = synchronized(this) {
             .add(KnowledgeSource(c.getString(1), c.getLong(2), c.getString(3), c.getString(4)))
         result
     }
-    KnowledgeSnapshot(nodes, chains, sources)
+    val titles = readableDatabase.rawQuery(
+        "SELECT DISTINCT n.birth,coalesce(nullif(s.title,''),s.goal) FROM knowledge_nodes n JOIN sessions s ON s.id=n.birth",
+        null
+    ).use { rows ->
+        buildMap { while (rows.moveToNext()) put(rows.getString(0), rows.getString(1)) }
+    }
+    KnowledgeSnapshot(nodes, chains, sources, titles)
 }
 
 /** The prober sees graph organization only, never proposition statements or old lesson prose. */
 internal fun SessionStore.graphSessions(): JSONObject = synchronized(this) {
     val sessions = readableDatabase.rawQuery(
-        "SELECT n.birth,s.goal,s.updated,count(*) FROM knowledge_nodes n JOIN sessions s ON s.id=n.birth GROUP BY n.birth ORDER BY s.updated DESC,n.birth",
+        "SELECT n.birth,coalesce(nullif(s.title,''),s.goal),s.updated,count(*) FROM knowledge_nodes n JOIN sessions s ON s.id=n.birth GROUP BY n.birth ORDER BY s.updated DESC,n.birth",
         null
     ).use { rows ->
         JSONArray().apply {

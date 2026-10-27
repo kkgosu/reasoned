@@ -314,8 +314,7 @@ internal object RuntimeTools {
                         "validating arguments: keys=${args.length()}; expected=${expected.size}"
                     )
                     val keys = args.keys().asSequence().toSet()
-                        if (keys != expected)
-                        throw ProviderFailure("invalid_tool_arguments")
+                        if (keys != expected) throw ProviderFailure("invalid_tool_arguments")
                     when (name) {
                         "list_propositions" -> args.strictString("session", 200)
                         "research" -> {
