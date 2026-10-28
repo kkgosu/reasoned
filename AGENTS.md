@@ -59,6 +59,13 @@ failures.
   Preserve accessibility, large-font behavior, RTL and native touch feedback.
 - The sample lesson, sample graph and style-reference screens are debug-only. Never treat sample
   graph data as learner evidence or expose debug screens in release.
+- Keep Sample session as the offline manual playground for Markdown/Markwon and LaTeX. Use the
+  same `lessonMarkdown` renderer as real sessions; when changing rendering behavior, add or update
+  an authored example in `MockLesson.RENDERING_SAMPLES` for the affected case. Keep examples
+  clearly labeled as test content, preserve sample interactions/restoration, and require no live
+  provider calls or credentials to inspect them. Bump the sample fixture version when changing
+  initial examples so saved sample state does not hide updates. This is contributor guidance,
+  not a runtime prompt.
 - Keep upstream files listed in `app/src/main/assets/learnharness/SOURCE.sha256` byte-preserved. Use
   existing projection scripts and the separate Android compatibility layer; don't silently rewrite
   vendored prompts. Preserve licenses and provenance.
@@ -136,7 +143,7 @@ adb -s emulator-5554 shell svc data disable
 adb -s emulator-5554 install -r app/build/outputs/apk/debug/app-debug.apk
 adb -s emulator-5554 install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 adb -s emulator-5554 shell am instrument -w -r \
-  com.kkgosu.reasoned.test/androidx.test.runner.AndroidJUnitRunner
+  com.kkgosu.reasoned.debug.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
 For a focused test, add `-e class com.kkgosu.reasoned.TestClass#methodName` before the runner.

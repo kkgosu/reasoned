@@ -19,7 +19,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:accessibilityLiveRegion="polite"
-        android:gravity="top|start"
+        android:gravity="center"
         android:padding="@dimen/space_24"
         android:text="@string/graph_no_matches"
         android:textAppearance="@style/TextAppearance.Harness"

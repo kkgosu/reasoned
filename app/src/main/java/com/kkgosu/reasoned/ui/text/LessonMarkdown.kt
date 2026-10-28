@@ -19,21 +19,26 @@ import android.text.style.MetricAffectingSpan
 import android.widget.TextView
 import com.kkgosu.reasoned.R
 import io.noties.markwon.AbstractMarkwonPlugin
+import io.noties.markwon.BlockHandlerDef
 import io.noties.markwon.Markwon
 import io.noties.markwon.MarkwonConfiguration
 import io.noties.markwon.MarkwonSpansFactory
+import io.noties.markwon.MarkwonVisitor
 import io.noties.markwon.core.MarkwonTheme
 import io.noties.markwon.core.spans.CodeBlockSpan
 import io.noties.markwon.core.spans.CodeSpan
 import io.noties.markwon.ext.latex.JLatexAsyncDrawableSpan
 import io.noties.markwon.ext.latex.JLatexMathNode
 import io.noties.markwon.ext.latex.JLatexMathPlugin
+import io.noties.markwon.ext.tables.TablePlugin
+import io.noties.markwon.ext.tables.TableTheme
 import io.noties.markwon.image.AsyncDrawableSpan
 import io.noties.markwon.inlineparser.InlineProcessor
 import io.noties.markwon.inlineparser.MarkwonInlineParserPlugin
 import io.noties.markwon.utils.SpanUtils
 import org.commonmark.node.Code
 import org.commonmark.node.FencedCodeBlock
+import org.commonmark.node.Heading
 import org.commonmark.node.IndentedCodeBlock
 import org.commonmark.node.Node
 import org.commonmark.node.Text
@@ -51,8 +56,21 @@ internal fun lessonMarkdown(context: Context): Markwon = Markwon.builder(context
         builder.theme().inlineTextColor(context.getColor(R.color.foreground))
             .blockTextColor(context.getColor(R.color.foreground))
     })
+    .usePlugin(TablePlugin.create(TableTheme.buildWithDefaults(context)
+        .tableBorderColor(context.getColor(R.color.border))
+        .build()))
     .usePlugin(DiagramPlugin(context))
     .usePlugin(object : AbstractMarkwonPlugin() {
+        override fun configureVisitor(builder: MarkwonVisitor.Builder) {
+            builder.blockHandler(object : BlockHandlerDef() {
+                override fun blockEnd(visitor: MarkwonVisitor, node: Node) {
+                    if (node is Heading) {
+                        if (visitor.hasNext(node)) visitor.ensureNewLine()
+                    } else super.blockEnd(visitor, node)
+                }
+            })
+        }
+
         override fun configureSpansFactory(builder: MarkwonSpansFactory.Builder) {
             val padding = context.resources.getDimensionPixelSize(R.dimen.space_4)
             builder.setFactory(Code::class.java) { config, _ ->

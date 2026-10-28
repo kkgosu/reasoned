@@ -32,6 +32,7 @@ import com.kkgosu.reasoned.storage.SessionStore
 import com.kkgosu.reasoned.storage.knowledge
 import com.kkgosu.reasoned.ui.adapters.LessonAdapter
 import com.kkgosu.reasoned.ui.text.lessonMarkdown
+import com.kkgosu.reasoned.ui.text.markdownBody
 import com.kkgosu.reasoned.utils.objects
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -346,12 +347,12 @@ class RuntimeTest {
                 )
                 assertEquals(
                     View.GONE,
-                    holder.itemView.findViewById<View>(R.id.answered_why).visibility
+                    holder.itemView.findViewById<android.widget.TextView>(R.id.answered_why).markdownBody.visibility
                 )
                 holder.itemView.findViewById<View>(R.id.answered_why_toggle).performClick()
                 assertEquals(
                     View.VISIBLE,
-                    holder.itemView.findViewById<View>(R.id.answered_why).visibility
+                    holder.itemView.findViewById<android.widget.TextView>(R.id.answered_why).markdownBody.visibility
                 )
                 assertEquals(
                     80,
@@ -378,7 +379,7 @@ class RuntimeTest {
                 )
                 assertEquals(
                     View.GONE,
-                    holder.itemView.findViewById<View>(R.id.answered_reading).visibility
+                    holder.itemView.findViewById<android.widget.TextView>(R.id.answered_reading).markdownBody.visibility
                 )
                 holder.itemView.findViewById<View>(R.id.answered_reading_toggle).performClick()
                 assertEquals(
@@ -387,7 +388,7 @@ class RuntimeTest {
                 )
                 assertEquals(
                     View.VISIBLE,
-                    holder.itemView.findViewById<View>(R.id.answered_reading).visibility
+                    holder.itemView.findViewById<android.widget.TextView>(R.id.answered_reading).markdownBody.visibility
                 )
                 assertEquals(
                     "Question thinking",

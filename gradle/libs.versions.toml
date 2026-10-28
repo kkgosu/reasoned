@@ -24,6 +24,7 @@ nimbus = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus" }
 markwon-core = { module = "io.noties.markwon:core", version.ref = "markwon" }
 markwon-inline = { module = "io.noties.markwon:inline-parser", version.ref = "markwon" }
 markwon-latex = { module = "io.noties.markwon:ext-latex", version.ref = "markwon" }
+markwon-tables = { module = "io.noties.markwon:ext-tables", version.ref = "markwon" }
 drawer = { module = "androidx.drawerlayout:drawerlayout", version.ref = "drawer" }
 junit = { module = "junit:junit", version.ref = "junit" }
 json = { module = "org.json:json", version.ref = "json" }

@@ -8,6 +8,9 @@ import android.text.TextWatcher
 import android.transition.ChangeBounds
 import android.transition.TransitionManager
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
@@ -21,10 +24,12 @@ import android.widget.SeekBar
 import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.kkgosu.reasoned.BuildConfig
 import com.kkgosu.reasoned.MainActivity
 import com.kkgosu.reasoned.R
 import com.kkgosu.reasoned.controllers.MockLesson
 import com.kkgosu.reasoned.ui.adapters.LessonAdapter
+import com.kkgosu.reasoned.ui.text.lessonMarkdown
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,14 +38,20 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import me.grishka.appkit.Nav
 import me.grishka.appkit.fragments.ToolbarFragment
 
 class LearningSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     private var pageView: View? = null
-    private val adapter = LessonAdapter()
+    private lateinit var adapter: LessonAdapter
     private var visibleScope: CoroutineScope? = null
     private var imeVisible = false
     private val lesson get() = (activity as MainActivity).mockLesson
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setHasOptionsMenu(BuildConfig.DEBUG)
+    }
 
     override fun onCreateContentView(
         inflater: LayoutInflater,
@@ -55,6 +66,7 @@ class LearningSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         val options = views.findViewById<RadioGroup>(R.id.question_options)
         list.layoutManager = LinearLayoutManager(inflater.context)
         list.itemAnimator = null
+        adapter = LessonAdapter(lessonMarkdown(inflater.context))
         adapter.submit(model.state.value.items)
         list.adapter = adapter
         resources.getStringArray(R.array.lesson_options).forEachIndexed { index, text ->
@@ -93,6 +105,19 @@ class LearningSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         }
         render(views, model.state.value)
         return views
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        if (BuildConfig.DEBUG) menu.add(Menu.NONE, R.id.session_plan, Menu.NONE, R.string.learning_plan)
+            .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (BuildConfig.DEBUG && item.itemId == R.id.session_plan) {
+            Nav.go(activity, SessionPlanFragment::class.java, Bundle().apply { putBoolean("sample", true) })
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     // AppKit's visibility hooks also stop work when a stacked fragment is hidden, not just paused.

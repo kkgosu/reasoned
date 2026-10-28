@@ -19,7 +19,7 @@ import org.scilab.forge.jlatexmath.TeXFormula
 internal fun Markwon.setToolMarkdown(view: TextView, source: String) {
     val tree = parse(source)
     ToolContentPresentation.recover(tree)
-    setParsedMarkdown(view, render(tree))
+    setLessonTree(view, tree)
 }
 
 internal object ToolContentPresentation {

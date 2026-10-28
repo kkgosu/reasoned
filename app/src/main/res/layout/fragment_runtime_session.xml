@@ -91,13 +91,18 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <TextView
-                    android:id="@+id/question_text"
+                <com.kkgosu.reasoned.ui.text.MarkdownContentView
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:lineSpacingMultiplier="1.5"
-                    android:textAppearance="@style/TextAppearance.Harness.Prose"
-                    android:textIsSelectable="true" />
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/question_text"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:lineSpacingMultiplier="1.5"
+                        android:textAppearance="@style/TextAppearance.Harness.Prose"
+                        android:textIsSelectable="true" />
+                </com.kkgosu.reasoned.ui.text.MarkdownContentView>
 
                 <LinearLayout
                     android:id="@+id/question_options"

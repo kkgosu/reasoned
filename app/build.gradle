@@ -23,6 +23,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+        }
         release {
             optimization {
                 enable true
@@ -45,6 +48,7 @@ dependencies {
     implementation libs.markwon.core
     implementation libs.markwon.inline
     implementation libs.markwon.latex
+    implementation libs.markwon.tables
     implementation(libs.drawer) {
         // LiteX already supplies the same androidx.collection classes.
         exclude group: 'androidx.collection', module: 'collection'

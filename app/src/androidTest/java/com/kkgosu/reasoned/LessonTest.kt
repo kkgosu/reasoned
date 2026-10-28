@@ -38,6 +38,7 @@ class LessonTest {
     fun incrementalStreamingRepairAndBoundedSavedState() {
         val resources = InstrumentationRegistry.getInstrumentation().targetContext.resources
         var lesson = MockLesson(resources)
+        assertEquals("slope" to setOf("function"), lesson.plan.positions(lesson.planProtocol(lesson.state.value)))
         val adapter = LessonAdapter()
         val changed = mutableListOf<Int>()
         adapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
@@ -58,7 +59,7 @@ class LessonTest {
             adapter.submit(lesson.state.value.items)
             assertEquals(ids, lesson.state.value.items.map { it.id })
         }
-        assertEquals(List(5) { 5 }, changed)
+        assertEquals(List(5) { ids.lastIndex }, changed)
         lesson.draft("A composer draft")
         lesson.stop()
         val stopped = lesson.state.value
@@ -85,6 +86,7 @@ class LessonTest {
         lesson.submitAnswer()
         lesson.submitAnswer()
         assertEquals(1, lesson.state.value.attempts)
+        assertEquals("update" to setOf("function", "slope"), lesson.plan.positions(lesson.planProtocol(lesson.state.value)))
         finishStream(lesson)
         assertEquals(MockLesson.Dock.QUESTION, lesson.state.value.dock)
         lesson.select(3)
@@ -137,6 +139,48 @@ class LessonTest {
             assertTrue("Mock state should remain small", bounded.dataSize() < 128 * 1024)
         } finally {
             bounded.recycle()
+        }
+    }
+
+    @Test
+    fun samplePlanOpensOfflineTracksPositionsAndSurvivesRecreation() {
+        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+            openLesson(scenario)
+            lateinit var toolbar: android.widget.Toolbar
+            scenario.onActivity { activity ->
+                finishStream(activity.mockLesson)
+                val fragment = activity.fragmentManager.fragments
+                    .filterIsInstance<com.kkgosu.reasoned.fragments.LearningSessionFragment>().single()
+                toolbar = fragment.view!!.findViewById(me.grishka.appkit.R.id.toolbar)
+                assertNotNull("The real toolbar must contain Learning plan", toolbar.menu.findItem(R.id.session_plan))
+                assertTrue("The overflow button must open its menu", toolbar.showOverflowMenu())
+            }
+            idle()
+            scenario.onActivity {
+                assertTrue(toolbar.isOverflowMenuShowing)
+                assertTrue(toolbar.menu.performIdentifierAction(R.id.session_plan, 0))
+                toolbar.dismissPopupMenus()
+            }
+            idle()
+            scenario.recreate()
+            scenario.onActivity { activity ->
+                val nodes = activity.findViewById<android.widget.LinearLayout>(R.id.plan_nodes)
+                assertEquals(5, nodes.childCount) // Diagram plus four authored steps.
+                assertTrue((nodes.getChildAt(1) as android.widget.TextView).text.contains(activity.getString(R.string.plan_visited)))
+                assertTrue((nodes.getChildAt(2) as android.widget.TextView).text.contains(activity.getString(R.string.plan_current)))
+                assertTrue((nodes.getChildAt(3) as android.widget.TextView).text.contains(activity.getString(R.string.plan_upcoming)))
+                activity.mockLesson.select(0)
+                activity.mockLesson.submitAnswer()
+            }
+            idle()
+            scenario.recreate()
+            scenario.onActivity { activity ->
+                val nodes = activity.findViewById<android.widget.LinearLayout>(R.id.plan_nodes)
+                assertEquals(5, nodes.childCount)
+                assertTrue((nodes.getChildAt(2) as android.widget.TextView).text.contains(activity.getString(R.string.plan_visited)))
+                assertTrue((nodes.getChildAt(3) as android.widget.TextView).text.contains(activity.getString(R.string.plan_current)))
+                assertEquals(1, activity.mockLesson.state.value.attempts)
+            }
         }
     }
 

@@ -6,6 +6,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import com.kkgosu.reasoned.api.ModelProvider
 import com.kkgosu.reasoned.api.ProviderFailure
 import com.kkgosu.reasoned.controllers.VisualMaker
+import com.kkgosu.reasoned.fragments.progressDiagramMarkdown
 import com.kkgosu.reasoned.model.LessonDisplayItem
 import com.kkgosu.reasoned.model.RuntimeSession
 import com.kkgosu.reasoned.model.StudyPlan
@@ -280,6 +281,37 @@ class DiagramTest {
             plan.diagramMarkdown().removePrefix("```mermaid\n").removeSuffix("```")
         )
         assertTrue(planImage.width > 0 && planImage.height > 0); planImage.recycle()
+    }
+
+    @Test
+    fun planProgressStylesFollowTaggedStepsAndRenderOffline() = runBlocking {
+        val plan = StudyPlan(
+            listOf("a", "b", "c").map { StudyPlan.Node(it, "Step $it", "") },
+            listOf("a" to "b", "b" to "c")
+        )
+        val history = JSONArray()
+        val initial = plan.progressDiagramMarkdown(context, history.toString())
+        assertTrue(initial.contains("class n0 upcoming"))
+        for (id in listOf("a", "b", "a")) {
+            history.put(JSONObject().put("type", "function_call").put("name", "ask_question")
+                .put("call_id", "call-${history.length()}")
+                .put("arguments", JSONObject().put("nodeId", id).toString()))
+            val chart = plan.progressDiagramMarkdown(context, history.toString())
+            val current = if (id == "a") 0 else 1
+            assertTrue(chart.contains("class n$current current"))
+            assertTrue(chart.contains("class n2 upcoming"))
+            if (history.length() > 1) {
+                assertTrue(chart.contains("class n${1 - current} visited"))
+                assertTrue(chart.contains("linkStyle 0 stroke:#e6e6e6"))
+            } else assertTrue(chart.contains("linkStyle 0 stroke:#434343"))
+            assertTrue(chart.contains("linkStyle 1 stroke:#434343"))
+            val source = chart.removePrefix("```mermaid\n").removeSuffix("```")
+            validateDiagram("mermaid", source)
+            val image = DiagramRenderer(context).render("mermaid", source)
+            assertTrue(image.width > 0 && image.height > 0)
+            image.recycle()
+        }
+        assertFalse(plan.diagramMarkdown().contains("classDef"))
     }
 
     @Test

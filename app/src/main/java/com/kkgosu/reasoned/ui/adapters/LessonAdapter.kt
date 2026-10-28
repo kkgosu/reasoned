@@ -19,6 +19,9 @@ import com.kkgosu.reasoned.model.LessonDisplayItem.FormulaDisplayItem
 import com.kkgosu.reasoned.model.LessonDisplayItem.QuestionDisplayItem
 import com.kkgosu.reasoned.model.LessonDisplayItem.Role
 import com.kkgosu.reasoned.model.LessonDisplayItem.TextDisplayItem
+import com.kkgosu.reasoned.ui.text.MarkdownContentView
+import com.kkgosu.reasoned.ui.text.markdownBody
+import com.kkgosu.reasoned.ui.text.setLessonMarkdown
 import com.kkgosu.reasoned.ui.text.setToolMarkdown
 import me.grishka.appkit.views.UsableRecyclerView
 
@@ -119,7 +122,7 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
                         Role.FIGURE, Role.RESEARCH, Role.ASSESSMENT
                     )
                 ) View.VISIBLE else View.GONE
-            text.visibility = View.VISIBLE
+            text.markdownBody.visibility = View.VISIBLE
             label.isEnabled = true
             if (learner || thinking) disclosure(
                 label,
@@ -145,8 +148,11 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
                     text,
                     item.text
                 )
-                else markdown.setMarkdown(text, item.text)
-            } else text.text = item.text
+                else markdown.setLessonMarkdown(text, item.text)
+            } else {
+                (text.parent as? MarkdownContentView)?.reset()
+                text.text = item.text
+            }
         }
     }
 
@@ -158,9 +164,10 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
         title: String,
         initiallyOpen: Boolean = false
     ) {
+        val content = (body as? TextView)?.markdownBody ?: body
         fun render() {
             val open = disclosures[id to key] ?: initiallyOpen
-            body.visibility = if (open) View.VISIBLE else View.GONE
+            content.visibility = if (open) View.VISIBLE else View.GONE
             toggle.text = toggle.context.getString(
                 if (open) R.string.transcript_close else R.string.transcript_open,
                 title
@@ -170,7 +177,7 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
         }
         render()
         toggle.setOnClickListener {
-            disclosures[id to key] = body.visibility != View.VISIBLE; render()
+            disclosures[id to key] = content.visibility != View.VISIBLE; render()
         }
     }
 
@@ -203,7 +210,7 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
             fun text(view: TextView, source: String, authored: Boolean = true) {
                 if (markdown == null) view.text =
                     source else if (authored) markdown.setToolMarkdown(view, source)
-                else markdown.setMarkdown(view, source)
+                else markdown.setLessonMarkdown(view, source)
             }
             text(
                 findViewById(R.id.answered_question),
@@ -260,7 +267,7 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
                 })
             }
             findViewById<TextView>(R.id.answered_text).apply {
-                visibility =
+                markdownBody.visibility =
                     if (!item.dontKnow && item.selectedValues.isNotEmpty()) View.GONE else View.VISIBLE
                 text(
                     this,
@@ -290,7 +297,7 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
                     "thinking",
                     context.getString(R.string.transcript_your_thinking)
                 )
-                if (item.thinking.isBlank()) thinking.visibility = View.GONE
+                if (item.thinking.isBlank()) thinking.markdownBody.visibility = View.GONE
             }
             val reading = findViewById<TextView>(R.id.answered_reading)
             text(reading, item.readingThinking, authored = false)
@@ -303,7 +310,7 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
                     "reading",
                     context.getString(R.string.transcript_reading_thinking)
                 )
-                if (item.readingThinking.isBlank()) reading.visibility = View.GONE
+                if (item.readingThinking.isBlank()) reading.markdownBody.visibility = View.GONE
             }
             val why = findViewById<TextView>(R.id.answered_why)
             text(
@@ -325,7 +332,7 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
                     context.getString(if (item.choices.isEmpty()) R.string.transcript_reference else R.string.transcript_why),
                     initiallyOpen = item.choices.isEmpty() && item.questionType != "predict"
                 )
-                if (item.correctAnswer.isBlank()) why.visibility = View.GONE
+                if (item.correctAnswer.isBlank()) why.markdownBody.visibility = View.GONE
             }
         }
     }

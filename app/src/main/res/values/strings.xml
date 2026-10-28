@@ -25,6 +25,7 @@
     <string name="return_home">Return home</string>
     <string name="sample_lesson_label">SAMPLE LESSON</string>
     <string name="sample_lesson_title">Gradient descent</string>
+    <string name="sample_plan_title">Sample learning plan</string>
     <string name="sample_lesson_description">Connect the slope of a function to a step toward its minimum.</string>
     <string name="open_sample_lesson">Explore gradient descent</string>
     <string name="lesson_preview">TEACHING · LOCAL PREVIEW</string>

@@ -188,7 +188,9 @@ Each accepted `plan_init` also appends a persisted PLAN row with a Mermaid diagr
 its validated nodes/edges, not from optional model prose. Labels are escaped and node IDs are
 app-generated; PLAN rows are not teaching evidence. The native Learning plan page renders the same
 structure (including older saved plans) and keeps the textual dependency list as an accessible
-fallback. Approve plan confirms directly without a second dialog. While awaiting approval, the
+fallback. The plan page observes the active session's plan/position changes without starting work;
+its Mermaid preview adds presentation-only current/visited/upcoming styles. Saved PLAN rows remain
+monochrome. Approve plan confirms directly without a second dialog. While awaiting approval, the
 existing composer accepts revision requests and switches its
 action from approval to Send plan changes. Before the first approval, persisted `planPending`
 survives generation/reopening/interruption: revised plans and plain clarification replies still

@@ -15,14 +15,19 @@
         android:layout_height="wrap_content"
         android:textAppearance="@style/TextAppearance.Harness.Label" />
 
-    <TextView
-        android:id="@+id/answered_question"
+    <com.kkgosu.reasoned.ui.text.MarkdownContentView
         android:layout_marginHorizontal="@dimen/space_16"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_8"
-        android:textAppearance="@style/TextAppearance.Harness.Prose"
-        android:textIsSelectable="true" />
+        android:layout_marginTop="@dimen/space_8">
+
+        <TextView
+            android:id="@+id/answered_question"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Harness.Prose"
+            android:textIsSelectable="true" />
+    </com.kkgosu.reasoned.ui.text.MarkdownContentView>
 
     <LinearLayout
         android:id="@+id/answered_choices"
@@ -32,14 +37,19 @@
         android:layout_marginTop="@dimen/space_8"
         android:orientation="vertical" />
 
-    <TextView
-        android:id="@+id/answered_text"
+    <com.kkgosu.reasoned.ui.text.MarkdownContentView
         android:layout_marginHorizontal="@dimen/space_16"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/space_8"
-        android:textAppearance="@style/TextAppearance.Harness.Prose"
-        android:textIsSelectable="true" />
+        android:layout_marginTop="@dimen/space_8">
+
+        <TextView
+            android:id="@+id/answered_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Harness.Prose"
+            android:textIsSelectable="true" />
+    </com.kkgosu.reasoned.ui.text.MarkdownContentView>
 
     <ProgressBar
         android:id="@+id/answered_confidence"
@@ -67,16 +77,21 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
-    <TextView
-        android:id="@+id/answered_thinking"
+    <com.kkgosu.reasoned.ui.text.MarkdownContentView
         android:layout_marginHorizontal="@dimen/space_16"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.Harness.Prose"
-        android:textColor="@color/muted_foreground"
-        android:textIsSelectable="true"
-        android:textStyle="italic"
-        android:visibility="gone" />
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/answered_thinking"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Harness.Prose"
+            android:textColor="@color/muted_foreground"
+            android:textIsSelectable="true"
+            android:textStyle="italic" />
+    </com.kkgosu.reasoned.ui.text.MarkdownContentView>
 
     <Button
         android:id="@+id/answered_reading_toggle"
@@ -85,16 +100,21 @@
         android:layout_height="wrap_content"
         android:visibility="gone" />
 
-    <TextView
-        android:id="@+id/answered_reading"
+    <com.kkgosu.reasoned.ui.text.MarkdownContentView
         android:layout_marginHorizontal="@dimen/space_16"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.Harness.Prose"
-        android:textColor="@color/muted_foreground"
-        android:textIsSelectable="true"
-        android:textStyle="italic"
-        android:visibility="gone" />
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/answered_reading"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Harness.Prose"
+            android:textColor="@color/muted_foreground"
+            android:textIsSelectable="true"
+            android:textStyle="italic" />
+    </com.kkgosu.reasoned.ui.text.MarkdownContentView>
 
     <Button
         android:id="@+id/answered_why_toggle"
@@ -102,12 +122,17 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content" />
 
-    <TextView
-        android:id="@+id/answered_why"
+    <com.kkgosu.reasoned.ui.text.MarkdownContentView
         android:layout_marginHorizontal="@dimen/space_16"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textAppearance="@style/TextAppearance.Harness.Prose"
-        android:textIsSelectable="true"
-        android:visibility="gone" />
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/answered_why"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Harness.Prose"
+            android:textIsSelectable="true" />
+    </com.kkgosu.reasoned.ui.text.MarkdownContentView>
 </LinearLayout>

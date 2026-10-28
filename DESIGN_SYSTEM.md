@@ -69,6 +69,12 @@ Resources: `values/dimens.xml`, `drawable/{surface_outline,input_background,butt
 - Functional input/dock: subtle surface fill, thin outline, rounded perimeter. Inline code: quiet
   darker tint and thin outline; tables and Mermaid are content, not floating panels. Diagram
   previews now render inline as native static spans (phase 6); they are not interactive web panels.
+- Document-body Markdown tables use native `TableLayout`/`HorizontalScrollView`: columns grow to
+  their content up to `table_column_max_width` (192 dp including cell padding), then text wraps.
+  Only an overflowing table scrolls sideways; surrounding prose retains the reading-column width.
+  Cells retain Markwon/LaTeX, selection, alignment, bold headers and the shared `border` color.
+  Compact controls, nested tables and documents exceeding 512 table cells keep Markwon's existing
+  wrapped-span fallback to avoid an unbounded native view tree. No HTML/WebView is involved.
 - No decorative elevation. Toolbar elevation is zero. Native pressed ripples use the monochrome palette.
 - **48 dp minimum touch target** is an Android accessibility adaptation, not a LearnHarness desktop token. It takes precedence over the desktop's smaller controls.
 
@@ -102,6 +108,17 @@ Use Android focus, touch feedback, TalkBack labels and heading semantics; do **n
 ## 7. Style reference and visual verification
 
 Screenshot references below are historical verification records. At the owner's request, screenshots are no longer generated; screenshot-only tests and capture helpers have been removed. Current checks use native view/state assertions, not fresh captures.
+
+The debug-only **Sample session** also serves as an offline Markwon/LaTeX playground, using the
+real session's `lessonMarkdown` renderer. Authored examples cover emphasis, nested lists, quotes,
+links, wrapped/aligned and horizontally scrolling wide tables, code, inline math and display fractions/sums/matrices/aligned equations.
+Markdown headings keep a single line break before their body rather than an extra empty line;
+ordinary paragraph spacing is unchanged. The sample includes short and wrapping headings.
+No credentials or provider requests are needed. Scroll upward from the sample's question to inspect
+them; use system font scaling to check larger text. **Sample session → overflow → Learning plan**
+opens the real plan screen with an authored four-step sample, initially showing visited/current/upcoming.
+Answering a sample question advances its positional highlight; recreation retains that sample progress.
+The synthetic plan tags exist only in memory and never enter session storage or the knowledge graph.
 
 Open **Style reference** from Home. It demonstrates three font roles, the complete size ladder, a minimal outlined surface, primary/secondary actions and a multiline restoration draft. It deliberately uses a static ScrollView: building a RecyclerView adapter for a fixed typography specimen would add no value. LiteX/AppKit RecyclerView now renders the phase-2 lesson.
 
@@ -164,6 +181,11 @@ Approve plan when blank; every revised plan still waits for approval. A muted li
 reports extraction/auditing/merging independently of the teaching footer. Context details disclose
 estimated pending coverage, separate stage usage and additional selected-connection billing. No new
 card system, graph editor, Mermaid surface or per-role model settings were introduced.
+The Learning plan page omits the introductory scaffolding notice. Its Mermaid preview follows
+LearnHarness's status language: visited nodes have light text/outlines, upcoming nodes and arrows
+with either endpoint upcoming are dimmed, and the current node has a translucent yellow fill.
+This fill approximates, rather than reproduces, upstream's blurred halo; Mermaid layout is retained.
+The preview and accessible text list update from the same active-session positions.
 Device/large-text acceptance for these additions is not yet claimed.
 
 The real-session renderer reuses the established document rows, font roles and persistent native
