@@ -1,20 +1,22 @@
 package com.kkgosu.learnharness
 
-import androidx.core.view.GravityCompat
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.drawable.RippleDrawable
-import android.view.View
 import android.view.KeyEvent
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ListView
 import android.widget.Toolbar
+import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.test.core.app.ActivityScenario
 import androidx.test.platform.app.InstrumentationRegistry
+import com.kkgosu.learnharness.fragments.SettingsFragment
+import com.kkgosu.learnharness.model.RuntimeSession
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout

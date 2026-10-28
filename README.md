@@ -4,8 +4,9 @@ A standalone, Kotlin-first Android learning app inspired
 by [LearnHarness](https://github.com/amosblomqvist/learnharness), with native Views and AppKit
 navigation. Not an official LearnHarness or OpenAI app.
 
-**Status: pre-release.** The offline regression suite passes on an Android API 36 emulator. This is
-not yet broad device coverage or live-provider acceptance. PDF support is deliberately deferred.
+**Status: pre-release.** Debug/release builds and lint pass. The latest API 36 offline run passes
+74/77 tests; all three failures also reproduce before the package refactor (details below).
+This is not broad device coverage or live-provider acceptance. PDF support is deliberately deferred.
 
 ## Included
 
@@ -84,8 +85,12 @@ Read the final `OK (… tests)` / `FAILURES!!!` result: an `adb` exit code alone
 test success. Providers and web retrieval are fixtures; loopback OAuth/socket checks and the offline
 WebView renderer run locally. No real credentials are needed.
 
-Latest release-preparation result: **76/76 tests passed on API 36**.
-See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) for remaining gates and limitations.
+Latest package-refactor result: **74/77 tests passed on API 36**. Two prompt-projection byte
+comparisons and one inline-code inset fixture fail identically on the unmodified `eee613a` baseline;
+they remain unfixed rather than being hidden or changed as part of this structural refactor.
+The earlier release-preparation run passed 76/76 tests.
+See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) for evidence, remaining gates and
+limitations.
 
 ## Scope and limitations
 

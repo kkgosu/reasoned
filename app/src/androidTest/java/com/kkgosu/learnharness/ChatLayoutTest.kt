@@ -11,6 +11,8 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
+import com.kkgosu.learnharness.fragments.RuntimeSessionFragment
+import com.kkgosu.learnharness.model.RuntimeSession
 import kotlinx.coroutines.runBlocking
 import me.grishka.appkit.Nav
 import org.junit.Assert.assertEquals

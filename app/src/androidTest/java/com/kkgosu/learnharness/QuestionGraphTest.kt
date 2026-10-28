@@ -9,6 +9,21 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.kkgosu.learnharness.api.ModelProvider
+import com.kkgosu.learnharness.api.ProviderFailure
+import com.kkgosu.learnharness.controllers.QuestionContract
+import com.kkgosu.learnharness.controllers.RuntimeTools
+import com.kkgosu.learnharness.controllers.SessionRuntime
+import com.kkgosu.learnharness.controllers.ToolSchemas
+import com.kkgosu.learnharness.fragments.RuntimeSessionFragment
+import com.kkgosu.learnharness.model.LessonDisplayItem
+import com.kkgosu.learnharness.model.RuntimeQuestion
+import com.kkgosu.learnharness.model.RuntimeSession
+import com.kkgosu.learnharness.storage.SessionStore
+import com.kkgosu.learnharness.storage.graphPropositions
+import com.kkgosu.learnharness.storage.knowledge
+import com.kkgosu.learnharness.utils.objects
+import com.kkgosu.learnharness.utils.strings
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
@@ -205,11 +220,11 @@ class QuestionGraphTest {
                     store.graphPropositions("missing' OR 1=1 --").getJSONArray("names").length()
                 )
                 for (phase in listOf("probe", "practice")) {
-                    val names = RuntimeTools.schemas(phase).objects().map { it.getString("name") }
+                    val names = ToolSchemas.schemas(phase).objects().map { it.getString("name") }
                     assertTrue("list_sessions" in names); assertTrue("list_propositions" in names)
                 }
                 assertFalse(
-                    RuntimeTools.schemas("teacher").objects()
+                    ToolSchemas.schemas("teacher").objects()
                         .any { it.getString("name") == "list_propositions" })
                 var calls = 0
                 val runtime = SessionRuntime(app, store, ModelProvider { request, _ ->

@@ -1,6 +1,7 @@
 package com.kkgosu.learnharness
 
 import androidx.test.platform.app.InstrumentationRegistry
+import com.kkgosu.learnharness.controllers.AgentInstructions
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

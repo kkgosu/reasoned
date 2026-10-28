@@ -2,13 +2,34 @@ package com.kkgosu.learnharness
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.kkgosu.learnharness.api.ModelProvider
+import com.kkgosu.learnharness.api.ProviderFailure
+import com.kkgosu.learnharness.api.toolResult
+import com.kkgosu.learnharness.api.userMessage
+import com.kkgosu.learnharness.controllers.ContextCompaction
+import com.kkgosu.learnharness.controllers.RuntimeTools
+import com.kkgosu.learnharness.controllers.SessionRuntime
+import com.kkgosu.learnharness.controllers.ToolSchemas
+import com.kkgosu.learnharness.model.ContextSummary
+import com.kkgosu.learnharness.model.LessonDisplayItem
+import com.kkgosu.learnharness.model.RuntimeQuestion
+import com.kkgosu.learnharness.model.RuntimeSession
+import com.kkgosu.learnharness.model.StudyPlan
+import com.kkgosu.learnharness.model.passages
+import com.kkgosu.learnharness.storage.SessionStore
+import com.kkgosu.learnharness.utils.objects
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
 import org.json.JSONObject
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.util.UUID
@@ -148,7 +169,7 @@ class RuntimeContinuityTest {
                     Triple("probe", "recall", "recall")
                 )) {
                     assertTrue(
-                        RuntimeTools.schemas(phase, mechanic = mechanic).objects()
+                        ToolSchemas.schemas(phase, mechanic = mechanic).objects()
                             .any { it.getString("name") == expected })
                 }
             }

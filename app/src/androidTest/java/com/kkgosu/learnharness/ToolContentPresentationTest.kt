@@ -2,6 +2,9 @@ package com.kkgosu.learnharness
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.kkgosu.learnharness.model.RuntimeQuestion
+import com.kkgosu.learnharness.ui.text.ToolContentPresentation
+import com.kkgosu.learnharness.ui.text.lessonMarkdown
 import io.noties.markwon.ext.latex.JLatexMathBlock
 import io.noties.markwon.ext.latex.JLatexMathNode
 import org.commonmark.node.Code
@@ -10,7 +13,9 @@ import org.commonmark.node.IndentedCodeBlock
 import org.commonmark.node.Link
 import org.commonmark.node.Node
 import org.commonmark.node.Text
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 

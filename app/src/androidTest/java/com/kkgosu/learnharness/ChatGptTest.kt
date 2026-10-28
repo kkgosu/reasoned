@@ -9,6 +9,24 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.kkgosu.learnharness.api.ChatGptAuth
+import com.kkgosu.learnharness.api.LoopbackSignIn
+import com.kkgosu.learnharness.api.ModelProvider
+import com.kkgosu.learnharness.api.OpenAiProvider
+import com.kkgosu.learnharness.api.ProviderFailure
+import com.kkgosu.learnharness.api.chatGptPayload
+import com.kkgosu.learnharness.api.oauthChallenge
+import com.kkgosu.learnharness.api.openAiHttpClient
+import com.kkgosu.learnharness.api.readResponseStream
+import com.kkgosu.learnharness.api.verifyChatGptIdentity
+import com.kkgosu.learnharness.controllers.RuntimeTools
+import com.kkgosu.learnharness.controllers.SessionRuntime
+import com.kkgosu.learnharness.controllers.ToolSchemas
+import com.kkgosu.learnharness.fragments.ProviderSettingsFragment
+import com.kkgosu.learnharness.storage.CredentialStore
+import com.kkgosu.learnharness.storage.SessionStore
+import com.kkgosu.learnharness.ui.text.runtimeError
+import com.kkgosu.learnharness.utils.objects
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.crypto.RSASSASigner
@@ -277,7 +295,7 @@ class ChatGptTest {
     @Test fun learnHarnessPayloadAndTerminalFailuresStayBoundedAndRedacted() = runBlocking {
         val raw = JSONObject().put("model", "wrong-model").put("store", true).put("stream", false)
             .put("input", JSONArray().put(JSONObject().put("role", "system").put("content", "Fixture instructions")))
-            .put("tools", RuntimeTools.schemas("probe")).put("instructions", "Fixture")
+            .put("tools", ToolSchemas.schemas("probe")).put("instructions", "Fixture")
         val forbidden = listOf("max_output_tokens", "previous_response_id", "background", "metadata", "temperature", "top_p", "prompt_cache_retention")
         forbidden.forEach { raw.put(it, "must-not-be-sent") }
         val payload = chatGptPayload(raw, "selected-model")
@@ -323,7 +341,10 @@ class ChatGptTest {
             val tools = body.getJSONArray("tools").getJSONObject(0)
             assertEquals("namespace", tools.getString("type"))
             assertEquals("learnharness", tools.getString("name"))
-            assertEquals(RuntimeTools.schemas("probe").toString(), tools.getJSONArray("tools").toString())
+            assertEquals(
+                ToolSchemas.schemas("probe").toString(),
+                tools.getJSONArray("tools").toString()
+            )
             if (calls > 0) {
                 assertTrue(input.any { it.optString("type") == "function_call_output" && it.optString("call_id") == "plan-context" })
                 assertTrue(input.any { it.optString("type") == "function_call" && it.optString("namespace") == "learnharness" && it.optString("id") == "fc_plan-context" })

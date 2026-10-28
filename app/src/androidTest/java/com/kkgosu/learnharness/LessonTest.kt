@@ -4,9 +4,9 @@ import android.graphics.Rect
 import android.os.Bundle
 import android.os.Parcel
 import android.view.View
+import android.view.WindowInsets
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.inputmethod.InputMethodManager
-import android.view.WindowInsets
 import android.widget.Button
 import android.widget.EditText
 import android.widget.RadioButton
@@ -19,9 +19,16 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
-import com.kkgosu.learnharness.LessonDisplayItem.QuestionDisplayItem
-import com.kkgosu.learnharness.LessonDisplayItem.TextDisplayItem
-import org.junit.Assert.*
+import com.kkgosu.learnharness.controllers.MockLesson
+import com.kkgosu.learnharness.model.LessonDisplayItem.QuestionDisplayItem
+import com.kkgosu.learnharness.model.LessonDisplayItem.TextDisplayItem
+import com.kkgosu.learnharness.ui.adapters.LessonAdapter
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 

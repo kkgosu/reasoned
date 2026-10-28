@@ -12,8 +12,10 @@ after graph refinements clears the prior visual-review gate for this implementat
 smoke testing remains opt-in and was not performed.
 
 Phase 7 implements knowledge-aware Practice and an isolated foreground Researcher with opt-in
-Brave/public-page tools; phase-6 PDF remains deferred. Release preparation executes the complete
-76-test offline suite on API 36, including native rendering and persistence. Shared native styles
+Brave/public-page tools; phase-6 PDF remains deferred. Release preparation previously passed a
+76-test offline suite on API 36. The package-refactor run executes 77 tests: 74 pass and three
+pre-existing prompt-projection/code-inset failures also reproduce on unmodified `eee613a`
+(see `docs/RELEASE_CHECKLIST.md`). Shared native styles
 center only ordinary action-button text; navigation/disclosure rows, chat titles, labels, prose and
 input remain start-aligned. Multiline fields use top alignment; single-line fields use vertical
 centering. Styles also
@@ -31,32 +33,30 @@ Current single Gradle application module:
 
 ```text
 app/src/main/java/com/kkgosu/learnharness/
-  MainActivity.kt             AppKit FragmentStackActivity, root and transitions
-  HomeFragment.kt             Sample graph, search entry and lesson entry
-  GraphSearchFragment.kt      Full-screen native search, search-bar morph and IME animation
-  KnowledgeGraphView.kt       Canvas drawing, gestures, picking and saved camera
-  GraphLayout.kt              Immutable geometry and camera mathematics
-  SampleGraph.kt              Authored propositions and illustrative relationships
-  GraphNodeFragment.kt        Concise proposition summary and named source-chat links
-  LearningSessionFragment.kt  Native transcript/dock, visible-only mock collection
-  LessonDisplayItem.kt        Typed text/formula/answered-question blocks
-  LessonAdapter.kt            Stable-ID holders and targeted append/text updates
-  MockLesson.kt               Bounded authored fixture, StateFlow and saved state
-  ModelProvider.kt            Real/fake boundary, bounded Responses SSE and HTTP cancellation
-  CredentialStore.kt          Keystore AES-GCM, atomic no-backup credential ciphertext
-  ChatGptAuth.kt              Browser OAuth/PKCE, verified identity, encrypted registrations/refresh
-  SessionRuntime.kt           Application owner, foreground Prober/Teacher/Practice tool loop
-  Practice.kt                 Hidden solution commitments and saved learner submissions/verdicts
-  Researcher.kt               Isolated bounded question/search/read/brief model context
-  ResearchWeb.kt              Brave search and validated public HTTPS text reader
-  ResearchSourcesFragment.kt  Offline saved reports, retrieval metadata and plain-text excerpts
-  RuntimeTools.kt             Role-specific strict schemas and independent native validation
-  SessionStore.kt             SQLite sessions/messages/questions/answers/runs and checkpoints
-  ProviderSettingsFragment.kt Secure credentials and account-scoped model choices
-  NewSessionFragment.kt       Goal and one-tap session start, separate from connection settings
-  SettingsFragment.kt         Settings categories, learning preferences and privacy
-  RuntimeSessionFragment.kt   Real runtime projection into the existing lesson rows/dock
-  StyleReferenceFragment.kt   Static native type/surface/input specimen
+  MainActivity.kt             AppKit activity, drawer and root navigation
+  ReasonedApplication.kt      Application-owned dependencies and foreground lifecycle
+  fragments/                  Public no-argument AppKit screens
+  api/                        Responses HTTP/SSE, research HTTPS and ChatGPT OAuth
+    OpenAiProvider.kt         HTTP requests, catalog retrieval and cancellation
+    ResponsesProtocol.kt      Bounded SSE assembly and ChatGPT payload projection
+    ChatGptAuth.kt             Registration, token lifecycle and account operations
+    OAuthIdentity.kt          PKCE and verified JWT identity
+    LoopbackSignIn.kt          Bounded loopback callback parsing and cancellation
+  controllers/                Foreground learning, extraction, research and visual workflows
+    SessionRuntime.kt         Commands, coroutine lifetime and durable tool execution
+    SessionRequests.kt        Instructions and provider request construction
+    SessionState.kt           Probe handoff and bounded transcript append
+    ToolSchemas.kt            Strict role-specific tool contracts
+    RuntimeTools.kt           Independent completed-response/tool validation
+  model/                      Session/question/checkpoint, plan, graph and result values
+  storage/                    SQLite owner, knowledge SQL, encrypted credentials and model catalog
+  ui/
+    adapters/                 Stable-ID lesson rows and disclosures
+    views/                    Graph/diagram gesture views and runtime IME layout
+    graph/                    Graph layout geometry and camera mathematics
+    diagrams/                 Isolated offline WebView renderer and diagram validation
+    text/                     Native Markdown/math, diagram spans and error presentation
+  utils/                      Shared bounded JSON accessors
 app/src/main/res/
   values/                     Dark palette, dimensions, text/widget styles, strings
   font/                       Bundled licensed fonts and platform family resources
@@ -120,7 +120,7 @@ Normal activity recreation is **not** suppressed with `configChanges`. XML views
 
 Future screen arguments contain stable domain IDs, not mutable sessions, bitmaps, API keys or full transcripts in Bundles. Durable lesson state belongs in SQLite/files; saved view state handles transient presentation.
 
-## Future structure: add only as each feature arrives
+## Structure boundaries: add only as each feature arrives
 
 Retain one module until a concrete build/ownership need requires more. Package by responsibility, not an up-front framework:
 

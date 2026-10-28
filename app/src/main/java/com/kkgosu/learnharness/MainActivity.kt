@@ -13,6 +13,12 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import com.kkgosu.learnharness.controllers.MockLesson
+import com.kkgosu.learnharness.fragments.GraphNodeFragment
+import com.kkgosu.learnharness.fragments.HomeFragment
+import com.kkgosu.learnharness.fragments.NewSessionFragment
+import com.kkgosu.learnharness.fragments.RuntimeSessionFragment
+import com.kkgosu.learnharness.fragments.SettingsFragment
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
