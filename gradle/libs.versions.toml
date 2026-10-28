@@ -3,6 +3,7 @@ agp = "9.3.3"
 appkit = "1.5.3"
 litexRecyclerView = "1.2.1.1"
 junit = "4.13.2"
+json = "20250517"
 testCore = "1.6.1"
 testRunner = "1.6.2"
 testJunit = "1.2.1"
@@ -25,6 +26,7 @@ markwon-inline = { module = "io.noties.markwon:inline-parser", version.ref = "ma
 markwon-latex = { module = "io.noties.markwon:ext-latex", version.ref = "markwon" }
 drawer = { module = "androidx.drawerlayout:drawerlayout", version.ref = "drawer" }
 junit = { module = "junit:junit", version.ref = "junit" }
+json = { module = "org.json:json", version.ref = "json" }
 androidx-test-core = { module = "androidx.test:core", version.ref = "testCore" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "testRunner" }
 androidx-junit = { module = "androidx.test.ext:junit", version.ref = "testJunit" }

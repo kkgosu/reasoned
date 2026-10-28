@@ -152,11 +152,14 @@ implementation; [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) documents the visual rules.
 Please keep PRs focused. A bug fix doesn't need a new framework attached to it.
 
 Every PR runs [GitHub Actions checks](.github/workflows/pr-checks.yml): debug/release compilation,
-Android lint, pinned-source integrity, release sample removal, and the full offline instrumentation
-suite on an API 36 emulator. The JVM test task is also wired up for future local unit tests (
-currently there are none). Build/test reports and a debug APK are retained as workflow artifacts for
-seven days, including reports from failed runs. No provider credentials or release signing keys are
-needed.
+Android lint, pinned-source integrity, release sample removal and JVM unit tests. The JVM suite
+covers version comparison, OAuth/PKCE and loopback callbacks, ChatGPT payload/error handling,
+question contracts/grading, public-web restrictions and graph geometry. Run it locally with
+`./gradlew :app:testDebugUnitTest`; no emulator or real provider credentials are needed.
+Android-specific checks (UI, SQLite, Keystore and native rendering) remain local instrumentation
+tests on a disposable emulator—not part of PR CI.
+Build/test reports and a debug APK are retained as workflow artifacts for seven days, including
+reports from failed runs. No provider credentials or release signing keys are needed.
 
 ## License and credits
 

@@ -224,11 +224,15 @@ class MainActivity : FragmentStackActivity() {
 
     override fun onStart() {
         super.onStart()
-        (application as ReasonedApplication).extraction.foreground = true
+        val app = application as ReasonedApplication
+        app.chatGpt.setForeground(true)
+        app.extraction.foreground = true
     }
 
     override fun onStop() {
-        (application as ReasonedApplication).pauseRuntime()
+        val app = application as ReasonedApplication
+        app.chatGpt.setForeground(false)
+        app.pauseRuntime()
         super.onStop()
     }
 

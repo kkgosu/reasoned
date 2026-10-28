@@ -101,14 +101,22 @@ The sample check needs both debug and release outputs. Release signing is not co
 
 `.github/workflows/pr-checks.yml` runs on every PR, pushes to `master`, and manual dispatch.
 `Build and lint` compiles debug/release, runs the available JVM test task, lints both variants,
-checks the vendored hashes and verifies R8 removes debug samples. `Instrumentation (API 36)`
-independently builds and runs the full suite on a disposable Linux x86_64 emulator with device
-networking disabled. Reports and a debug APK are retained for seven days; Actions are commit-pinned,
-PR caches are read-only, and no secrets/signing keys are used. Do not exclude failing tests or add
-`continue-on-error` to hide a failure.
+checks the vendored hashes and verifies R8 removes debug samples. Plain JUnit tests under
+`app/src/test` run in a separate `Run JVM unit tests` step via `:app:testDebugUnitTest`, without an
+emulator or real provider calls. They cover versions, OAuth/PKCE, loopback callbacks, payload/error
+handling, question contracts/grading, public-web restrictions and graph geometry. A test-only
+`org.json` dependency replaces Android's stub; only `android.util.Log` is a no-op test double.
+Do not enable blanket Android default return values to hide framework dependencies.
+Android-dependent tests (UI, SQLite, Keystore and native rendering) remain under
+`app/src/androidTest`
+and are local-only, not part of PR CI.
+Reports and a debug APK are retained for seven days; Actions are commit-pinned, PR caches are
+read-only, and no secrets/signing keys are used. Do not add `continue-on-error` to hide a failure.
 
-After the workflow has run on GitHub, the repository owner can require both checks in the `master`
-branch ruleset before merging. Workflow configuration alone does not enable branch protection. Known
+After the workflow has run on GitHub, the repository owner can require `Build and lint` in the
+`master` branch ruleset before merging. Remove the old `Instrumentation (API 36)` required check if
+it was enabled, otherwise merging will wait for a check that no longer runs.
+Workflow configuration alone does not enable branch protection. Known
 failures remain documented in `docs/RELEASE_CHECKLIST.md`; the first hosted run, not local YAML
 validation, establishes the actual CI result.
 

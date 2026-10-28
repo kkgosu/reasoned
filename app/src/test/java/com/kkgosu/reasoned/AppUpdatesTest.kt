@@ -1,13 +1,10 @@
 package com.kkgosu.reasoned
 
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kkgosu.reasoned.api.AppUpdates
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
 class AppUpdatesTest {
     @Test
     fun releaseTagsCompareNumericallyAndRejectUnsupportedFormats() {

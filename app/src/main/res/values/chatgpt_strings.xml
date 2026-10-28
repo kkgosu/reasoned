@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="chatgpt_use_plan">ChatGPT plan</string>
-    <string name="chatgpt_use_api">API key · separate billing</string>
+    <string name="chatgpt_use_api">API key</string>
     <string name="chatgpt_continue">Continue with ChatGPT</string>
     <string name="chatgpt_cancel">Cancel sign-in</string>
     <string name="chatgpt_add_account">Add account</string>

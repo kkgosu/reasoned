@@ -49,6 +49,9 @@ dependencies {
         // LiteX already supplies the same androidx.collection classes.
         exclude group: 'androidx.collection', module: 'collection'
     }
+    testImplementation libs.junit
+    // Android's org.json is a stub in local JVM tests; use a real implementation.
+    testImplementation libs.json
     androidTestImplementation libs.junit
     androidTestImplementation libs.androidx.test.core
     androidTestImplementation libs.androidx.test.runner

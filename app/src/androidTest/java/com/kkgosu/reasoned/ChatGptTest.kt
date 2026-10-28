@@ -10,15 +10,11 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.kkgosu.reasoned.api.ChatGptAuth
-import com.kkgosu.reasoned.api.LoopbackSignIn
 import com.kkgosu.reasoned.api.ModelProvider
 import com.kkgosu.reasoned.api.OpenAiProvider
 import com.kkgosu.reasoned.api.ProviderFailure
-import com.kkgosu.reasoned.api.chatGptPayload
-import com.kkgosu.reasoned.api.oauthChallenge
 import com.kkgosu.reasoned.api.openAiHttpClient
 import com.kkgosu.reasoned.api.readResponseStream
-import com.kkgosu.reasoned.api.verifyChatGptIdentity
 import com.kkgosu.reasoned.controllers.RuntimeTools
 import com.kkgosu.reasoned.controllers.SessionRuntime
 import com.kkgosu.reasoned.controllers.ToolSchemas
@@ -36,8 +32,6 @@ import com.nimbusds.jwt.JWTClaimsSet
 import com.nimbusds.jwt.SignedJWT
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -48,7 +42,11 @@ import okhttp3.ResponseBody.Companion.toResponseBody
 import okio.Buffer
 import org.json.JSONArray
 import org.json.JSONObject
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.Socket
@@ -99,96 +97,6 @@ class ChatGptTest {
             socket.getOutputStream()
                 .write("GET ${url.encodedPath}?${url.encodedQuery} HTTP/1.1\r\nHost: 127.0.0.1:${url.port}\r\n\r\n".toByteArray())
             socket.getInputStream().bufferedReader().readText()
-        }
-    }
-
-    @Test
-    fun pkceAndSignedIdentityRejectWrongNonceAudienceIssuerExpiryAndSignature() {
-        assertEquals(
-            "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM",
-            oauthChallenge("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
-        )
-        val token = signed()
-        assertEquals(
-            "fixture-user",
-            verifyChatGptIdentity(token, jwks, "oaiapp_fixture", "nonce", "fixture-access").first
-        )
-        rejects { verifyChatGptIdentity(token, jwks, "oaiapp_other", "nonce", "fixture-access") }
-        rejects { verifyChatGptIdentity(token, jwks, "oaiapp_fixture", "wrong", "fixture-access") }
-        rejects {
-            verifyChatGptIdentity(
-                signed(issuer = "https://example.invalid"),
-                jwks,
-                "oaiapp_fixture",
-                "nonce",
-                "fixture-access"
-            )
-        }
-        rejects {
-            verifyChatGptIdentity(
-                signed(expiration = System.currentTimeMillis() - 10_000),
-                jwks,
-                "oaiapp_fixture",
-                "nonce",
-                "fixture-access"
-            )
-        }
-        rejects {
-            verifyChatGptIdentity(
-                token.substringBeforeLast('.') + ".AAAA",
-                jwks,
-                "oaiapp_fixture",
-                "nonce",
-                "fixture-access"
-            )
-        }
-        rejects {
-            verifyChatGptIdentity(
-                "eyJhbGciOiJub25lIn0.e30.",
-                jwks,
-                "oaiapp_fixture",
-                "nonce",
-                "fixture-access"
-            )
-        }
-    }
-
-    @Test
-    fun loopbackRejectsUnmatchedOrDuplicateStateAndCancellationClosesPort() = runBlocking {
-        val listener = LoopbackSignIn()
-        val pending = async { listener.await("expected", null) }
-        val base = listener.redirectUri
-        withContext(Dispatchers.IO) {
-            assertTrue(
-                callback("$base?state=wrong&code=fixture&client_id=oaiapp_fixture").startsWith(
-                    "HTTP/1.1 400"
-                )
-            )
-            assertTrue(
-                callback("$base?state=expected&state=wrong&code=fixture&client_id=oaiapp_fixture").startsWith(
-                    "HTTP/1.1 400"
-                )
-            )
-            assertTrue(
-                callback("$base?state=expected&code=fixture&client_id=oaiapp_fixture").startsWith(
-                    "HTTP/1.1 200"
-                )
-            )
-        }
-        val result = withTimeout(3000) { pending.await() }
-        assertEquals("fixture", result.code)
-        assertEquals("oaiapp_fixture", result.clientId)
-        listener.close()
-        val cancelled = LoopbackSignIn()
-        val wait = async { cancelled.await("state", "oaiapp_fixture") }
-        kotlinx.coroutines.yield()
-        withTimeout(3000) { wait.cancelAndJoin() }
-        try {
-            Socket(
-                "127.0.0.1",
-                cancelled.redirectUri.toHttpUrl().port
-            ).close(); fail("Cancelled listener still bound")
-        } catch (_: java.io.IOException) {
         }
     }
 
@@ -283,6 +191,15 @@ class ChatGptTest {
                     ) + "&code=fixture&client_id=oaiapp_fixture"
                 )
             }
+            withTimeout(5000) { auth.state.first { it.accounts.isNotEmpty() } }
+            delay(200)
+            assertTrue(
+                "Callback must wait for the app to return to the foreground",
+                auth.state.value.busy
+            )
+            assertEquals(0, tokenCalls)
+            assertTrue(encrypted.read()!!.contains("oaiapp_fixture"))
+            auth.setForeground(true)
             withTimeout(5000) { auth.state.first { !it.busy } }
             assertEquals("", auth.state.value.error)
             assertEquals("oaiapp_fixture", auth.state.value.active)
@@ -410,6 +327,7 @@ class ChatGptTest {
             assertNull(returning.queryParameter("agent_name_hint"))
             assertNull(returning.queryParameter("id_token_hint"))
             nonce = returning.queryParameter("nonce")!!
+            auth.setForeground(true)
             withContext(Dispatchers.IO) {
                 callback(
                     returning.queryParameter("redirect_uri") + "?state=" + returning.queryParameter(
@@ -487,72 +405,6 @@ class ChatGptTest {
             withContext(Dispatchers.Main) { runtime.stop() }.join(); store.close(); app.deleteDatabase(
                 name
             )
-        }
-    }
-
-    @Test
-    fun learnHarnessPayloadAndTerminalFailuresStayBoundedAndRedacted() = runBlocking {
-        val raw = JSONObject().put("model", "wrong-model").put("store", true).put("stream", false)
-            .put(
-                "input",
-                JSONArray().put(
-                    JSONObject().put("role", "system").put("content", "Fixture instructions")
-                )
-            )
-            .put("tools", ToolSchemas.schemas("probe")).put("instructions", "Fixture")
-        val forbidden = listOf(
-            "max_output_tokens",
-            "previous_response_id",
-            "background",
-            "metadata",
-            "temperature",
-            "top_p",
-            "prompt_cache_retention"
-        )
-        forbidden.forEach { raw.put(it, "must-not-be-sent") }
-        val payload = chatGptPayload(raw, "selected-model")
-        assertEquals("selected-model", payload.getString("model"))
-        assertFalse(payload.getBoolean("store")); assertTrue(payload.getBoolean("stream"))
-        forbidden.forEach { assertFalse(it, payload.has(it)) }
-        assertEquals("developer", payload.getJSONArray("input").getJSONObject(0).getString("role"))
-        assertEquals("system", raw.getJSONArray("input").getJSONObject(0).getString("role"))
-        assertEquals(
-            "learnharness",
-            payload.getJSONArray("tools").getJSONObject(0).getString("name")
-        )
-        rejects("protocol") { chatGptPayload(JSONObject(), "selected-model") }
-        raw.put("tools", JSONArray().put(JSONObject().put("type", "tool_search")))
-        rejects("tool_denied") { chatGptPayload(raw, "selected-model") }
-        val code = "subscription_sharing_usage_limit_exceeded"
-        val error = JSONObject().put("code", code).put("message", "private provider diagnostic")
-        val failed = listOf(
-            JSONObject().put("type", "error").put("code", code),
-            JSONObject().put("type", "response.failed")
-                .put("response", JSONObject().put("error", error)),
-            JSONObject().put("type", "response.completed")
-                .put("response", JSONObject().put("status", "completed").put("error", error)),
-            JSONObject().put("type", "response.created")
-                .put("response", JSONObject().put("error", error))
-        )
-        for (event in failed) {
-            try {
-                readResponseStream(Buffer().writeUtf8("data: $event\n\n")) { }; fail("Failed response accepted")
-            } catch (failure: ProviderFailure) {
-                assertEquals(code, failure.reason); assertFalse(
-                    failure.toString().contains("private")
-                )
-            }
-        }
-        for (stream in listOf(
-            "",
-            "data: [DONE]\n\n",
-            "data: {\"type\":\"response.created\"}\n\n"
-        )) {
-            try {
-                readResponseStream(Buffer().writeUtf8(stream)) { }; fail("Missing completion accepted")
-            } catch (failure: ProviderFailure) {
-                assertEquals("incomplete", failure.reason)
-            }
         }
     }
 

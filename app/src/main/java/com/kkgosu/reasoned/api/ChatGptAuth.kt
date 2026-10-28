@@ -3,6 +3,8 @@ package com.kkgosu.reasoned.api
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
+import com.kkgosu.reasoned.BuildConfig
 import com.kkgosu.reasoned.model.ChatGptAccount
 import com.kkgosu.reasoned.model.ChatGptModel
 import com.kkgosu.reasoned.model.ChatGptStatus
@@ -20,6 +22,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -47,6 +50,11 @@ internal class ChatGptAuth(
     val state = mutable.asStateFlow()
     private var login: Job? = null
     private var document: JSONObject? = null
+    private val foreground = MutableStateFlow(false)
+
+    fun setForeground(active: Boolean) {
+        foreground.value = active
+    }
 
     private fun load(): JSONObject =
         document ?: (encrypted.read()?.let(::JSONObject) ?: JSONObject()
@@ -92,6 +100,8 @@ internal class ChatGptAuth(
         if (login?.isActive == true) return
         mutable.value = mutable.value.copy(busy = true, error = "")
         login = scope.launch {
+            // Temporary OAuth diagnostics: never log exception messages, URLs or response bodies.
+            var stage = "load_credentials"
             try {
                 val saved = withContext(Dispatchers.IO) {
                     mutex.withLock {
@@ -105,6 +115,7 @@ internal class ChatGptAuth(
                     }
                 }
                 if (id == null && saved.third >= 10) throw ProviderFailure("chatgpt_account_limit")
+                stage = "prepare_callback"
                 val state = randomOAuthValue()
                 val nonce = randomOAuthValue()
                 val verifier = randomOAuthValue()
@@ -132,15 +143,18 @@ internal class ChatGptAuth(
                         ) url.addQueryParameter("prompt", "consent")
                     }
                     // The listener is bound before browser launch. Never log this URL or the callback.
+                    stage = "open_browser"
                     context.startActivity(
                         Intent(Intent.ACTION_VIEW, Uri.parse(url.build().toString()))
                             .addCategory(Intent.CATEGORY_BROWSABLE)
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                     )
+                    stage = "await_callback"
                     withTimeout(300_000) { callback.await(state, id) }.also { result ->
                         withContext(Dispatchers.IO) {
                             mutex.withLock {
                                 // Retain an issued registration even if its one-use code later expires.
+                                stage = "persist_registration"
                                 val doc = copy()
                                 if (accounts(doc).none { it.getString("client") == result.clientId }) {
                                     doc.getJSONArray("accounts").put(
@@ -148,6 +162,14 @@ internal class ChatGptAuth(
                                     )
                                     persist(doc)
                                 }
+                            }
+                            // Keep the issued registration, but don't use the network while the browser
+                            // has left this process cached/background-restricted by Android.
+                            stage = "await_foreground"
+                            withTimeout(300_000) { foreground.first { it } }
+                            mutex.withLock {
+                                val doc = copy()
+                                stage = "exchange_code"
                                 val tokens = json(
                                     Request.Builder().url(TOKEN).post(
                                         FormBody.Builder()
@@ -159,12 +181,14 @@ internal class ChatGptAuth(
                                             .add("resource", RESOURCE).build()
                                     ).build()
                                 )
+                                stage = "validate_tokens_and_identity"
                                 val profile = tokenRecord(
                                     account(doc, result.clientId),
                                     tokens,
                                     nonce,
                                     refreshing = false
                                 )
+                                stage = "save_account"
                                 val updated = copy()
                                 val old = account(updated, result.clientId)
                                 profile.keys().forEach { key -> old.put(key, profile.get(key)) }
@@ -179,6 +203,17 @@ internal class ChatGptAuth(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
+                if (BuildConfig.DEBUG) {
+                    val frame = error.stackTrace.firstOrNull {
+                        it.className.startsWith("com.kkgosu.reasoned.")
+                    }
+                    Log.w(
+                        "ReasonedAuth",
+                        "sign-in failed: stage=$stage; exception=${error.javaClass.simpleName}; " +
+                                "cause=${error.cause?.javaClass?.simpleName ?: "none"}; " +
+                                "at=${frame?.fileName}:${frame?.lineNumber}"
+                    )
+                }
                 mutable.value = mutable.value.copy(
                     error = (error as? ProviderFailure)?.reason ?: "chatgpt_sign_in_failed"
                 )
