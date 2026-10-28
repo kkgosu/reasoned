@@ -1,0 +1,394 @@
+{
+  "id": "chat_contract_artifacts",
+  "title": "[Authored offline test] Inline artifacts and missing PDF source",
+  "createdAt": "2026-10-01T00:00:00.000Z",
+  "updatedAt": "2026-10-01T00:00:48.000Z",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Authored offline artifact examples; do not run jobs.",
+      "id": "a_goal",
+      "timestamp": 1790812832000
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call_research",
+          "name": "research",
+          "arguments": {
+            "question": "Authored offline source lookup."
+          }
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "offline-fixture-not-a-real-model",
+      "usage": {
+        "input": 12,
+        "output": 6,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 18,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "id": "a_research",
+      "timestamp": 1790812833000
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "call_research",
+      "toolName": "research",
+      "content": [
+        {
+          "type": "text",
+          "text": "Dispatched (job job_fixture_research). This call is fire-and-forget: continue your turn and keep teaching — do not wait, poll, or mention waiting. The researched brief arrives as a new message when ready and the lesson resumes from it; cite its sources when you use them."
+        }
+      ],
+      "details": "Dispatched (job job_fixture_research). This call is fire-and-forget: continue your turn and keep teaching — do not wait, poll, or mention waiting. The researched brief arrives as a new message when ready and the lesson resumes from it; cite its sources when you use them.",
+      "isError": false,
+      "id": "a_research_ack",
+      "timestamp": 1790812834000
+    },
+    {
+      "id": "steer_job_fixture_research",
+      "role": "custom",
+      "customType": "subagent-steer",
+      "content": "Research complete — the researcher's full brief follows. Weave it into the lesson and cite its sources when you use its findings:\n\nAuthored test brief, not a real research finding.",
+      "display": true,
+      "details": {
+        "jobId": "job_fixture_research",
+        "kind": "research",
+        "toolCallId": "call_research",
+        "result": {
+          "brief": "Authored test brief, not a real research finding.",
+          "sources": [
+            {
+              "title": "Reserved example URL",
+              "url": "https://example.invalid/reference"
+            }
+          ]
+        }
+      },
+      "timestamp": 1790812835000
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call_demo",
+          "name": "demo",
+          "arguments": {
+            "title": "Offline demo",
+            "brief": "Static fixture only; do not execute."
+          }
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "offline-fixture-not-a-real-model",
+      "usage": {
+        "input": 12,
+        "output": 6,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 18,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "id": "a_demo",
+      "timestamp": 1790812836000
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "call_demo",
+      "toolName": "demo",
+      "content": [
+        {
+          "type": "text",
+          "text": "Dispatched (job job_fixture_demo). This call is fire-and-forget: continue your turn and keep teaching — do not wait, poll, or mention waiting. The tested demo arrives as a new message when ready and is rendered in the lesson; teach with it then."
+        }
+      ],
+      "details": "Dispatched (job job_fixture_demo). This call is fire-and-forget: continue your turn and keep teaching — do not wait, poll, or mention waiting. The tested demo arrives as a new message when ready and is rendered in the lesson; teach with it then.",
+      "isError": false,
+      "id": "a_demo_ack",
+      "timestamp": 1790812837000
+    },
+    {
+      "id": "steer_job_fixture_demo",
+      "role": "custom",
+      "customType": "subagent-steer",
+      "content": "The demo \"Offline demo\" is built, headlessly tested, and rendered in the lesson. Builder notes: The tested flag is authored fixture data, not evidence this harness executed a browser..\nTeach with it — reference its controls by name and point the learner at what to try.",
+      "display": true,
+      "details": {
+        "jobId": "job_fixture_demo",
+        "kind": "demo",
+        "toolCallId": "call_demo",
+        "result": {
+          "title": "Offline demo",
+          "html": "<!doctype html><html><body><p>Authored test artifact</p><script>/* Data sentinel only: never execute imported scripts. */</script></body></html>",
+          "tested": true,
+          "notes": "The tested flag is authored fixture data, not evidence this harness executed a browser."
+        }
+      },
+      "timestamp": 1790812838000
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call_visual",
+          "name": "visual",
+          "arguments": {
+            "brief": "A static circle, authored test content."
+          }
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "offline-fixture-not-a-real-model",
+      "usage": {
+        "input": 12,
+        "output": 6,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 18,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "id": "a_visual",
+      "timestamp": 1790812839000
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "call_visual",
+      "toolName": "visual",
+      "content": [
+        {
+          "type": "text",
+          "text": "Dispatched (job job_fixture_visual). This call is fire-and-forget: continue your turn and keep teaching — do not wait, poll, or mention waiting. The verified figure arrives as a new message when ready and is rendered in the lesson; reference it then."
+        }
+      ],
+      "details": "Dispatched (job job_fixture_visual). This call is fire-and-forget: continue your turn and keep teaching — do not wait, poll, or mention waiting. The verified figure arrives as a new message when ready and is rendered in the lesson; reference it then.",
+      "isError": false,
+      "id": "a_visual_ack",
+      "timestamp": 1790812840000
+    },
+    {
+      "id": "steer_job_fixture_visual",
+      "role": "custom",
+      "customType": "subagent-steer",
+      "content": "The figure is drawn, verified by inspection, and rendered in the lesson. Maker notes: Authored SVG; no rendering or model inspection occurred..\nReference its elements as you teach.",
+      "display": true,
+      "details": {
+        "jobId": "job_fixture_visual",
+        "kind": "visual",
+        "toolCallId": "call_visual",
+        "result": {
+          "svg": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"8\" height=\"8\"><circle cx=\"4\" cy=\"4\" r=\"3\"/></svg>",
+          "notes": "Authored SVG; no rendering or model inspection occurred."
+        }
+      },
+      "timestamp": 1790812841000
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call_pdf",
+          "name": "pdf",
+          "arguments": {
+            "path": "/offline-fixtures/missing-source.pdf",
+            "question": "Authored question; do not open a file."
+          }
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "offline-fixture-not-a-real-model",
+      "usage": {
+        "input": 12,
+        "output": 6,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 18,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "id": "a_pdf",
+      "timestamp": 1790812842000
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "call_pdf",
+      "toolName": "pdf",
+      "content": [
+        {
+          "type": "text",
+          "text": "Dispatched (job job_fixture_pdf). This call is fire-and-forget: continue your turn and keep teaching — do not wait, poll, or mention waiting. The document brief arrives as a new message when ready; weave it into the lesson and cite its pages."
+        }
+      ],
+      "details": "Dispatched (job job_fixture_pdf). This call is fire-and-forget: continue your turn and keep teaching — do not wait, poll, or mention waiting. The document brief arrives as a new message when ready; weave it into the lesson and cite its pages.",
+      "isError": false,
+      "id": "a_pdf_ack",
+      "timestamp": 1790812843000
+    },
+    {
+      "id": "steer_job_fixture_pdf",
+      "role": "custom",
+      "customType": "subagent-steer",
+      "content": "PDF reading complete — the reader's brief on \"/offline-fixtures/missing-source.pdf\" follows, with page citations. Weave it into the lesson and cite pages when you use it:\n\nAuthored brief with a citation to page 1. The source PDF is deliberately absent.",
+      "display": true,
+      "details": {
+        "jobId": "job_fixture_pdf",
+        "kind": "pdf",
+        "toolCallId": "call_pdf",
+        "result": {
+          "path": "/offline-fixtures/missing-source.pdf",
+          "question": "Authored question; do not open a file.",
+          "brief": "Authored brief with a citation to page 1. The source PDF is deliberately absent.",
+          "pagesRead": [
+            1
+          ],
+          "pagesConsulted": [
+            1,
+            2
+          ]
+        }
+      },
+      "timestamp": 1790812844000
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call_image",
+          "name": "read",
+          "arguments": {
+            "path": "/offline-fixtures/inline-image.png"
+          }
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "offline-fixture-not-a-real-model",
+      "usage": {
+        "input": 12,
+        "output": 6,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 18,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "id": "a_image",
+      "timestamp": 1790812845000
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "call_image",
+      "toolName": "read",
+      "content": [
+        {
+          "type": "text",
+          "text": "Authored 1x1 PNG image fixture, stored inline."
+        },
+        {
+          "type": "image",
+          "data": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j4L8AAAAASUVORK5CYII=",
+          "mimeType": "image/png"
+        }
+      ],
+      "details": null,
+      "isError": false,
+      "id": "a_image_result",
+      "timestamp": 1790812846000
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call_pdf_pending",
+          "name": "pdf",
+          "arguments": {
+            "path": "/offline-fixtures/missing-source.pdf",
+            "question": "Authored question; do not open a file."
+          }
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "offline-fixture-not-a-real-model",
+      "usage": {
+        "input": 12,
+        "output": 6,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 18,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "id": "a_pdf_pending",
+      "timestamp": 1790812847000
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "call_pdf_pending",
+      "toolName": "pdf",
+      "content": [
+        {
+          "type": "text",
+          "text": "Dispatched (job job_fixture_pending). This call is fire-and-forget: continue your turn and keep teaching — do not wait, poll, or mention waiting. The document brief arrives as a new message when ready; weave it into the lesson and cite its pages."
+        }
+      ],
+      "details": "Dispatched (job job_fixture_pending). This call is fire-and-forget: continue your turn and keep teaching — do not wait, poll, or mention waiting. The document brief arrives as a new message when ready; weave it into the lesson and cite its pages.",
+      "isError": false,
+      "id": "a_pdf_pending_ack",
+      "timestamp": 1790812848000
+    }
+  ],
+  "version": 1
+}

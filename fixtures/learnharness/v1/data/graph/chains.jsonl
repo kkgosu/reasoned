@@ -1,0 +1,3 @@
+{"id":"arg_selected","premises":["n_shared","n_notes"],"conclusion":"n_selected","provenance":[{"chatId":"chat_contract_teach","messageId":""}],"createdAt":"2026-10-01T00:00:00.000Z"}
+{"id":"arg_same_argument","premises":["n_notes","n_shared"],"conclusion":"n_selected","provenance":[{"chatId":"chat_external","messageId":""}],"createdAt":"2026-10-01T00:00:00.000Z"}
+{"id":"arg_unrelated","premises":["n_unrelated"],"conclusion":"n_shared","provenance":[{"chatId":"chat_external","messageId":""}],"createdAt":"2026-10-01T00:00:00.000Z"}

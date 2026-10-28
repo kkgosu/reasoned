@@ -1,0 +1,575 @@
+{
+  "id": "chat_contract_teach",
+  "title": "[Authored offline test] Probe, plan review, teach and compaction",
+  "createdAt": "2026-10-01T00:00:00.000Z",
+  "updatedAt": "2026-10-01T00:00:17.000Z",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Offline test content: teach me even integers.",
+      "id": "m_goal",
+      "timestamp": 1790812801000
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call_probe_1",
+          "name": "probe",
+          "arguments": {
+            "question": "Which numbers are even?",
+            "options": [
+              {
+                "label": "Two",
+                "value": "two"
+              },
+              {
+                "label": "Three",
+                "value": "three"
+              },
+              {
+                "label": "Four",
+                "value": "four"
+              }
+            ],
+            "multiSelect": true,
+            "explanation": "Two and four are divisible by two.",
+            "correctAnswer": [
+              "two",
+              "four"
+            ]
+          }
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "offline-fixture-not-a-real-model",
+      "usage": {
+        "input": 12,
+        "output": 6,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 18,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "id": "m_probe",
+      "timestamp": 1790812802000
+    },
+    {
+      "id": "m_probe_answer",
+      "role": "toolResult",
+      "toolCallId": "call_probe_1",
+      "toolName": "probe",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"kind\":\"quiz\",\"answers\":[{\"index\":2,\"label\":\"Four\"},{\"index\":3,\"label\":\"Two\"}],\"correct\":true,\"confidence\":90,\"thinking\":\"Both divide into pairs.\"}"
+        }
+      ],
+      "details": {
+        "kind": "quiz",
+        "tool": "probe",
+        "questionText": "Which numbers are even?",
+        "options": [
+          {
+            "index": 1,
+            "label": "Three"
+          },
+          {
+            "index": 2,
+            "label": "Four"
+          },
+          {
+            "index": 3,
+            "label": "Two"
+          }
+        ],
+        "dontKnow": false,
+        "answers": [
+          {
+            "index": 2,
+            "label": "Four",
+            "value": "four"
+          },
+          {
+            "index": 3,
+            "label": "Two",
+            "value": "two"
+          }
+        ],
+        "thinking": "Both divide into pairs.",
+        "confidence": 90,
+        "correct": true,
+        "correctIndices": [
+          2,
+          3
+        ],
+        "explanation": "Two and four are divisible by two.",
+        "answeredAt": "2026-10-01T00:00:02.000Z"
+      },
+      "isError": false,
+      "timestamp": 1790812803000
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call_probe_done",
+          "name": "probe_done",
+          "arguments": {
+            "assessment": {
+              "strands": [
+                {
+                  "strand": "Integer divisibility",
+                  "assessment": "Authored assessment: recognizes positive even integers; zero is untested."
+                }
+              ],
+              "summary": "This is synthetic test content, not a learner assessment."
+            }
+          }
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "offline-fixture-not-a-real-model",
+      "usage": {
+        "input": 12,
+        "output": 6,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 18,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "id": "m_probe_done",
+      "timestamp": 1790812804000
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "call_probe_done",
+      "toolName": "probe_done",
+      "content": [
+        {
+          "type": "text",
+          "text": "Assessment recorded — it is shown to the learner now and the teacher plans from it. Say your closing sentence and end your turn; the teaching phase takes over from here."
+        }
+      ],
+      "details": {
+        "ok": true
+      },
+      "isError": false,
+      "id": "m_probe_done_result",
+      "timestamp": 1790812805000
+    },
+    {
+      "id": "steer_probe_chat_contract_teach",
+      "role": "custom",
+      "customType": "probe-handoff",
+      "content": "Next: plan the full teaching arc from my current understanding to the goal understanding. Apply the teaching methodology in your system prompt, and find the optimal way to teach me this. Find the unconditional truths, plan the motivated derivations/discoveries, so every reasoning step has to land as obviously true. Take your time here and really think this through. When it's genuinely reasoned out, call plan_init and present the plan; I'll accept it or ask for changes.",
+      "display": true,
+      "details": {
+        "chatId": "chat_contract_teach"
+      },
+      "timestamp": 1790812806000
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call_plan",
+          "name": "plan_init",
+          "arguments": {
+            "mermaid": "graph TD\n  definition[Even integers]\n  zero[The zero case]\n  definition --> zero"
+          }
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "offline-fixture-not-a-real-model",
+      "usage": {
+        "input": 12,
+        "output": 6,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 18,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "id": "m_plan",
+      "timestamp": 1790812807000
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "call_plan",
+      "toolName": "plan_init",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"ok\":true,\"nodeIds\":[\"definition\",\"zero\"],\"reminder\":\"These are the plan's node ids — the only valid nodeId values for every quiz and explain call from here on. Reference them exactly.\"}"
+        }
+      ],
+      "details": {
+        "ok": true,
+        "tree": {
+          "nodes": [
+            {
+              "id": "definition",
+              "title": "Even integers"
+            },
+            {
+              "id": "zero",
+              "title": "The zero case"
+            }
+          ],
+          "edges": [
+            {
+              "from": "definition",
+              "to": "zero"
+            }
+          ],
+          "version": 1
+        }
+      },
+      "isError": false,
+      "id": "m_plan_result",
+      "timestamp": 1790812808000
+    },
+    {
+      "id": "m_plan_block",
+      "role": "custom",
+      "customType": "plan-block",
+      "content": "",
+      "display": true,
+      "details": {
+        "planCallId": "call_plan",
+        "block": {
+          "kind": "full",
+          "at": "2026-10-01T00:00:00.000Z",
+          "current": null,
+          "nodes": [
+            {
+              "id": "definition",
+              "title": "Even integers",
+              "status": "upcoming"
+            },
+            {
+              "id": "zero",
+              "title": "The zero case",
+              "status": "upcoming"
+            }
+          ],
+          "edges": [
+            {
+              "from": "definition",
+              "to": "zero"
+            }
+          ]
+        }
+      },
+      "timestamp": 1790812809000
+    },
+    {
+      "role": "user",
+      "content": "Please start with the definition, then discuss zero.",
+      "id": "m_plan_reply",
+      "timestamp": 1790812810000
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call_predict",
+          "name": "quiz",
+          "arguments": {
+            "question": "Is zero even?",
+            "options": [
+              {
+                "label": "Yes",
+                "value": "yes"
+              },
+              {
+                "label": "No",
+                "value": "no"
+              }
+            ],
+            "explanation": "Zero equals two times zero.",
+            "correctAnswer": "yes",
+            "type": "predict",
+            "nodeId": "definition"
+          }
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "offline-fixture-not-a-real-model",
+      "usage": {
+        "input": 12,
+        "output": 6,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 18,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "id": "m_predict",
+      "timestamp": 1790812811000
+    },
+    {
+      "id": "m_predict_answer",
+      "role": "toolResult",
+      "toolCallId": "call_predict",
+      "toolName": "quiz",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"kind\":\"quiz\",\"answers\":[{\"index\":2,\"label\":\"No\"}],\"correct\":false,\"confidence\":50,\"thinking\":\"I thought even numbers must be positive.\"}"
+        }
+      ],
+      "details": {
+        "kind": "quiz",
+        "tool": "quiz",
+        "questionType": "predict",
+        "questionText": "Is zero even?",
+        "options": [
+          {
+            "index": 1,
+            "label": "Yes"
+          },
+          {
+            "index": 2,
+            "label": "No"
+          }
+        ],
+        "dontKnow": false,
+        "answers": [
+          {
+            "index": 2,
+            "label": "No",
+            "value": "no"
+          }
+        ],
+        "thinking": "I thought even numbers must be positive.",
+        "confidence": 50,
+        "correct": false,
+        "correctIndices": [
+          1
+        ],
+        "explanation": "Zero equals two times zero.",
+        "answeredAt": "2026-10-01T00:00:02.000Z"
+      },
+      "isError": false,
+      "timestamp": 1790812812000
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "Offline test reasoning; not learner evidence.",
+          "thinkingSignature": "opaque-offline-test-signature"
+        },
+        {
+          "type": "text",
+          "text": "Test lesson: use the definition rather than a positive-number pattern."
+        },
+        {
+          "type": "toolCall",
+          "id": "call_prose",
+          "name": "send_to_user",
+          "arguments": {
+            "message": "An integer is even if it equals twice an integer. Zero equals twice zero."
+          }
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "offline-fixture-not-a-real-model",
+      "usage": {
+        "input": 12,
+        "output": 6,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 18,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "id": "m_teach",
+      "timestamp": 1790812813000
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "call_prose",
+      "toolName": "send_to_user",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"ok\":true}"
+        }
+      ],
+      "details": {
+        "ok": true
+      },
+      "isError": false,
+      "id": "m_prose_result",
+      "timestamp": 1790812814000
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call_explain",
+          "name": "explain",
+          "arguments": {
+            "question": "Explain why zero is even.",
+            "correctAnswer": "An integer is even when it equals twice an integer.",
+            "type": "check",
+            "nodeId": "zero"
+          }
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "offline-fixture-not-a-real-model",
+      "usage": {
+        "input": 12,
+        "output": 6,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 18,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "id": "m_explain",
+      "timestamp": 1790812815000
+    },
+    {
+      "id": "m_explain_answer",
+      "role": "toolResult",
+      "toolCallId": "call_explain",
+      "toolName": "explain",
+      "content": [
+        {
+          "type": "text",
+          "text": "{\"kind\":\"explain\",\"text\":\"It is twice the integer zero.\",\"thinking\":\"The definition also covers zero.\",\"thinkingWhileReading\":\"The divisibility definition resolved my doubt.\"}"
+        }
+      ],
+      "details": {
+        "kind": "explain",
+        "tool": "explain",
+        "questionType": "check",
+        "questionText": "Explain why zero is even.",
+        "options": [],
+        "dontKnow": false,
+        "answers": [],
+        "text": "It is twice the integer zero.",
+        "thinking": "The definition also covers zero.",
+        "readingThinking": "The divisibility definition resolved my doubt.",
+        "committed": "An integer is even when it equals twice an integer.",
+        "answeredAt": "2026-10-01T00:00:02.000Z"
+      },
+      "isError": false,
+      "timestamp": 1790812816000
+    },
+    {
+      "id": "m_compaction",
+      "role": "custom",
+      "customType": "compaction",
+      "content": "[SESSION HISTORY COMPACTED] The transcript before this point was summarized to fit the context window; the summary below replaces it. Everything after this message is the verbatim recent transcript.\n\nAuthored test summary: the probe and plan are complete; the learner predicted incorrectly before seeing the definition.",
+      "display": true,
+      "details": {
+        "firstKeptMessageId": "m_teach",
+        "tokensBefore": 150001,
+        "model": "openai:offline-fixture-not-a-real-model",
+        "at": "2026-10-01T00:00:00.000Z"
+      },
+      "timestamp": 1790812817000
+    }
+  ],
+  "version": 1,
+  "tree": {
+    "nodes": [
+      {
+        "id": "definition",
+        "title": "Even integers"
+      },
+      {
+        "id": "zero",
+        "title": "The zero case"
+      }
+    ],
+    "edges": [
+      {
+        "from": "definition",
+        "to": "zero"
+      }
+    ],
+    "version": 1
+  },
+  "settings": {
+    "model": {
+      "provider": "openai",
+      "id": "offline-fixture-not-a-real-model"
+    },
+    "thinkingLevel": "low"
+  },
+  "turns": [
+    {
+      "id": "turn_fixture",
+      "messageId": "m_teach",
+      "at": "2026-10-01T00:00:00.000Z",
+      "model": "openai:offline-fixture-not-a-real-model",
+      "steps": [
+        {
+          "inputTokens": 12,
+          "outputTokens": 6
+        }
+      ]
+    }
+  ],
+  "fixtureOnly": {
+    "authored": true,
+    "purpose": "Opaque field preservation sentinel; all usage is invented test data."
+  }
+}

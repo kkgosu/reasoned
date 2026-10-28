@@ -1,0 +1,552 @@
+{
+  "description": "Authored checkpoint expectations, independent of the native fold implementations. Prefixes are persisted stopped states, not instructions to run them.",
+  "checkpoints": [
+    {
+      "name": "probe-question-pending",
+      "chat": "chat_contract_teach",
+      "through": "m_probe",
+      "expect": {
+        "phase": "probe",
+        "pending": "call_probe_1",
+        "continuation": false,
+        "current": null,
+        "visited": []
+      }
+    },
+    {
+      "name": "probe-answer-awaits-reaction",
+      "chat": "chat_contract_teach",
+      "through": "m_probe_answer",
+      "expect": {
+        "phase": "probe",
+        "pending": null,
+        "continuation": true,
+        "current": null,
+        "visited": []
+      }
+    },
+    {
+      "name": "bare-probe-done-does-not-advance",
+      "chat": "chat_contract_teach",
+      "through": "m_probe_done",
+      "expect": {
+        "phase": "probe",
+        "pending": null,
+        "continuation": false,
+        "current": null,
+        "visited": []
+      }
+    },
+    {
+      "name": "successful-probe-done-advances",
+      "chat": "chat_contract_teach",
+      "through": "m_probe_done_result",
+      "expect": {
+        "phase": "plan",
+        "pending": null,
+        "continuation": true,
+        "current": null,
+        "visited": []
+      }
+    },
+    {
+      "name": "handoff-is-not-learner-speech",
+      "chat": "chat_contract_teach",
+      "through": "steer_probe_chat_contract_teach",
+      "expect": {
+        "phase": "plan",
+        "pending": null,
+        "continuation": false,
+        "current": null,
+        "visited": []
+      }
+    },
+    {
+      "name": "plan-review-without-approval-ledger",
+      "chat": "chat_contract_teach",
+      "through": "m_plan_block",
+      "expect": {
+        "phase": "plan",
+        "pending": null,
+        "continuation": false,
+        "current": null,
+        "visited": []
+      }
+    },
+    {
+      "name": "natural-plan-reply-stays-plan",
+      "chat": "chat_contract_teach",
+      "through": "m_plan_reply",
+      "expect": {
+        "phase": "plan",
+        "pending": null,
+        "continuation": false,
+        "current": null,
+        "visited": []
+      }
+    },
+    {
+      "name": "teach-starts-at-tagged-call",
+      "chat": "chat_contract_teach",
+      "through": "m_predict",
+      "expect": {
+        "phase": "teach",
+        "pending": "call_predict",
+        "continuation": false,
+        "current": "definition",
+        "visited": []
+      }
+    },
+    {
+      "name": "wrong-answer-does-not-complete-plan-node",
+      "chat": "chat_contract_teach",
+      "through": "m_predict_answer",
+      "expect": {
+        "phase": "teach",
+        "pending": null,
+        "continuation": true,
+        "current": "definition",
+        "visited": []
+      }
+    },
+    {
+      "name": "free-recall-pending-and-position-advances",
+      "chat": "chat_contract_teach",
+      "through": "m_explain",
+      "expect": {
+        "phase": "teach",
+        "pending": "call_explain",
+        "continuation": false,
+        "current": "zero",
+        "visited": [
+          "definition"
+        ]
+      }
+    },
+    {
+      "name": "free-recall-answer-awaits-reaction",
+      "chat": "chat_contract_teach",
+      "through": "m_explain_answer",
+      "expect": {
+        "phase": "teach",
+        "pending": null,
+        "continuation": true,
+        "current": "zero",
+        "visited": [
+          "definition"
+        ]
+      }
+    },
+    {
+      "name": "compaction-preserves-archive-and-native-tail-law",
+      "chat": "chat_contract_teach",
+      "through": "m_compaction",
+      "expect": {
+        "phase": "teach",
+        "pending": null,
+        "continuation": false,
+        "current": "zero",
+        "visited": [
+          "definition"
+        ]
+      }
+    },
+    {
+      "name": "unacknowledged-problem-is-not-active",
+      "chat": "chat_contract_practice",
+      "through": "p_pose",
+      "expect": {
+        "active": null,
+        "dismissal": null,
+        "continuation": false
+      }
+    },
+    {
+      "name": "posed-problem-does-not-auto-continue",
+      "chat": "chat_contract_practice",
+      "through": "p_pose_ack",
+      "expect": {
+        "active": "call_problem",
+        "dismissal": null,
+        "continuation": false
+      }
+    },
+    {
+      "name": "thinking-stays-with-active-problem",
+      "chat": "chat_contract_practice",
+      "through": "p_thinking",
+      "expect": {
+        "active": "call_problem",
+        "dismissal": null,
+        "continuation": false
+      }
+    },
+    {
+      "name": "unacknowledged-conclude-does-not-free",
+      "chat": "chat_contract_practice",
+      "through": "p_conclude",
+      "expect": {
+        "active": "call_problem",
+        "dismissal": null,
+        "continuation": false
+      }
+    },
+    {
+      "name": "clean-conclude-frees-slot",
+      "chat": "chat_contract_practice",
+      "through": "p_conclude_ack",
+      "expect": {
+        "active": null,
+        "dismissal": null,
+        "continuation": true
+      }
+    },
+    {
+      "name": "next-is-explicit-learner-input",
+      "chat": "chat_contract_practice",
+      "through": "p_next",
+      "expect": {
+        "active": null,
+        "dismissal": null,
+        "continuation": false
+      }
+    },
+    {
+      "name": "second-problem-activates-on-ack",
+      "chat": "chat_contract_practice",
+      "through": "p_pose_again_ack",
+      "expect": {
+        "active": "call_problem_again",
+        "dismissal": null,
+        "continuation": false
+      }
+    },
+    {
+      "name": "silent-dismissal-awaits-deferred-conclude",
+      "chat": "chat_contract_practice",
+      "through": "p_dismissed",
+      "expect": {
+        "active": null,
+        "dismissal": "call_problem_again",
+        "continuation": false
+      }
+    },
+    {
+      "name": "deferred-conclude-settles-dismissal",
+      "chat": "chat_contract_practice",
+      "through": "p_dismiss_ack",
+      "expect": {
+        "active": null,
+        "dismissal": null,
+        "continuation": true
+      }
+    },
+    {
+      "name": "next-after-dismissal",
+      "chat": "chat_contract_practice",
+      "through": "p_next_again",
+      "expect": {
+        "active": null,
+        "dismissal": null,
+        "continuation": false
+      }
+    },
+    {
+      "name": "failure-is-retryable-without-rewriting-history",
+      "chat": "chat_contract_interrupted",
+      "through": "i_error",
+      "expect": {
+        "retry": true,
+        "retryDrops": [
+          "i_error"
+        ],
+        "pending": null,
+        "continuation": false
+      }
+    },
+    {
+      "name": "abort-is-a-deliberate-stop",
+      "chat": "chat_contract_interrupted",
+      "through": "i_aborted",
+      "expect": {
+        "retry": false,
+        "pending": null,
+        "continuation": false
+      }
+    }
+  ],
+  "answers": [
+    {
+      "name": "multiselect-stable-values-and-display-order",
+      "answer": {
+        "kind": "quiz",
+        "tool": "probe",
+        "questionText": "Which numbers are even?",
+        "options": [
+          {
+            "index": 1,
+            "label": "Three"
+          },
+          {
+            "index": 2,
+            "label": "Four"
+          },
+          {
+            "index": 3,
+            "label": "Two"
+          }
+        ],
+        "dontKnow": false,
+        "answers": [
+          {
+            "index": 2,
+            "label": "Four",
+            "value": "four"
+          },
+          {
+            "index": 3,
+            "label": "Two",
+            "value": "two"
+          }
+        ],
+        "thinking": "Both divide into pairs.",
+        "confidence": 90,
+        "correct": true,
+        "correctIndices": [
+          2,
+          3
+        ],
+        "explanation": "Two and four are divisible by two.",
+        "answeredAt": "2026-10-01T00:00:02.000Z"
+      },
+      "compact": {
+        "kind": "quiz",
+        "answers": [
+          {
+            "index": 2,
+            "label": "Four"
+          },
+          {
+            "index": 3,
+            "label": "Two"
+          }
+        ],
+        "correct": true,
+        "confidence": 90,
+        "thinking": "Both divide into pairs."
+      }
+    },
+    {
+      "name": "wrong-prediction-with-real-coin-flip-confidence",
+      "answer": {
+        "kind": "quiz",
+        "tool": "quiz",
+        "questionType": "predict",
+        "questionText": "Is zero even?",
+        "options": [
+          {
+            "index": 1,
+            "label": "Yes"
+          },
+          {
+            "index": 2,
+            "label": "No"
+          }
+        ],
+        "dontKnow": false,
+        "answers": [
+          {
+            "index": 2,
+            "label": "No",
+            "value": "no"
+          }
+        ],
+        "thinking": "I thought even numbers must be positive.",
+        "confidence": 50,
+        "correct": false,
+        "correctIndices": [
+          1
+        ],
+        "explanation": "Zero equals two times zero.",
+        "answeredAt": "2026-10-01T00:00:02.000Z"
+      },
+      "compact": {
+        "kind": "quiz",
+        "answers": [
+          {
+            "index": 2,
+            "label": "No"
+          }
+        ],
+        "correct": false,
+        "confidence": 50,
+        "thinking": "I thought even numbers must be positive."
+      }
+    },
+    {
+      "name": "free-recall-does-not-repeat-model-commitment",
+      "answer": {
+        "kind": "explain",
+        "tool": "explain",
+        "questionType": "check",
+        "questionText": "Explain why zero is even.",
+        "options": [],
+        "dontKnow": false,
+        "answers": [],
+        "text": "It is twice the integer zero.",
+        "thinking": "The definition also covers zero.",
+        "readingThinking": "The divisibility definition resolved my doubt.",
+        "committed": "An integer is even when it equals twice an integer.",
+        "answeredAt": "2026-10-01T00:00:02.000Z"
+      },
+      "compact": {
+        "kind": "explain",
+        "text": "It is twice the integer zero.",
+        "thinking": "The definition also covers zero.",
+        "thinkingWhileReading": "The divisibility definition resolved my doubt."
+      }
+    },
+    {
+      "name": "dont-know-is-not-zero-confidence",
+      "answer": {
+        "kind": "quiz",
+        "tool": "quiz",
+        "questionText": "Authored test question",
+        "dontKnow": true,
+        "answers": [],
+        "correct": false,
+        "answeredAt": "2026-10-01T00:00:02.000Z"
+      },
+      "compact": {
+        "kind": "quiz",
+        "dontKnow": true
+      }
+    },
+    {
+      "name": "ask-with-other-free-text",
+      "answer": {
+        "kind": "ask",
+        "tool": "ask_user_question",
+        "questionText": "Authored preference question",
+        "dontKnow": false,
+        "answers": [],
+        "other": "A different goal",
+        "answeredAt": "2026-10-01T00:00:02.000Z"
+      },
+      "compact": {
+        "kind": "ask",
+        "other": "A different goal"
+      }
+    },
+    {
+      "name": "legacy-note-is-preserved-but-projects-as-thinking",
+      "answer": {
+        "kind": "explain",
+        "tool": "recall",
+        "questionText": "Authored recall question",
+        "dontKnow": false,
+        "answers": [],
+        "text": "My answer",
+        "note": "My legacy reasoning",
+        "committed": "Teacher-only commitment",
+        "answeredAt": "2026-10-01T00:00:02.000Z"
+      },
+      "compact": {
+        "kind": "explain",
+        "text": "My answer",
+        "thinking": "My legacy reasoning"
+      }
+    },
+    {
+      "name": "dismissal-is-not-an-incorrect-answer",
+      "answer": {
+        "kind": "ask",
+        "questionText": "Authored preference question",
+        "dontKnow": false,
+        "answers": [],
+        "dismissed": true,
+        "answeredAt": "2026-10-01T00:00:02.000Z"
+      },
+      "compact": {
+        "kind": "ask",
+        "dismissed": true
+      }
+    }
+  ],
+  "graph": {
+    "rawNodes": 5,
+    "rawChains": 3,
+    "nodeIds": [
+      "n_shared",
+      "n_notes",
+      "n_selected",
+      "n_unrelated"
+    ],
+    "chainIds": [
+      "arg_selected",
+      "arg_unrelated"
+    ],
+    "sharedName": "Twice an integer",
+    "sharedStatement": "An even integer equals twice an integer.",
+    "sharedAliases": [
+      "Even integers can be written as 2k."
+    ],
+    "sharedProvenance": [
+      {
+        "chatId": "chat_external",
+        "messageId": "m_external"
+      },
+      {
+        "chatId": "chat_contract_teach",
+        "messageId": "m_teach"
+      }
+    ],
+    "chainProvenance": [
+      {
+        "chatId": "chat_contract_teach",
+        "messageId": ""
+      },
+      {
+        "chatId": "chat_external",
+        "messageId": ""
+      }
+    ],
+    "logicalEdges": [
+      {
+        "from": "n_shared",
+        "to": "n_selected"
+      },
+      {
+        "from": "n_notes",
+        "to": "n_selected"
+      },
+      {
+        "from": "n_unrelated",
+        "to": "n_shared"
+      }
+    ],
+    "coveredMessageIds": [
+      "m_teach"
+    ]
+  },
+  "dependencies": {
+    "externalChats": [
+      "chat_external"
+    ],
+    "externalSources": [
+      "src_contract_notes"
+    ],
+    "missingFiles": [
+      "/offline-fixtures/missing-source.pdf",
+      "/offline-fixtures/contract-notes.txt"
+    ],
+    "inlineImageCall": "call_image",
+    "deliveredKinds": [
+      "research",
+      "demo",
+      "visual",
+      "pdf"
+    ],
+    "pendingJob": "job_fixture_pending"
+  }
+}

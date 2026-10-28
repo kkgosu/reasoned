@@ -443,6 +443,13 @@ Additional providers, remaining specialized rich content, and background recover
 Full release dependency/security review, API-26/device diversity and a real-key smoke test are not
 claimed by the deterministic emulator checks.
 
+Selected-lesson interoperability with LearnHarness is planned, not implemented. The pinned
+compatibility baseline, runtime differences, related-subgraph scope and manual conflict rules are
+recorded in [docs/LEARNHARNESS_SYNC.md](docs/LEARNHARNESS_SYNC.md). Direct synchronization of the
+live SQLite database and desktop JSON/JSONL stores is not part of that plan. Stage 1's
+[frozen native contract and offline reference checks](docs/LEARNHARNESS_NATIVE_CONTRACT.md)
+are available; Android engine/store adaptation and transfer remain unimplemented.
+
 ### Optional ChatGPT plan connection
 
 The owner selected a public open-source distribution. `ChatGptAuth` follows the documented OSS public-client flow: stable per-install UUID host ID, dynamic first registration, retained per-registration client ID/verified subject, browser authorization, fresh state/nonce/S256 PKCE and an ephemeral 127.0.0.1 `/auth/callback` listener. Callback parsing is bounded and checks state, duplicate parameters, host and returning client ID. Nimbus JOSE+JWT 10.10 verifies RS256 signatures using the pinned issuer's JWKS, issuer/audience/expiry/nonce/authorized party and optional access-token hash; no hand-written signature verification. Identity-only grants stay signed in but cannot generate through the plan.

@@ -1,0 +1,283 @@
+{
+  "id": "chat_contract_practice",
+  "title": "[Authored offline test] Practice pose, thinking, conclude, dismissal and next",
+  "createdAt": "2026-10-01T00:00:00.000Z",
+  "updatedAt": "2026-10-01T00:00:31.000Z",
+  "messages": [
+    {
+      "id": "p_context",
+      "role": "custom",
+      "customType": "graph-context",
+      "content": "[Session context] — picked from the learner's knowledge map when starting this session:\n\nPropositions (id — name: statement; the problem tool's target field uses these ids):\n- [n_selected] Even zero: Zero is even.",
+      "display": true,
+      "details": {
+        "propositions": [
+          {
+            "id": "n_selected",
+            "name": "Even zero",
+            "statement": "Zero is even."
+          }
+        ],
+        "chains": []
+      },
+      "timestamp": 1790812818000
+    },
+    {
+      "role": "user",
+      "content": "Authored offline exercise. Practice parity.",
+      "id": "p_goal",
+      "timestamp": 1790812819000
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call_problem",
+          "name": "problem",
+          "arguments": {
+            "mode": "composition",
+            "target": [
+              "n_selected"
+            ],
+            "statement": "Offline exercise: show that the sum of two even integers is even.",
+            "modelSolution": "Write a=2k and b=2j; then a+b=2(k+j). The sum k+j is an integer."
+          }
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "offline-fixture-not-a-real-model",
+      "usage": {
+        "input": 12,
+        "output": 6,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 18,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "id": "p_pose",
+      "timestamp": 1790812820000
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "call_problem",
+      "toolName": "problem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Problem posed — the turn ends here; the learner's thinking traces and answer commits arrive as labeled messages."
+        }
+      ],
+      "details": null,
+      "isError": false,
+      "id": "p_pose_ack",
+      "timestamp": 1790812821000
+    },
+    {
+      "id": "p_thinking",
+      "role": "custom",
+      "customType": "practice-thinking",
+      "content": "Your thinking:\nI can write both numbers as multiples of two.",
+      "display": true,
+      "details": {
+        "problemCallId": "call_problem",
+        "text": "I can write both numbers as multiples of two."
+      },
+      "timestamp": 1790812822000
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call_conclude",
+          "name": "conclude",
+          "arguments": {
+            "outcome": "solved",
+            "verdict": "Authored test verdict: the factorization is valid.",
+            "rung": null,
+            "missClass": null,
+            "retest": false
+          }
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "offline-fixture-not-a-real-model",
+      "usage": {
+        "input": 12,
+        "output": 6,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 18,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "id": "p_conclude",
+      "timestamp": 1790812823000
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "call_conclude",
+      "toolName": "conclude",
+      "content": [
+        {
+          "type": "text",
+          "text": "Problem concluded. Say your closing words about the learner's work if useful, then END YOUR TURN — no further tool calls. The next problem is NEVER posed here: it waits for the learner's explicit go-ahead (a *Next problem* message, or their own words asking for the next one). Between problems, answer their questions about the concluded one."
+        }
+      ],
+      "details": null,
+      "isError": false,
+      "id": "p_conclude_ack",
+      "timestamp": 1790812824000
+    },
+    {
+      "id": "p_next",
+      "role": "custom",
+      "customType": "practice-next",
+      "content": "[NEXT PROBLEM] — the learner's explicit go-ahead: pose the next problem now per the selection rules, or wrap the session in text if the arc is complete.",
+      "display": true,
+      "details": {},
+      "timestamp": 1790812825000
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call_problem_again",
+          "name": "problem",
+          "arguments": {
+            "mode": "composition",
+            "target": [
+              "n_selected"
+            ],
+            "statement": "Offline exercise: give a second proof.",
+            "modelSolution": "Write a=2k and b=2j; then a+b=2(k+j). The sum k+j is an integer."
+          }
+        }
+      ],
+      "api": "openai-responses",
+      "provider": "openai",
+      "model": "offline-fixture-not-a-real-model",
+      "usage": {
+        "input": 12,
+        "output": 6,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 18,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse",
+      "id": "p_pose_again",
+      "timestamp": 1790812826000
+    },
+    {
+      "role": "toolResult",
+      "toolCallId": "call_problem_again",
+      "toolName": "problem",
+      "content": [
+        {
+          "type": "text",
+          "text": "Problem posed — the turn ends here; the learner's thinking traces and answer commits arrive as labeled messages."
+        }
+      ],
+      "details": null,
+      "isError": false,
+      "id": "p_pose_again_ack",
+      "timestamp": 1790812827000
+    },
+    {
+      "id": "p_dismissed",
+      "role": "custom",
+      "customType": "problem-dismissed",
+      "content": "",
+      "display": true,
+      "details": {
+        "problemCallId": "call_problem_again"
+      },
+      "timestamp": 1790812828000
+    },
+    {
+      "id": "p_dismiss_conclude",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "toolCall",
+          "id": "call_conc_call_problem_again",
+          "name": "conclude",
+          "arguments": {
+            "outcome": "dismissed"
+          }
+        }
+      ],
+      "timestamp": 1790812829000,
+      "api": "faux",
+      "provider": "synthetic",
+      "model": "synthetic-conclude",
+      "usage": {
+        "input": 0,
+        "output": 0,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": 0,
+        "cost": {
+          "input": 0,
+          "output": 0,
+          "cacheRead": 0,
+          "cacheWrite": 0,
+          "total": 0
+        }
+      },
+      "stopReason": "toolUse"
+    },
+    {
+      "id": "p_dismiss_ack",
+      "role": "toolResult",
+      "toolCallId": "call_conc_call_problem_again",
+      "toolName": "conclude",
+      "content": [
+        {
+          "type": "text",
+          "text": "Problem concluded. Say your closing words about the learner's work if useful, then END YOUR TURN — no further tool calls. The next problem is NEVER posed here: it waits for the learner's explicit go-ahead (a *Next problem* message, or their own words asking for the next one). Between problems, answer their questions about the concluded one."
+        }
+      ],
+      "details": {
+        "outcome": "dismissed",
+        "problemCallId": "call_problem_again"
+      },
+      "isError": false,
+      "timestamp": 1790812830000
+    },
+    {
+      "id": "p_next_again",
+      "role": "custom",
+      "customType": "practice-next",
+      "content": "[NEXT PROBLEM] — the learner's explicit go-ahead: pose the next problem now per the selection rules, or wrap the session in text if the arc is complete.",
+      "display": true,
+      "details": {},
+      "timestamp": 1790812831000
+    }
+  ],
+  "kind": "practice"
+}

@@ -1,0 +1,5 @@
+{"id":"n_shared","name":"Twice an integer","statement":"An even integer equals twice an integer.","aliases":[],"createdAt":"2026-10-01T00:00:00.000Z","provenance":[{"chatId":"chat_external","messageId":"m_external"}]}
+{"id":"n_shared","name":"A later label must not replace the defining label","statement":"Even integers can be written as 2k.","aliases":[],"createdAt":"2026-10-01T00:00:00.000Z","provenance":[{"chatId":"chat_contract_teach","messageId":"m_teach"}]}
+{"id":"n_notes","name":"Integer zero","statement":"Zero is an integer.","aliases":[],"createdAt":"2026-10-01T00:00:00.000Z","provenance":[{"chatId":"src_contract_notes","messageId":""}]}
+{"id":"n_selected","name":"Even zero","statement":"Zero is even.","aliases":[],"createdAt":"2026-10-01T00:00:00.000Z","provenance":[{"chatId":"chat_contract_teach","messageId":"m_teach"}]}
+{"id":"n_unrelated","name":"Odd one","statement":"One is odd.","aliases":[],"createdAt":"2026-10-01T00:00:00.000Z","provenance":[{"chatId":"chat_external","messageId":"m_external_other"}]}

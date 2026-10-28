@@ -1,0 +1,30 @@
+{
+  "id": "job_fixture_pending",
+  "kind": "pdf",
+  "chatId": "chat_contract_artifacts",
+  "toolCallId": "call_pdf_pending",
+  "input": {
+    "path": "/offline-fixtures/missing-source.pdf",
+    "question": "Authored question; do not open a file."
+  },
+  "status": "done",
+  "activity": "Authored pending delivery; never resume on import.",
+  "createdAt": "2026-10-01T00:00:00.000Z",
+  "updatedAt": "2026-10-01T00:00:00.000Z",
+  "result": {
+    "path": "/offline-fixtures/missing-source.pdf",
+    "question": "Authored question; do not open a file.",
+    "brief": "Authored brief with a citation to page 1. The source PDF is deliberately absent.",
+    "pagesRead": [
+      1
+    ],
+    "pagesConsulted": [
+      1,
+      2
+    ]
+  },
+  "delivery": {
+    "kind": "result",
+    "status": "pending"
+  }
+}
