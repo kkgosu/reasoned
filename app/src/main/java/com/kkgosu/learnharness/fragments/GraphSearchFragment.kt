@@ -24,6 +24,7 @@ import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ListView
 import android.widget.Toolbar
+import com.kkgosu.learnharness.BuildConfig
 import com.kkgosu.learnharness.R
 import com.kkgosu.learnharness.ReasonedApplication
 import com.kkgosu.learnharness.model.GraphNode
@@ -52,7 +53,7 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
     private lateinit var navigation: LayerDrawable
     private var adapter: ArrayAdapter<GraphNode>? = null
     private var scope: CoroutineScope? = null
-    private val sample get() = arguments?.getBoolean("sample") == true
+    private val sample get() = BuildConfig.DEBUG && arguments?.getBoolean("sample") == true
 
     override fun wantsCustomNavigationIcon() = true
     override fun getNavigationIconDrawable(): Drawable? =
@@ -159,7 +160,7 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
             visible.launch {
                 try {
                     val data = withContext(Dispatchers.IO) {
-                        if (sample) SampleGraph.create(resources) else (activity.application as ReasonedApplication).sessions.knowledge()
+                        if (BuildConfig.DEBUG && sample) SampleGraph.create(resources) else (activity.application as ReasonedApplication).sessions.knowledge()
                             .data()
                     }
                     adapter?.apply {

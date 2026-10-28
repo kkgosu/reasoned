@@ -32,7 +32,6 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
         setHasStableIds(true)
     }
 
-    // ponytail: the mock is append-only; use DiffUtil when real sessions support edits/removals.
     fun submit(next: List<LessonDisplayItem>, running: Boolean = false): Boolean {
         if (items == next && generating == running) return false
         val previous = items

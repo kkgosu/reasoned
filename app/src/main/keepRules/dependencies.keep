@@ -1,0 +1,2 @@
+# Nimbus's shaded Gson references this compile-time annotation, not a runtime dependency.
+-dontwarn com.google.errorprone.annotations.CanIgnoreReturnValue

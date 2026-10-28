@@ -41,7 +41,9 @@ class MainActivity : FragmentStackActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // AppKit may restore fragments inside super.onCreate; their state owner must exist first.
-        mockLesson = MockLesson(resources, savedInstanceState?.getBundle("mockLesson"))
+        if (BuildConfig.DEBUG) {
+            mockLesson = MockLesson(resources, savedInstanceState?.getBundle("mockLesson"))
+        }
         super.onCreate(savedInstanceState)
         // Keep AppKit's actual stack/inset owner; DrawerLayout supplies native scrim, gestures and back handling.
         (content.parent as ViewGroup).removeView(content)
@@ -231,7 +233,7 @@ class MainActivity : FragmentStackActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        outState.putBundle("mockLesson", mockLesson.save())
+        if (BuildConfig.DEBUG) outState.putBundle("mockLesson", mockLesson.save())
         super.onSaveInstanceState(outState)
     }
 

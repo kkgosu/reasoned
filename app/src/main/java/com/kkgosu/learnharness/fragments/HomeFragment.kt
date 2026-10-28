@@ -11,6 +11,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.TextView
 import androidx.core.view.OneShotPreDrawListener
+import com.kkgosu.learnharness.BuildConfig
 import com.kkgosu.learnharness.MainActivity
 import com.kkgosu.learnharness.R
 import com.kkgosu.learnharness.ReasonedApplication
@@ -35,7 +36,7 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
     private var pageView: View? = null
     private var visibleScope: CoroutineScope? = null
     private var pendingSelection: String? = null
-    private val sample get() = arguments?.getBoolean("sample") == true
+    private val sample get() = BuildConfig.DEBUG && arguments?.getBoolean("sample") == true
     private val app get() = activity.application as ReasonedApplication
 
     override fun wantsCustomNavigationIcon() = true
@@ -50,8 +51,11 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         inflater.inflate(R.menu.home, menu)
-        menu.findItem(R.id.graph_sample)
-            ?.setTitle(if (sample) R.string.knowledge_real else R.string.knowledge_sample)
+        if (BuildConfig.DEBUG) {
+            inflater.inflate(R.menu.home_debug, menu)
+            menu.findItem(R.id.graph_sample)
+                ?.setTitle(if (sample) R.string.knowledge_real else R.string.knowledge_sample)
+        }
         menu.findItem(R.id.graph_stop_update)?.isVisible = app.extraction.state.value.running
     }
 
@@ -62,14 +66,23 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
             R.id.graph_fit -> graph.fit()
             R.id.graph_zoom_in -> graph.zoomBy(1.5f)
             R.id.graph_zoom_out -> graph.zoomBy(1 / 1.5f)
-            R.id.open_sample_lesson -> Nav.go(activity, LearningSessionFragment::class.java, null)
-            R.id.graph_sample -> Nav.go(
+            R.id.open_sample_lesson -> if (BuildConfig.DEBUG) Nav.go(
+                activity,
+                LearningSessionFragment::class.java,
+                null
+            )
+
+            R.id.graph_sample -> if (BuildConfig.DEBUG) Nav.go(
                 activity,
                 HomeFragment::class.java,
                 Bundle().apply { putBoolean("sample", !sample) })
 
             R.id.graph_stop_update -> app.extraction.stop()
-            R.id.style_reference -> Nav.go(activity, StyleReferenceFragment::class.java, null)
+            R.id.style_reference -> if (BuildConfig.DEBUG) Nav.go(
+                activity,
+                StyleReferenceFragment::class.java,
+                null
+            )
             else -> return super.onOptionsItemSelected(item)
         }
         return true
@@ -197,7 +210,7 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
             val loading = views.findViewById<TextView>(R.id.graph_loading)
             try {
                 val data = withContext(Dispatchers.IO) {
-                    if (sample) SampleGraph.create(views.resources) else app.sessions.knowledge()
+                    if (BuildConfig.DEBUG && sample) SampleGraph.create(views.resources) else app.sessions.knowledge()
                         .data()
                 }
                 val snapshot = withContext(Dispatchers.Default) { GraphLayout.compute(data) }

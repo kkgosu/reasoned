@@ -25,7 +25,6 @@ import me.grishka.appkit.Nav
 import me.grishka.appkit.fragments.ToolbarFragment
 import java.io.File
 
-/** A small native category index; focused pages share only their toolbar/lifecycle. */
 class SettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
     private val page get() = arguments?.getString("page")
     private var pageView: View? = null

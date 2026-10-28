@@ -80,7 +80,6 @@ class MockLesson(private val resources: Resources, saved: Bundle? = null) {
         }
     }
 
-    // Also allows deterministic checks without sleeping or a coroutine test framework.
     fun advanceStream() = mutableState.update { current ->
         if (!current.streaming) return@update current
         val last = current.items.last() as TextDisplayItem
@@ -139,7 +138,6 @@ class MockLesson(private val resources: Resources, saved: Bundle? = null) {
         )
     }
 
-    // ponytail: a bounded mock fits in saved state; real transcripts move to SQLite in phase 4.
     fun save(): Bundle = with(state.value) {
         Bundle().apply {
             putString("fixture", FIXTURE)

@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.kkgosu.learnharness.BuildConfig
 import com.kkgosu.learnharness.MainActivity
 import com.kkgosu.learnharness.R
 import com.kkgosu.learnharness.ReasonedApplication
@@ -24,7 +25,6 @@ import kotlinx.coroutines.withContext
 import me.grishka.appkit.Nav
 import me.grishka.appkit.fragments.ToolbarFragment
 
-/** LearnHarness's name/statement/session summary, on a native full-screen surface. */
 class GraphNodeFragment : ToolbarFragment(R.layout.fragment_shell) {
     private var scope: CoroutineScope? = null
     private var pageView: View? = null
@@ -57,14 +57,14 @@ class GraphNodeFragment : ToolbarFragment(R.layout.fragment_shell) {
         name.setText(R.string.navigation_loading)
         statement.text = ""
         sourceLabel.text = ""
-        val sample = arguments?.getBoolean("sample") == true
+        val sample = BuildConfig.DEBUG && arguments?.getBoolean("sample") == true
         val app = activity.application as ReasonedApplication
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).also { visible ->
             visible.launch {
                 try {
                     val (data, knowledge) = withContext(Dispatchers.IO) {
-                        val saved = if (sample) null else app.sessions.knowledge()
-                        (saved?.data() ?: SampleGraph.create(resources)) to saved
+                        if (BuildConfig.DEBUG && sample) SampleGraph.create(resources) to null
+                        else app.sessions.knowledge().let { it.data() to it }
                     }
                     val node = data.nodes.firstOrNull {
                         it.id == arguments?.getString("node") && !it.implication
@@ -74,10 +74,10 @@ class GraphNodeFragment : ToolbarFragment(R.layout.fragment_shell) {
                         return@launch
                     }
                     name.text = node.label
-                    if (!sample || node.id in SampleGraph.lessonNodes) {
+                    if (!sample || (BuildConfig.DEBUG && node.id in SampleGraph.lessonNodes)) {
                         toolbar.menu.add(if (sample) R.string.open_sample_lesson else R.string.session_practice)
                             .setOnMenuItemClickListener {
-                                if (sample) Nav.go(
+                                if (BuildConfig.DEBUG && sample) Nav.go(
                                     activity,
                                     LearningSessionFragment::class.java,
                                     null

@@ -55,7 +55,6 @@ import kotlinx.coroutines.withContext
 import me.grishka.appkit.Nav
 import me.grishka.appkit.fragments.ToolbarFragment
 
-/** App-owned runtime with a native transcript, question panel and persistent composer. */
 class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     private var pageView: View? = null
     private var adapter = LessonAdapter()

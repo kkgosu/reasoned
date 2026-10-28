@@ -3,8 +3,5 @@
     <item android:id="@+id/graph_fit" android:title="@string/graph_fit" />
     <item android:id="@+id/graph_zoom_in" android:title="@string/graph_zoom_in" />
     <item android:id="@+id/graph_zoom_out" android:title="@string/graph_zoom_out" />
-    <item android:id="@+id/open_sample_lesson" android:title="@string/graph_sample_lesson" />
-    <item android:id="@+id/graph_sample" android:title="@string/knowledge_sample" />
     <item android:id="@+id/graph_stop_update" android:title="@string/knowledge_stop" />
-    <item android:id="@+id/style_reference" android:title="@string/style_reference" />
 </menu>
