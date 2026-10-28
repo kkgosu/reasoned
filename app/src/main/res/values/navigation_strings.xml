@@ -28,6 +28,15 @@
     <string name="settings_learning_summary">Language, pace and explanation style</string>
     <string name="settings_about">About &amp; privacy</string>
     <string name="settings_about_summary">App information and how your data is used</string>
+    <string name="about_version">Version %1$s</string>
+    <string name="about_version_releases">Version %1$s. Open GitHub Releases</string>
+    <string name="about_check_updates">Check for updates</string>
+    <string name="about_update_checking">Checking GitHub…</string>
+    <string name="about_update_no_releases">No published releases are available yet.</string>
+    <string name="about_update_current">You’re up to date with the latest published release.</string>
+    <string name="about_update_available">Version %1$s is available. Tap the version above to open GitHub Releases.</string>
+    <string name="about_update_failed">Could not check for updates. Check your connection or try again later. You can also open GitHub Releases using the version above.</string>
+    <string name="about_browser_missing">No browser is available to open GitHub Releases.</string>
     <string name="settings_save">Save preferences</string>
     <string name="settings_saved">Saved.</string>
     <string name="settings_preferences_note">Applies to new sessions. Existing sessions keep their original preferences.</string>

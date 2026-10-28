@@ -1,5 +1,6 @@
 package com.kkgosu.learnharness.fragments
 
+import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -13,7 +14,9 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import com.kkgosu.learnharness.BuildConfig
 import com.kkgosu.learnharness.R
+import com.kkgosu.learnharness.api.AppUpdates
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -84,13 +87,58 @@ class SettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
                     }
                 }
 
-            "about" -> views.findViewById<Button>(R.id.settings_reference).setOnClickListener {
-                startActivity(
-                    Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse("https://github.com/amosblomqvist/learnharness")
+            "about" -> {
+                views.findViewById<Button>(R.id.about_version).apply {
+                    text = getString(R.string.about_version, BuildConfig.VERSION_NAME)
+                    contentDescription =
+                        getString(R.string.about_version_releases, BuildConfig.VERSION_NAME)
+                    setOnClickListener {
+                        try {
+                            startActivity(
+                                Intent(
+                                    Intent.ACTION_VIEW,
+                                    Uri.parse(AppUpdates.RELEASES_URL)
+                                )
+                            )
+                        } catch (_: ActivityNotFoundException) {
+                            views.findViewById<TextView>(R.id.about_update_status)
+                                .setText(R.string.about_browser_missing)
+                        }
+                    }
+                }
+                views.findViewById<Button>(R.id.about_check_updates).setOnClickListener { button ->
+                    val activeScope = scope ?: return@setOnClickListener
+                    val status = views.findViewById<TextView>(R.id.about_update_status)
+                    button.isEnabled = false
+                    status.setText(R.string.about_update_checking)
+                    activeScope.launch {
+                        try {
+                            val latest = AppUpdates.latestVersion()
+                            status.text = when {
+                                latest == null -> getString(R.string.about_update_no_releases)
+                                AppUpdates.isNewer(latest, BuildConfig.VERSION_NAME) ->
+                                    getString(R.string.about_update_available, latest)
+
+                                else -> getString(R.string.about_update_current)
+                            }
+                        } catch (cancelled: CancellationException) {
+                            status.text = ""
+                            throw cancelled
+                        } catch (_: Exception) {
+                            status.setText(R.string.about_update_failed)
+                        } finally {
+                            button.isEnabled = true
+                        }
+                    }
+                }
+                views.findViewById<Button>(R.id.settings_reference).setOnClickListener {
+                    startActivity(
+                        Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://github.com/amosblomqvist/learnharness")
+                        )
                     )
-                )
+                }
             }
 
             else -> {

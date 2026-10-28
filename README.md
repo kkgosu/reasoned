@@ -1,125 +1,175 @@
 # Reasoned
 
-A standalone, Kotlin-first Android learning app inspired
-by [LearnHarness](https://github.com/amosblomqvist/learnharness), with native Views and AppKit
-navigation. Not an official LearnHarness or OpenAI app.
+**First things first: all the credit for the idea goes
+to [Amos Blomqvist](https://github.com/amosblomqvist)
+and [LearnHarness](https://github.com/amosblomqvist/learnharness).** That's the project that
+inspired this app: its approach to learning, teaching instructions and visual direction. If you like
+what you see here, go give the original some love (and a star). The laurels belong there; I just
+wanted this experience on Android.
 
-**Status: pre-release.** Debug/release builds and lint pass. The latest API 36 offline run passes
-74/77 tests; all three failures also reproduce before the package refactor (details below).
-This is not broad device coverage or live-provider acceptance. PDF support is deliberately deferred.
+The Android architecture takes inspiration
+from [Mastodon for Android](https://github.com/mastodon/mastodon-android). After writing about a
+hundred apps with the “proper” architecture, I wanted to try something different: an app without
+Architecture™ and the usual modern stack. So: Kotlin, native Views, platform fragments, AppKit/LiteX
+and SQLite. No Compose, MVVM ceremony, DI framework or clean-architecture layer cake. Just an
+Android app.
 
-## Included
+**Found a bug? If you can, please fix it and send a PR.** Small, focused fixes are very welcome. If
+you can't fix it yourself, an issue with reproduction steps, Android version and screenshots still
+helps a lot. Please leave credentials and private conversations out of reports.
 
-- Probe → learner-approved learning plan → Teacher, with predictions, reading checks, free recall,
-  stable choice identities and multiple selection.
-- Persistent chats, drafts and answers; drawer long-press rename/delete. Renaming updates graph
-  groups; deleting a chat removes its history but retains extracted knowledge.
-- A persistent knowledge graph with concise proposition summaries and named source-chat links; a
-  separate illustrative sample graph.
-- Native Markdown/LaTeX, offline Mermaid/SVG previews and a model-assisted figure
-  creation/inspection loop.
-- One-problem-at-a-time Practice and an isolated, opt-in Researcher using Brave search and public
-  HTTPS pages.
-- OpenAI API-key connections and browser-based ChatGPT OAuth/PKCE connections. Account/model
-  availability depends on the provider; billing never silently falls back to another connection.
-- Local session history and long-context compaction without deleting the full transcript.
+This is an independent app, not an official LearnHarness, OpenAI or Mastodon app.
 
-Teaching, extraction, visual generation, research and compaction can make **paid model requests**.
-An extracted proposition or model verdict is not independently verified and does not certify
-mastery.
+## What it does
 
-## Build
+Reasoned is a learning app, not just another chat box. Start with something you want to understand,
+work through questions about what you already know, approve a learning plan, then learn by
+explaining, predicting and recalling—not only reading.
 
-Requirements: JDK 21 (validated), Android SDK Platform 36 and the SDK/build tools required by
-Android Gradle Plugin. Minimum supported Android version: 8.0 / API 26. The Gradle wrapper is
-included.
+- Guided lessons with understanding checks, free-text answers and multiple-choice questions.
+- Practice, one problem at a time.
+- Saved sessions, drafts and answers; long-press a session in the drawer to rename or delete it.
+- A persistent knowledge graph with summaries and links back to source conversations.
+- Markdown, math, Mermaid diagrams and SVG figures.
+- Optional web research with per-session permission; Brave Search uses a separate key.
 
-1. Set `JAVA_HOME` and `ANDROID_HOME`, or configure `sdk.dir` in an untracked `local.properties`.
-2. Build:
+AI explanations, extracted knowledge and grading can be wrong. A graph node is not proof that you've
+mastered something.
 
-   ```sh
-   ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest :app:assembleRelease :app:lintDebug :app:lintRelease
-   ```
+## Screenshots
 
-   A first build downloads dependencies. Once cached, add `--offline` to prevent Gradle network
-   access.
-3. Outputs:
-    - Debug: `app/build/outputs/apk/debug/app-debug.apk`
-    - Test APK: `app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk`
-    - **Unsigned** release: `app/build/outputs/apk/release/app-release-unsigned.apk`
+Captured from the debug build on an Android emulator. The graph, lesson and answer feedback are
+built-in samples, not generated learning results. Sample screens are debug-only and aren't included
+in release builds.
 
-Release signing is intentionally not configured. Keep signing material and provider credentials
-outside the repository; distribute only a deliberately signed release with its matching source.
+<table>
+  <tr>
+    <th>Sample graph</th>
+    <th>Correct answer & feedback</th>
+    <th>Sample lesson</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/sample-graph.png" width="260" alt="Sample knowledge graph with connected topic groups"></td>
+    <td><img src="docs/screenshots/sample-answer.png" width="260" alt="Correct answer to the sample prediction question with explanatory feedback"></td>
+    <td><img src="docs/screenshots/sample-lesson.png" width="260" alt="Sample gradient descent lesson with formulas and an understanding check"></td>
+  </tr>
+</table>
 
-## Start learning
+To explore the samples yourself, install a debug build and open the graph screen's overflow menu → *
+*Sample graph** or **Sample lesson**. No account needed.
 
-Install the debug APK, then open Settings → Connections to configure an API key or browser sign-in
-and select an available model. Start a new learning or practice session from the drawer. Brave
-search has a separate credential; research also requires per-session permission. The sample lesson
-and graph need no account.
+## Connections and costs
 
-Sessions, answers, graph data and preferences are app-private but **not encrypted as a database**.
-Credentials are separately encrypted with Android Keystore. App backup/transfer is disabled;
-uninstalling or clearing app storage loses local data, and export/import is not implemented.
-See [PRIVACY.md](PRIVACY.md).
+**Currently, the only model provider is OpenAI: a ChatGPT subscription connection, or an OpenAI API
+key. API-key connections are implemented but haven't been tested with live requests.** Other model
+providers aren't supported yet. ChatGPT model availability and limits depend on your account and
+plan.
 
-## Offline tests
+ChatGPT subscription usage and API billing are separate. The app never silently switches to another
+connection. Lessons, graph extraction, figure generation, research and automatic context summaries
+can make additional model requests and consume your plan allowance or incur API charges. Brave
+Search has its own key and billing.
 
-**Use a disposable emulator only.** The fixtures exercise database migrations, deletion and
-credential reset. Do not run them against a personal installation. Avoid unscoped connected-device
-test commands when a phone is attached.
+## Install
 
-After building both debug APKs, target the emulator explicitly (replace `emulator-5554` with its
-serial):
+**Requires Android 8.0 (API 26) or newer.** GitHub release APKs are coming later; for now, build
+from source.
+
+### Build from source
+
+You'll need Git, JDK 21, and an Android SDK with Platform 36. The Gradle wrapper is included; the
+first build needs internet access to download dependencies and any missing build tools.
 
 ```sh
-adb -s emulator-5554 shell svc wifi disable
-adb -s emulator-5554 shell svc data disable
-adb -s emulator-5554 install -r app/build/outputs/apk/debug/app-debug.apk
-adb -s emulator-5554 install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-adb -s emulator-5554 shell am instrument -w -r \
-  com.kkgosu.learnharness.test/androidx.test.runner.AndroidJUnitRunner
+git clone https://github.com/kkgosu/learnharness.git
+cd learnharness
 ```
 
-Read the final `OK (… tests)` / `FAILURES!!!` result: an `adb` exit code alone does not establish
-test success. Providers and web retrieval are fixtures; loopback OAuth/socket checks and the offline
-WebView renderer run locally. No real credentials are needed.
+Open the project in Android Studio, let Gradle sync, select the `app` debug configuration and run it
+on your device or emulator.
 
-Latest package-refactor result: **74/77 tests passed on API 36**. Two prompt-projection byte
-comparisons and one inline-code inset fixture fail identically on the unmodified `eee613a` baseline;
-they remain unfixed rather than being hidden or changed as part of this structural refactor.
-The earlier release-preparation run passed 76/76 tests.
-See [docs/RELEASE_CHECKLIST.md](docs/RELEASE_CHECKLIST.md) for evidence, remaining gates and
-limitations.
+Or build from a terminal, with `JAVA_HOME` pointing to JDK 21 and `ANDROID_HOME` pointing to your
+Android SDK (you can also set `sdk.dir` in an untracked `local.properties`):
 
-## Scope and limitations
+```sh
+./gradlew :app:assembleDebug
+```
 
-- No PDF import/search, generated HTML/JavaScript demos, background agents, sync or export/import.
-- Model requests are foreground operations; reopening a saved session does not itself resume
-  generation.
-- Formula escape recovery is presentation-only and bounded, not a complete desktop content-reader
-  port.
-- API 26–35, TalkBack journeys, RTL, tablets/foldables and live billing/provider/research flows
-  still need release acceptance.
+On Windows, use `gradlew.bat` instead of `./gradlew`.
 
-Architecture and implementation
-history: [ARCHITECTURE.md](ARCHITECTURE.md), [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md).
-Security boundaries: [SECURITY.md](SECURITY.md).
+The APK is at `app/build/outputs/apk/debug/app-debug.apk`. Copy it to your phone, open it and allow
+installation from that source when Android asks. Or enable USB debugging, connect your device and
+install with ADB:
 
-## License and attribution
+```sh
+adb devices
+adb -s YOUR_DEVICE_SERIAL install -r app/build/outputs/apk/debug/app-debug.apk
+```
 
-Application code is licensed **AGPL-3.0-only**; see [LICENSE](LICENSE). Third-party components
-retain their own licenses and notices.
+Debug builds use a local development signing key. Future signed releases may require uninstalling a
+debug build first; uninstalling deletes local app data.
 
-- LearnHarness: pinned, byte-preserved instruction/source inventory and native adaptations;
-  see [provenance](app/src/main/assets/learnharness/NOTICE.md)
+### Updates
+
+In **Settings → About & privacy**, tap the current version to open this repository’s GitHub
+Releases, or **Check for updates** to check for a newer stable release. Checks happen only when you
+press the button; there is no background updater or automatic installation. Until releases are
+published, the check reports that none are available.
+
+### First launch
+
+1. Open the drawer → **Settings → Providers & models**.
+2. Connect your ChatGPT account in the browser, or enter an OpenAI API key (live API-key use is
+   untested).
+3. Choose and save a model.
+4. Optionally set your language, pace and explanation style under **Learning preferences**.
+5. Open **New session**, enter a topic and start learning. Keep the app in the foreground while it
+   generates.
+
+## Your data and current limits
+
+Sessions, answers, preferences and the knowledge graph stay in app-private storage on your device.
+The database itself isn't encrypted; credentials are stored separately using Android Keystore-backed
+encryption. Starting a model request sends the relevant learning context to OpenAI. Optional
+research also sends queries to Brave and fetches public pages from your device.
+
+There is no sync, export/import or app backup. **Clearing app storage or uninstalling loses your
+local data.** PDF import and background agents aren't supported.
+
+This is still pre-release software. Offline checks aren't the same as live-provider or broad device
+testing. Known failures and remaining release checks are tracked
+in [the release checklist](docs/RELEASE_CHECKLIST.md), not hidden behind a “ready for everything”
+badge.
+
+More details: [Privacy](PRIVACY.md) · [Security](SECURITY.md).
+
+## Working on the app
+
+Agents and human contributors: start with [AGENTS.md](AGENTS.md). It covers the project layout,
+conventions and safe validation commands. [ARCHITECTURE.md](ARCHITECTURE.md) describes the
+implementation; [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) documents the visual rules.
+
+Please keep PRs focused. A bug fix doesn't need a new framework attached to it.
+
+Every PR runs [GitHub Actions checks](.github/workflows/pr-checks.yml): debug/release compilation,
+Android lint, pinned-source integrity, release sample removal, and the full offline instrumentation
+suite on an API 36 emulator. The JVM test task is also wired up for future local unit tests (
+currently there are none). Build/test reports and a debug APK are retained as workflow artifacts for
+seven days, including reports from failed runs. No provider credentials or release signing keys are
+needed.
+
+## License and credits
+
+Application code is **AGPL-3.0-only**; see [LICENSE](LICENSE). Third-party components keep their own
+licenses. Preserve their notices and comply with corresponding-source obligations when distributing
+modified sources or binaries.
+
+- **[LearnHarness / Amos Blomqvist](https://github.com/amosblomqvist/learnharness)** — the original
+  idea, teaching approach, visual inspiration and bundled instruction sources.
+  See [provenance](app/src/main/assets/learnharness/NOTICE.md)
   and [source hashes](app/src/main/assets/learnharness/SOURCE.sha256).
-- AppKit / LiteX and Mastodon-derived search motion, Markwon / JLaTeXMath, Mermaid, fonts and other
-  dependencies: notices under [app/src/main/assets/licenses](app/src/main/assets/licenses) and the
-  bundled font/diagram source directories.
-- Additional runtime
-  notices: [runtime_dependencies.txt](app/src/main/assets/licenses/runtime_dependencies.txt).
-
-Preserve these notices and comply with corresponding-source obligations when distributing modified
-sources or binaries. This repository has not yet been published and no public release is implied by
-a successful build.
+- **[Mastodon for Android](https://github.com/mastodon/mastodon-android)** — inspiration for the
+  Android structure and way of building a native app.
+- **AppKit / LiteX, Markwon / JLaTeXMath, Mermaid, bundled fonts and other dependencies** —
+  see [bundled notices](app/src/main/assets/licenses)
+  and [runtime dependency notices](app/src/main/assets/licenses/runtime_dependencies.txt).

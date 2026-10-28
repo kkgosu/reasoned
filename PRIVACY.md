@@ -30,6 +30,10 @@ is not available.
   context for compaction. Figure creation sends a brief and locally rendered PNGs for model
   inspection. Research sends its self-contained question and retrieved excerpts to the session's
   model. These features can incur extra requests on the selected billing connection.
+- **GitHub update checks:** pressing **Check for updates** in About requests this repository’s
+  latest stable release from the public GitHub API. GitHub receives your network address and
+  ordinary request metadata, not app credentials or learning data. There are no background checks;
+  opening the releases link uses your browser.
 - **Authentication:** browser-based OpenAI authorization, OAuth registration/discovery, token
   exchange/refresh and account-scoped model discovery. Signing out clears local tokens; a failed
   remote revocation can leave a grant that must be disconnected at the provider.

@@ -4,8 +4,8 @@ import android.content.res.Resources
 import android.os.Bundle
 import com.kkgosu.learnharness.R
 import com.kkgosu.learnharness.model.LessonDisplayItem
+import com.kkgosu.learnharness.model.LessonDisplayItem.AnsweredDisplayItem
 import com.kkgosu.learnharness.model.LessonDisplayItem.FormulaDisplayItem
-import com.kkgosu.learnharness.model.LessonDisplayItem.QuestionDisplayItem
 import com.kkgosu.learnharness.model.LessonDisplayItem.Role
 import com.kkgosu.learnharness.model.LessonDisplayItem.TextDisplayItem
 import kotlinx.coroutines.delay
@@ -104,9 +104,17 @@ class MockLesson(private val resources: Resources, saved: Bundle? = null) {
             else -> R.string.lesson_repair
         }
         current.copy(
-            items = current.items + QuestionDisplayItem(
-                current.nextId, resources.getStringArray(R.array.lesson_options)[current.selection],
-                current.thinking, current.confidence.takeUnless { current.selection == 3 },
+            items = current.items + AnsweredDisplayItem(
+                id = current.nextId,
+                question = text(R.string.lesson_question),
+                choices = resources.getStringArray(R.array.lesson_options).take(3),
+                answer = resources.getStringArray(R.array.lesson_options)[current.selection],
+                thinking = current.thinking,
+                confidence = current.confidence.takeUnless { current.selection == 3 },
+                correctAnswer = resources.getStringArray(R.array.lesson_options)[0],
+                explanation = text(R.string.lesson_correct),
+                questionType = "predict",
+                dontKnow = current.selection == 3,
             ) + TextDisplayItem(current.nextId + 1, ""),
             dock = Dock.COMPOSER,
             expanded = false,

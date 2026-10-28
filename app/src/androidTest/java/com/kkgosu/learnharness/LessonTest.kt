@@ -20,7 +20,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.SdkSuppress
 import androidx.test.platform.app.InstrumentationRegistry
 import com.kkgosu.learnharness.controllers.MockLesson
-import com.kkgosu.learnharness.model.LessonDisplayItem.QuestionDisplayItem
+import com.kkgosu.learnharness.model.LessonDisplayItem.AnsweredDisplayItem
 import com.kkgosu.learnharness.model.LessonDisplayItem.TextDisplayItem
 import com.kkgosu.learnharness.ui.adapters.LessonAdapter
 import org.junit.Assert.assertEquals
@@ -84,13 +84,23 @@ class LessonTest {
         assertEquals(MockLesson.Dock.QUESTION, lesson.state.value.dock)
         lesson.select(3)
         lesson.submitAnswer()
-        assertNull(lesson.state.value.items.filterIsInstance<QuestionDisplayItem>().last().confidence)
+        assertNull(
+            lesson.state.value.items.filterIsInstance<AnsweredDisplayItem>().last().confidence
+        )
         finishStream(lesson)
         lesson.select(0)
         lesson.submitAnswer()
         finishStream(lesson)
         assertEquals(MockLesson.Dock.COMPOSER, lesson.state.value.dock)
         assertEquals("A composer draft", lesson.state.value.draft)
+        val answered = lesson.state.value.items.filterIsInstance<AnsweredDisplayItem>().last()
+        assertEquals(resources.getString(R.string.lesson_question), answered.question)
+        assertEquals(3, answered.choices.size)
+        assertEquals(answered.correctValues, answered.selectedValues)
+        assertEquals(
+            answered,
+            com.kkgosu.learnharness.model.LessonDisplayItem.restore(answered.save())
+        )
         val uncertain = MockLesson(resources)
         repeat(3) {
             finishStream(uncertain)

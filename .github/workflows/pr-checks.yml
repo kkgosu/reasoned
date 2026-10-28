@@ -1,0 +1,111 @@
+name: PR checks
+
+on:
+  pull_request:
+  push:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' || github.ref != 'refs/heads/master' }}
+
+      - name: Verify pinned LearnHarness sources
+        working-directory: app/src/main/assets/learnharness
+        run: sha256sum --check SOURCE.sha256
+
+      - name: Compile, run JVM tests and lint both variants
+        run: >-
+          ./gradlew --stacktrace --console=plain --continue
+          :app:assembleDebug :app:assembleRelease
+          :app:testDebugUnitTest
+          :app:lintDebug :app:lintRelease
+
+      - name: Verify sample screens are removed from release
+        run: python3 scripts/check-release-samples.py
+
+      - name: Upload build reports and debug APK
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: build-reports-and-debug-apk
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            app/build/reports/
+            app/build/test-results/
+            build/reports/
+            app/build/outputs/apk/debug/app-debug.apk
+
+  tests:
+    name: Instrumentation (API 36)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+      - uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' || github.ref != 'refs/heads/master' }}
+
+      - name: Build instrumentation APKs
+        run: ./gradlew --stacktrace --console=plain :app:assembleDebug :app:assembleDebugAndroidTest
+
+      - name: Enable emulator hardware acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run the full offline instrumentation suite
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7_pro
+          emulator-port: 5554
+          disable-animations: true
+          script: |
+            adb -s emulator-5554 shell svc wifi disable
+            adb -s emulator-5554 shell svc data disable
+            ANDROID_SERIAL=emulator-5554 ./gradlew --stacktrace --console=plain :app:connectedDebugAndroidTest
+
+      - name: Upload instrumentation reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: instrumentation-api-36
+          retention-days: 7
+          if-no-files-found: warn
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+            build/reports/
