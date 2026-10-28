@@ -50,6 +50,9 @@ internal data class RuntimeSession(
     val contextOutputTokens: Long = 0,
     val compacting: Boolean = false, // Transient: reopening never restarts a summary request.
     val selectedValues: List<String> = listOfNotNull(question?.values?.getOrNull(selection)),
+    // Separate SQLite columns/tables: never fold opaque native history into the local checkpoint.
+    val nativeRecord: NativeChat? = null,
+    val nativeDisplayIds: Map<NativeChat.Part, Long> = emptyMap(),
 ) {
     val activeProblem get() = problems.lastOrNull()?.takeIf { it.outcome.isEmpty() }
     val displayItems: List<LessonDisplayItem>

@@ -16,3 +16,4 @@ local.properties
 .memory
 .idea
 app/release
+/build-logs

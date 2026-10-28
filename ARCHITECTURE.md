@@ -404,8 +404,19 @@ text characters and 16 MB UTF-8 protocol. Compaction never creates teaching or g
 
 Hiding the runtime screen or stopping the Activity cancels the foreground job; there is no service/background-execution promise. Cancellation closes the HTTP call/body, including blocked reads. Finally checkpoints run non-cancellably on IO; streamed partial text is marked interrupted and excluded from model context. Startup marks unfinished runs/sessions interrupted; Retry starts a new charged request rather than claiming token-level resume. Reported usage accumulates completed responses/runs; interrupted or rejected responses may have billed usage the client cannot report. Draft writes debounce 200 ms and flush on actions/hiding. Native saved state carries no real transcript or credentials.
 
-SQLite v3 preserves sessions, messages, questions, answers and runs, with additive migrations
-from v1/v2 for knowledge tables and separate display-title/deletion metadata. Drawer long-press
+SQLite v4 preserves sessions, messages, questions, answers and runs, with additive migrations
+from v1/v2/v3 for knowledge tables, display-title/deletion metadata and optional native-record
+storage. `sessions.native_record` retains original LearnHarness JSON separately from local
+checkpoints; `native_display_ids` allocates stable numeric identities for native messages/content
+blocks in the same save transaction. Legacy histories remain legacy; no events are fabricated.
+Native persistence/pure restoration checks are implemented, but the native execution adapter is
+not: opening native-backed sessions is blocked before the legacy runner can alter them. New
+lessons still use the existing engine. The four native persistence tests plus the existing v2
+migration regression passed on an API-36 emulator (`OK (5 tests)`), using temporary fixture DBs
+and no provider calls. This does not verify cross-engine continuation. See stage 2 in
+[the interoperability plan](docs/LEARNHARNESS_SYNC.md).
+
+Drawer long-press
 opens a native context menu; rename input and delete confirmation use native dialogs. Renaming
 changes presentation in the drawer, graph groups,
 source links and graph metadata reads, never the original learning goal or wire transcript.
@@ -415,7 +426,8 @@ chains remain; a non-openable origin row retains only its ID, group title, times
 marker. Deleted chats are excluded from navigation/recovery, and stale saves cannot resurrect them.
 The graph keeps named groups without inventing source links; details disclose unavailable sources.
 Build/lint and test-APK compilation plus host SQLite DDL/migration/deletion checks pass; native
-management/cancellation/migration fixtures are compiled, not device-executed.
+management/cancellation fixtures are compiled but have not run as a full suite; only the focused
+v2 migration regression noted above was device-executed in this work.
 Checkpoints preserve model/prompt version, phase, wire history, pending tool, provisional route and
 input state. Accepted answers and their source message IDs commit transactionally with the
 checkpoint; `(session, call_id)` prevents duplicate answers. Replacing session or message rows is
@@ -448,7 +460,8 @@ compatibility baseline, runtime differences, related-subgraph scope and manual c
 recorded in [docs/LEARNHARNESS_SYNC.md](docs/LEARNHARNESS_SYNC.md). Direct synchronization of the
 live SQLite database and desktop JSON/JSONL stores is not part of that plan. Stage 1's
 [frozen native contract and offline reference checks](docs/LEARNHARNESS_NATIVE_CONTRACT.md)
-are available; Android engine/store adaptation and transfer remain unimplemented.
+are available. Native persistence/restoration foundations have started; native execution
+adaptation and transfer remain unimplemented.
 
 ### Optional ChatGPT plan connection
 

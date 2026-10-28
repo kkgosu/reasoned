@@ -8,6 +8,7 @@ import com.kkgosu.reasoned.controllers.QuestionContract
 import com.kkgosu.reasoned.model.ContextSummary
 import com.kkgosu.reasoned.model.LessonDisplayItem.Role
 import com.kkgosu.reasoned.model.LessonDisplayItem.TextDisplayItem
+import com.kkgosu.reasoned.model.NativeChat
 import com.kkgosu.reasoned.model.PracticeProblem
 import com.kkgosu.reasoned.model.ProbeAssessment
 import com.kkgosu.reasoned.model.ResearchReport
@@ -21,25 +22,35 @@ import org.json.JSONObject
 
 /** One concrete SQLite owner. Transactions couple rendered messages, tool state and learner evidence. */
 internal class SessionStore(context: Context, name: String = "sessions.db") :
-    SQLiteOpenHelper(context, name, null, 3) {
+    SQLiteOpenHelper(context, name, null, 4) {
     override fun onConfigure(db: SQLiteDatabase) {
         db.setForeignKeyConstraintsEnabled(true)
     }
 
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL("CREATE TABLE sessions(id TEXT PRIMARY KEY, goal TEXT NOT NULL, model TEXT NOT NULL, checkpoint TEXT NOT NULL, updated INTEGER NOT NULL, title TEXT NOT NULL DEFAULT '', deleted INTEGER NOT NULL DEFAULT 0)")
+        db.execSQL("CREATE TABLE sessions(id TEXT PRIMARY KEY, goal TEXT NOT NULL, model TEXT NOT NULL, checkpoint TEXT NOT NULL, native_record TEXT, updated INTEGER NOT NULL, title TEXT NOT NULL DEFAULT '', deleted INTEGER NOT NULL DEFAULT 0)")
         db.execSQL("CREATE TABLE messages(session TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, id INTEGER NOT NULL, role TEXT NOT NULL, text TEXT NOT NULL, PRIMARY KEY(session,id))")
         db.execSQL("CREATE TABLE questions(session TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, call_id TEXT NOT NULL, question TEXT NOT NULL, PRIMARY KEY(session,call_id))")
         db.execSQL("CREATE TABLE answers(session TEXT NOT NULL, call_id TEXT NOT NULL, message_id INTEGER NOT NULL, answer TEXT NOT NULL, PRIMARY KEY(session,call_id), FOREIGN KEY(session,call_id) REFERENCES questions(session,call_id))")
         db.execSQL("CREATE TABLE runs(id TEXT PRIMARY KEY, session TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, phase TEXT NOT NULL, prompt_version TEXT NOT NULL, status TEXT NOT NULL, input_tokens INTEGER NOT NULL, output_tokens INTEGER NOT NULL)")
         createKnowledgeTables(db)
+        createNativeTable(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        check(oldVersion in 1..2 && newVersion == 3) { "Unsupported database migration" }
+        check(oldVersion in 1..3 && newVersion == 4) { "Unsupported database migration" }
         if (oldVersion == 1) createKnowledgeTables(db)
-        db.execSQL("ALTER TABLE sessions ADD COLUMN title TEXT NOT NULL DEFAULT ''")
-        db.execSQL("ALTER TABLE sessions ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0")
+        if (oldVersion < 3) {
+            db.execSQL("ALTER TABLE sessions ADD COLUMN title TEXT NOT NULL DEFAULT ''")
+            db.execSQL("ALTER TABLE sessions ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0")
+        }
+        // No fabricated native events for legacy sessions, and no checkpoint/answer rewrites.
+        db.execSQL("ALTER TABLE sessions ADD COLUMN native_record TEXT")
+        createNativeTable(db)
+    }
+
+    private fun createNativeTable(db: SQLiteDatabase) {
+        db.execSQL("CREATE TABLE native_display_ids(session TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, message TEXT NOT NULL, part INTEGER NOT NULL, display_id INTEGER NOT NULL, PRIMARY KEY(session,message,part), UNIQUE(session,display_id))")
     }
 
     @Synchronized
@@ -69,10 +80,11 @@ internal class SessionStore(context: Context, name: String = "sessions.db") :
         db.beginTransaction()
         try {
             db.execSQL(
-                "UPDATE sessions SET title=coalesce(nullif(title,''),goal),goal='',model='',checkpoint='',deleted=1 WHERE id=? AND deleted=0",
+                "UPDATE sessions SET title=coalesce(nullif(title,''),goal),goal='',model='',checkpoint='',native_record=NULL,deleted=1 WHERE id=? AND deleted=0",
                 arrayOf(id)
             )
             for (table in listOf(
+                "native_display_ids",
                 "knowledge_sources",
                 "knowledge_coverage",
                 "knowledge_runs",
@@ -90,25 +102,13 @@ internal class SessionStore(context: Context, name: String = "sessions.db") :
 
     @Synchronized
     fun load(id: String): RuntimeSession? = readableDatabase.rawQuery(
-        "SELECT goal,model,length(checkpoint),substr(checkpoint,1,131072) FROM sessions WHERE id=? AND deleted=0",
+        "SELECT goal,model FROM sessions WHERE id=? AND deleted=0",
         arrayOf(id)
     ).use { cursor ->
         if (!cursor.moveToFirst()) return null
-        // Android's CursorWindow cannot hold a multi-megabyte row. Read the archive in bounded SQL slices.
-        val checkpoint = buildString {
-            append(cursor.getString(3))
-            var offset = 131073
-            while (offset <= cursor.getInt(2)) {
-                readableDatabase.rawQuery(
-                    "SELECT substr(checkpoint,?,131072) FROM sessions WHERE id=?",
-                    arrayOf(offset.toString(), id)
-                ).use { slice ->
-                    check(slice.moveToFirst()); append(slice.getString(0))
-                }
-                offset += 131072
-            }
-        }
-        val json = JSONObject(checkpoint)
+        val json = JSONObject(readText(readableDatabase, id, "checkpoint")!!)
+        val native = readText(readableDatabase, id, "native_record")?.let(NativeChat::parse)
+        check(native == null || native.id == id) { "Native session identity mismatch" }
         val question = json.optJSONObject("question")?.let(RuntimeQuestion::parse)
         val answers = readableDatabase.rawQuery(
             "SELECT a.message_id,a.answer,q.question FROM answers a JOIN questions q ON q.session=a.session AND q.call_id=a.call_id WHERE a.session=?",
@@ -189,8 +189,35 @@ internal class SessionStore(context: Context, name: String = "sessions.db") :
             contextOutputTokens = json.optLong("contextOutputTokens"),
             selectedValues = json.optJSONArray("selectedValues")
                 ?.strings(QuestionContract.MAX_OPTIONS, 4000)
-                ?: listOfNotNull(question?.values?.getOrNull(json.getInt("selection")))
+                ?: listOfNotNull(question?.values?.getOrNull(json.getInt("selection"))),
+            nativeRecord = native,
+            nativeDisplayIds = nativeIds(readableDatabase, id)
         )
+    }
+
+    // SQLite substr/length use character offsets, not UTF-8 byte offsets (including for emoji).
+    private fun readText(db: SQLiteDatabase, id: String, column: String): String? = db.rawQuery(
+        "SELECT length($column),substr($column,1,131072) FROM sessions WHERE id=?", arrayOf(id)
+    ).use { row ->
+        check(row.moveToFirst())
+        if (row.isNull(0)) return null
+        buildString {
+            append(row.getString(1))
+            var offset = 131073
+            while (offset <= row.getInt(0)) {
+                db.rawQuery("SELECT substr($column,?,131072) FROM sessions WHERE id=?",
+                    arrayOf(offset.toString(), id)).use { slice ->
+                    check(slice.moveToFirst()); append(slice.getString(0))
+                }
+                offset += 131072
+            }
+        }
+    }
+
+    private fun nativeIds(db: SQLiteDatabase, id: String): Map<NativeChat.Part, Long> = db.rawQuery(
+        "SELECT message,part,display_id FROM native_display_ids WHERE session=?", arrayOf(id)
+    ).use { rows ->
+        buildMap { while (rows.moveToNext()) put(NativeChat.Part(rows.getString(0), rows.getInt(1)), rows.getLong(2)) }
     }
 
     @Synchronized
@@ -198,9 +225,17 @@ internal class SessionStore(context: Context, name: String = "sessions.db") :
         val db = writableDatabase
         db.beginTransaction()
         try {
+            val native = state.nativeRecord
+            require(native == null || native.id == state.id) { "Native session identity mismatch" }
+            if (native == null) db.rawQuery(
+                "SELECT native_record IS NOT NULL FROM sessions WHERE id=?", arrayOf(state.id)
+            ).use { row ->
+                check(!row.moveToFirst() || row.getInt(0) == 0) { "Cannot discard a native archive" }
+            }
             val values = ContentValues().apply {
                 put("id", state.id); put("goal", state.goal); put("model", state.model)
                 put("checkpoint", state.checkpoint()); put("updated", System.currentTimeMillis())
+                put("native_record", native?.raw)
             }
             // UPDATE, not REPLACE: replacing the parent would cascade-delete its evidence.
             if (db.update(
@@ -227,6 +262,17 @@ internal class SessionStore(context: Context, name: String = "sessions.db") :
                             )
                         }
                     }
+            if (native != null) {
+                val ids = nativeIds(db, state.id)
+                var next = maxOf(ids.values.maxOrNull() ?: 0, existing.keys.maxOrNull() ?: 0,
+                    state.items.maxOfOrNull { it.id } ?: 0)
+                native.parts().filter { it !in ids }.forEach { part ->
+                    db.insertOrThrow("native_display_ids", null, ContentValues().apply {
+                        put("session", state.id); put("message", part.message); put("part", part.index)
+                        put("display_id", ++next)
+                    })
+                }
+            }
             state.items.filter { existing[it.id] != (it.role.name to it.text) }.forEach { item ->
                 val message = ContentValues().apply {
                     put("session", state.id); put("id", item.id); put(

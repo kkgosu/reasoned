@@ -3,8 +3,10 @@
 ## Scope and authority
 
 Stage 1 of [the interoperability plan](LEARNHARNESS_SYNC.md): freeze the actual native
-contract and establish authored, offline reference cases. **No Android runtime/persistence
-adaptation, converter, import installation, transfer UI or network sync is implemented here.**
+contract and establish authored, offline reference cases. **This reference does not establish
+cross-engine continuation, conversion, import installation, transfer UI or network sync.**
+The subsequent Android persistence/restoration foundation is recorded under stage 2 of the plan;
+native execution adaptation is still incomplete.
 
 The authority is LearnHarness `main` at
 [`3dd52110bbcbcba81645453ce0a8fdc230594c47`](https://github.com/amosblomqvist/learnharness/tree/3dd52110bbcbcba81645453ce0a8fdc230594c47),

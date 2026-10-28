@@ -9,8 +9,9 @@ remain accurate until the feature is implemented.
 
 Stage 1 now has a [frozen native-contract inventory and executable reference matrix](LEARNHARNESS_NATIVE_CONTRACT.md)
 with [authored offline fixtures](../fixtures/learnharness/v1/README.md). The 45 checks pass against
-hash-pinned LearnHarness readers/folds. This is not Android adaptation, conversion or verified
-cross-engine continuation; stages 2–6 remain unimplemented.
+hash-pinned LearnHarness readers/folds. Stage 2 has started with native persistence and pure
+Kotlin restoration/projection checks (details below), not a native execution adapter. Cross-engine
+continuation remains unverified; stages 3–6 remain unimplemented.
 
 LearnHarness is the source of truth for the learning-data format and learning-runtime semantics;
 Reasoned adapts to it, not the other way around. The LearnHarness library is the canonical home
@@ -273,7 +274,7 @@ parser or this document's description.
 [`fixtures/learnharness/v1/`](../fixtures/learnharness/v1/README.md) and
 [`scripts/check-learnharness-contract.mjs`](../scripts/check-learnharness-contract.mjs).
 45 native checks passed offline; setup, exact scope and limitations are recorded with the fixtures.
-No Android engine/store or transfer feature has changed.
+That reference work did not change the Android engine/store or implement a transfer feature.
 
 ### 2. Adapt Android persistence and runtime to LearnHarness
 
@@ -287,6 +288,61 @@ vendored prompts or replace the native architecture.
 **Deliverable:** supported lessons can be represented and continued under the native contracts.
 **Gate:** offline continuation/restoration cases pass; importing/opening never invokes a provider,
 changes billing source, reveals a hidden answer or runs an imported job.
+
+**In progress — persistence/restoration foundation (2a), not stage-2 completion:**
+
+- `NativeChat.kt` keeps the original JSON string immutable, including unknown fields, opaque
+  signatures and inline artifacts. Mutable JSON snapshots are isolated. It checks storage bounds,
+  native version and message identities/roles; it is **not** the stage-3 external-package validator.
+- SQLite v4 adds nullable `sessions.native_record` and `native_display_ids`, mapping native
+  message/ordered-block identities to locally allocated numeric row IDs without string hashes.
+  Record, checkpoint, mappings and learner evidence save in the same transaction. Native records
+  use bounded SQL reads for CursorWindow safety. Deleting a session also erases its native data;
+  a stale legacy save cannot discard a native archive. Local row IDs never enter native JSON.
+- v1/v2/v3 migrations leave legacy checkpoint/evidence untouched and native history absent.
+  Existing and newly created lessons still use the existing runner; no native past is invented.
+- Pure native folds cover phase, pending question, plan position, practice activation/dismissal,
+  continuation and retry drops. Native model projection preserves the full archive, applies the
+  compaction cut, filters/flattens markers and makes interrupted results ephemeral. This returns
+  native pi-shaped messages, **not** a Responses payload. Full answers stay separate from the
+  learner-only compact answer projection. None of these functions renders or executes artifacts.
+- Until the native execution adapter exists, `SessionRuntime.open` explicitly refuses native-backed
+  sessions before legacy handoff/migration/publication. It must not interpret their local checkpoint
+  as authority or run the legacy engine against them. There is no production import action yet.
+
+Validation: the seven `NativeChatTest` JVM tests pass, including all **24 authored native state
+checkpoints and seven answer cases**, plus refusal, immutability and model-projection checks.
+The complete existing JVM suite also passes. Android Studio analysis reports no errors in the
+changed production files. Four `NativeSessionStoreTest` instrumentation tests cover v1–v3
+migration, raw/Unicode round trips, stable multipart IDs, transaction rollback/deletion, stale
+legacy writes and no-provider opening. On the user-selected running emulator (API 36), these four
+and `SessionManagementTest#versionTwoMigrationPreservesHistoryAndSupportsRenaming` passed:
+**`OK (5 tests)`**. Debug and test APK assembly also passed. The run used separate temporary
+fixture databases, no app-data clearing and no real provider; temporary databases were deleted
+and the emulator's Wi-Fi/mobile-data settings restored afterward. This validates the persistence
+foundation on API 36, not cross-engine continuation or the full stage-2 gate.
+
+Run the JVM reference checks with:
+
+```sh
+gw ./gradlew :app:testDebugUnitTest --tests com.kkgosu.reasoned.NativeChatTest --offline
+```
+
+On Windows use `gw ./gradlew.bat ...`. Use the repository's disposable-emulator procedure for
+instrumentation; never target a personal device. The focused instrumented run was:
+
+```sh
+adb -s emulator-5554 shell am instrument -w -r \
+  -e class 'com.kkgosu.reasoned.NativeSessionStoreTest,com.kkgosu.reasoned.SessionManagementTest#versionTwoMigrationPreservesHistoryAndSupportsRenaming' \
+  com.kkgosu.reasoned.debug.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+**Remaining within stage 2:** native-to-UI/provider projections and actual native event appends;
+question normalization/shuffling/confidence and submitted-answer details; native input-cause/
+foreground-permission gates; native probe/plan handoff and plan authoring; practice dismissal/deferred conclusion; compaction identity capture;
+and offline fake-provider continuation/restoration tests through the actual runtime. Keep native
+execution blocked until those seams work. Do not move to conversion or claim unfinished-lesson
+portability merely because the reference folds or lossless storage pass.
 
 ### 3. Implement pure conversion and selected-subgraph export
 

@@ -94,6 +94,9 @@ internal class SessionRuntime(
                 try {
                     val loaded = withContext(Dispatchers.IO) { store.load(id) }
                         ?: throw ProviderFailure("session_missing")
+                    // Native persistence precedes the execution adapter. Never feed a native lesson
+                    // into the legacy Responses/checkpoint runner or migrate its supposed route.
+                    if (loaded.nativeRecord != null) throw ProviderFailure("native_runtime_unavailable")
                     // Old route-review checkpoints migrate locally; opening still sends no request.
                     val ready =
                         if (loaded.status == "route" || (loaded.phase == "probe" && loaded.routeCall.isNotEmpty() && loaded.question == null)) handoff(
@@ -104,8 +107,9 @@ internal class SessionRuntime(
                     failure.value = ""
                 } catch (cancelled: CancellationException) {
                     throw cancelled
-                } catch (_: Exception) {
-                    failure.value = "storage"
+                } catch (error: Exception) {
+                    failure.value = if ((error as? ProviderFailure)?.reason == "native_runtime_unavailable")
+                        "native_runtime_unavailable" else "storage"
                 }
             }
         }.also { work = it }
