@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "learnharness"
+rootProject.name = "reasoned"
 include ':app'

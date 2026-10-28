@@ -114,7 +114,7 @@ Install/launch with the Android CLI or Android Studio:
 ```sh
 android run --device emulator-5554 \
   --apks app/build/outputs/apk/debug/app-debug.apk \
-  --activity com.kkgosu.learnharness.MainActivity
+  --activity com.kkgosu.reasoned.MainActivity
 ```
 
 Instrumentation reports: `app/build/reports/androidTests/connected/debug/index.html`.
@@ -178,7 +178,13 @@ Graph labels/captions now scale with zoom. Bottom button rows are replaced by a 
 
 Build/lint and IDE error inspections of both changed Kotlin files pass. All **11** Pixel_7/API-36 instrumentation tests pass in scoped runs (seven foundation/classroom plus four graph checks). All four graph checks also pass at 200% text with animations disabled; original emulator settings are restored. The additional check records actual Canvas text sizes across zoom, exercises rapid selection/fade completion, checks tooltip placement/clearing, search gravity and menu actions. Existing navigation/recreation checks now use toolbar actions. Updated review captures include [scaled text](docs/screenshots/phase3-scaled-text.png). The subsequent owner go-ahead after the selection-blink fix cleared the gate to phase 4.
 
-The initial unfiltered `./gradlew :app:connectedDebugAndroidTest --console=plain` exceeded the 30-second shell limit and reported an animation-timing assertion failure; it is not counted as a pass. Final scoped runs completed successfully after waiting on native animation completion and using a short, unellipsized label in the scaling check at 200% text. Reproduce with `ANDROID_SERIAL=emulator-5554` and `-Pandroid.testInstrumentationRunnerArguments.class=com.kkgosu.learnharness.GraphTest` or `com.kkgosu.learnharness.FoundationTest,com.kkgosu.learnharness.LessonTest`.
+The initial unfiltered `./gradlew :app:connectedDebugAndroidTest --console=plain` exceeded the
+30-second shell limit and reported an animation-timing assertion failure; it is not counted as a
+pass. Final scoped runs completed successfully after waiting on native animation completion and
+using a short, unellipsized label in the scaling check at 200% text. Reproduce with
+`ANDROID_SERIAL=emulator-5554` and
+`-Pandroid.testInstrumentationRunnerArguments.class=com.kkgosu.reasoned.GraphTest` or
+`com.kkgosu.reasoned.FoundationTest,com.kkgosu.reasoned.LessonTest`.
 
 ## Phase-4 verification record
 
@@ -190,9 +196,9 @@ Reproduce without credentials/network (each command can be scoped to stay within
 
 ```sh
 ANDROID_SERIAL=emulator-5554 ./gradlew :app:assembleDebug :app:lintDebug
-ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.kkgosu.learnharness.RuntimeTest
-ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.kkgosu.learnharness.LessonTest
-ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.kkgosu.learnharness.FoundationTest,com.kkgosu.learnharness.GraphTest
+ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.kkgosu.reasoned.RuntimeTest
+ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.kkgosu.reasoned.LessonTest
+ANDROID_SERIAL=emulator-5554 ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.kkgosu.reasoned.FoundationTest,com.kkgosu.reasoned.GraphTest
 ```
 
 The combined older-regression command (FoundationTest, LessonTest and GraphTest together) exceeded the 30-second shell limit after 8/11 tests with no failure yet reported. It is **not counted as a pass**; no active instrumentation/app process remained before the successful smaller class runs. IDE inspections of credentials, SQLite, schemas, runtime and both fragments report no errors. The HTTP file's IDE model still resolves AppKit's old OkHttp API and reports stale companion/property errors, whereas the CLI dependency report resolves 5.4.0 and compilation/lint/transport execution pass: refresh Android Studio's Gradle model.
@@ -207,7 +213,13 @@ The requested public open-source flow is implemented alongside BYOK. Setup disti
 
 Build, Android-test compilation and lint pass. After an authorized cold restart of the stalled Pixel_7/API-36 emulator, all **25** instrumentation tests pass in completed scoped runs: six ChatGptTest, eight RuntimeTest, five LessonTest and six FoundationTest/GraphTest. The new native billing UI check also passes at 200% text with animations disabled; original emulator settings were restored. IDE error inspections of `ChatGptAuth.kt` and `ProviderSettingsFragment.kt` report no errors.
 
-The six new checks cover RFC PKCE, signed issuer/audience/nonce/expiry/signature rejection, loopback state/duplicate rejection and socket cancellation, dynamic registration/refresh/model listing/revocation/encrypted storage, durable billing isolation/no API fallback, preview-compatible plan tools/tool continuation/namespace rejection and native billing-choice persistence/no implicit browser login. These use local HTTP/token fixtures, **not a live OpenAI authorization**. Reproduce with the existing class-filtered Gradle command and `com.kkgosu.learnharness.ChatGptTest` (or `#methodName` for a smaller run).
+The six new checks cover RFC PKCE, signed issuer/audience/nonce/expiry/signature rejection, loopback
+state/duplicate rejection and socket cancellation, dynamic registration/refresh/model
+listing/revocation/encrypted storage, durable billing isolation/no API fallback, preview-compatible
+plan tools/tool continuation/namespace rejection and native billing-choice persistence/no implicit
+browser login. These use local HTTP/token fixtures, **not a live OpenAI authorization**. Reproduce
+with the existing class-filtered Gradle command and `com.kkgosu.reasoned.ChatGptTest` (or
+`#methodName` for a smaller run).
 
 Earlier all-class and UI-only runs hit the 30-second shell timeout while Android's activity service was stalled; they are not counted as passes. An initial loopback cancellation race was fixed by honoring cancellation around socket acceptance/read errors. The emulator's graceful reboot/shutdown also stalled; the owner authorized restart, and its stuck process was terminated before cold-starting the same saved AVD without a data wipe. Final split runs above completed normally.
 

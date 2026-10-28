@@ -14,7 +14,7 @@ for suffix in (
     "fragments.LearningSessionFragment",
     "fragments.StyleReferenceFragment",
 ):
-    name = "com.kkgosu.learnharness." + suffix
+    name = "com.kkgosu.reasoned." + suffix
     assert ("L" + name.replace(".", "/") + ";").encode() in debug_dex, f"Missing from debug: {name}"
     assert name in removed, f"Not removed by R8: {name}"
     assert not any(line.startswith((name + " -> ", name + "$")) for line in retained), f"Retained in release: {name}"

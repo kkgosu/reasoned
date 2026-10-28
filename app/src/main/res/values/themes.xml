@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- AppKit uses platform widgets, not the Material Components library. -->
-    <style name="Theme.Learnharness" parent="Theme.AppKit">
+    <style name="Theme.Reasoned" parent="Theme.AppKit">
         <item name="android:windowBackground">@color/background</item>
         <item name="android:colorBackground">@color/background</item>
         <item name="android:colorForeground">@color/foreground</item>

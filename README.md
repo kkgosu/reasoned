@@ -81,8 +81,8 @@ You'll need Git, JDK 21, and an Android SDK with Platform 36. The Gradle wrapper
 first build needs internet access to download dependencies and any missing build tools.
 
 ```sh
-git clone https://github.com/kkgosu/learnharness.git
-cd learnharness
+git clone https://github.com/kkgosu/reasoned.git
+cd reasoned
 ```
 
 Open the project in Android Studio, let Gradle sync, select the `app` debug configuration and run it

@@ -32,7 +32,7 @@ The app is standalone, Kotlin-first, traditional Views. It is not a web wrapper,
 Current single Gradle application module:
 
 ```text
-app/src/main/java/com/kkgosu/learnharness/
+app/src/main/java/com/kkgosu/reasoned/
   MainActivity.kt             AppKit activity, drawer and root navigation
   ReasonedApplication.kt      Application-owned dependencies and foreground lifecycle
   fragments/                  Public no-argument AppKit screens

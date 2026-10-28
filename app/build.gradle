@@ -3,13 +3,13 @@ plugins {
 }
 
 android {
-    namespace 'com.kkgosu.learnharness'
+    namespace 'com.kkgosu.reasoned'
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId "com.kkgosu.learnharness"
+        applicationId "com.kkgosu.reasoned"
         minSdk 26
         targetSdk 36
         versionCode 1

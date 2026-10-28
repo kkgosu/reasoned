@@ -22,7 +22,7 @@ native Views/XML, platform fragments, AppKit/LiteX, coroutines, OkHttp and SQLit
 
 ## Where things live
 
-Application sources: `app/src/main/java/com/kkgosu/learnharness/`.
+Application sources: `app/src/main/java/com/kkgosu/reasoned/`.
 
 | Path                     | Responsibility                                                                 |
 |--------------------------|--------------------------------------------------------------------------------|
@@ -128,10 +128,10 @@ adb -s emulator-5554 shell svc data disable
 adb -s emulator-5554 install -r app/build/outputs/apk/debug/app-debug.apk
 adb -s emulator-5554 install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 adb -s emulator-5554 shell am instrument -w -r \
-  com.kkgosu.learnharness.test/androidx.test.runner.AndroidJUnitRunner
+  com.kkgosu.reasoned.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
-For a focused test, add `-e class com.kkgosu.learnharness.TestClass#methodName` before the runner.
+For a focused test, add `-e class com.kkgosu.reasoned.TestClass#methodName` before the runner.
 Read the final `OK` / `FAILURES!!!` output; ADB's exit code alone doesn't prove success. Don't
 weaken assertions or hide known failures to get a green result.
 
@@ -142,7 +142,7 @@ incur costs. API-key live use is currently untested; don't document it as verifi
 
 About reads the installed version from `BuildConfig.VERSION_NAME`. Update `versionName` and
 increment `versionCode` in `app/build.gradle` for each release. Publish a stable GitHub release in
-`kkgosu/learnharness` with a matching numeric tag, preferably `vMAJOR.MINOR.PATCH` (for example
+`kkgosu/reasoned` with a matching numeric tag, preferably `vMAJOR.MINOR.PATCH` (for example
 `v1.1.0`). Drafts and prereleases are not update candidates. About uses GitHub’s latest stable
 release endpoint; keep its latest-release designation correct. The app opens GitHub Releases in the
 browser and does not download or install updates itself.
