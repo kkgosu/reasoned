@@ -114,6 +114,8 @@ real session's `lessonMarkdown` renderer. Authored examples cover emphasis, nest
 links, wrapped/aligned and horizontally scrolling wide tables, code, inline math and display fractions/sums/matrices/aligned equations.
 Markdown headings keep a single line break before their body rather than an extra empty line;
 ordinary paragraph spacing is unchanged. The sample includes short and wrapping headings.
+A quoted `[!IMPORTANT]` marker renders as a bold “Important” label inside the existing native
+quote border; body Markdown remains selectable. The sample includes an authored callout specimen.
 No credentials or provider requests are needed. Scroll upward from the sample's question to inspect
 them; use system font scaling to check larger text. Sample session now opens the same `RuntimeSessionFragment` and layout as a real chat, using the
 same `SessionRuntime` with an authored offline provider and a separate in-memory SQLite store.

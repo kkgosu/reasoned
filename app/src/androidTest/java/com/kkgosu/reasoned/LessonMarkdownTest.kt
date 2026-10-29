@@ -45,6 +45,43 @@ class LessonMarkdownTest {
     }
 
     @Test
+    fun importantCalloutsKeepBodyFormattingAndLeaveOrdinaryQuotesAndCodeAlone() {
+        val app = ApplicationProvider.getApplicationContext<ReasonedApplication>()
+        val renderer = lessonMarkdown(app)
+        val label = app.getString(R.string.markdown_important)
+        for (opening in listOf("> [!IMPORTANT]\n> ", "> [!IMPORTANT] ")) {
+            val tree = renderer.parse(opening + "A **key** point.\n>\n> Another paragraph.\n\nOutside.")
+            repeat(2) { // Rendering the same parsed tree must not duplicate the label.
+                val rendered = renderer.render(tree)
+                assertEquals("$label\n\nA key point.\n\nAnother paragraph.\n\nOutside.", rendered.toString())
+                val quotes = rendered.getSpans(0, rendered.length, io.noties.markwon.core.spans.BlockQuoteSpan::class.java)
+                assertEquals(1, quotes.size)
+                assertTrue(rendered.getSpanEnd(quotes.single()) <= rendered.toString().indexOf("Outside."))
+                val bold = rendered.getSpans(0, rendered.length, io.noties.markwon.core.spans.StrongEmphasisSpan::class.java)
+                assertEquals(2, bold.size)
+                assertTrue(bold.any { rendered.subSequence(rendered.getSpanStart(it), rendered.getSpanEnd(it)).toString() == label })
+            }
+        }
+        assertEquals(label, renderer.toMarkdown("> [!IMPORTANT]").toString())
+        val list = renderer.toMarkdown("> [!IMPORTANT]\n>\n> - First\n> - Second")
+        assertTrue(list.toString().startsWith("$label\n\nFirst"))
+        assertFalse(list.contains("[!IMPORTANT]"))
+        for (source in listOf(
+            "[!IMPORTANT] Plain prose",
+            "> Ordinary quote with [!IMPORTANT] inside.",
+            "> [!IMPORTANT]suffix",
+            "> [!NOTE]\n> Unhandled type stays literal.",
+            "> `[!IMPORTANT]`",
+            "```markdown\n> [!IMPORTANT]\n> Literal code.\n```",
+            "> ```markdown\n> [!IMPORTANT]\n> ```",
+        )) {
+            val rendered = renderer.toMarkdown(source)
+            assertTrue(rendered.contains(if (source.contains("[!NOTE]")) "[!NOTE]" else "[!IMPORTANT]"))
+            assertEquals(0, rendered.getSpans(0, rendered.length, io.noties.markwon.core.spans.StrongEmphasisSpan::class.java).size)
+        }
+    }
+
+    @Test
     fun sampleSessionIncludesNativeMarkdownAndMathFixtures() = kotlinx.coroutines.runBlocking {
         val app = ApplicationProvider.getApplicationContext<ReasonedApplication>()
         val lesson = com.kkgosu.reasoned.controllers.MockLesson(app)
@@ -59,6 +96,10 @@ class LessonMarkdownTest {
                 assertTrue(count(io.noties.markwon.core.spans.StrongEmphasisSpan::class.java) >= 8)
                 assertTrue(count(io.noties.markwon.core.spans.CodeSpan::class.java) >= 4)
                 assertTrue(count(io.noties.markwon.ext.latex.JLatexAsyncDrawableSpan::class.java) >= 10)
+                assertTrue(lesson.session().items.any { it.text.contains("> [!IMPORTANT]") })
+                assertTrue(samples.any { it.toString().contains(app.getString(R.string.markdown_important)) &&
+                    !it.toString().contains("[!IMPORTANT]") &&
+                    it.getSpans(0, it.length, io.noties.markwon.core.spans.BlockQuoteSpan::class.java).isNotEmpty() })
                 val state = lesson.session()
                 assertEquals(state.items.size, state.items.map { it.id }.distinct().size)
                 assertEquals(0, lesson.requests)

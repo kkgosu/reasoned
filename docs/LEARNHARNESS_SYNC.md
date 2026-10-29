@@ -784,6 +784,30 @@ these commands do not select or prepare an emulator automatically.
   the six desktop fixture outputs stay unchanged in scope. No live model, private lesson or Electron
   UI was used in this slice.
 
+**Owner-authorized private lesson / real ChatGPT check (2p), still not a production transfer feature:**
+
+- One explicitly selected original desktop record was packaged byte-for-byte in a test ZIP with
+  `manifest.json`, hash-checked on the owner's Pixel 8 Pro, and restored into a separate cache-local
+  SQLite database. The manifest explicitly excluded graph installation and external source files.
+  This used a temporary, explicitly authorized diagnostic kept outside the repository, not a
+  maintained test or production importer. The results below record that one-off check.
+- The selected phone connection/model was confirmed as **ChatGPT / `gpt-6.1-sol`**. With explicit
+  permission for at most three model requests, the continuation used **two real requests**: next
+  quiz → owner-authorized, clearly labeled technical autoanswer → next quiz. This is not evidence
+  of the learner's knowledge. Reopen made **zero** requests. The original message/usage prefixes
+  and opaque root data survived; the desktop source SHA-256 and existing phone library were unchanged.
+- Private input/output ZIPs and a redacted receipt stayed outside Git; the isolated phone cache/DB
+  was removed after exporting the result. No fixture suite, credential reset, phone data clearing,
+  fabricated cost or API-key provider acceptance was involved. Test APK assembly and the one targeted
+  live instrumentation check passed; this is not broad UI, teaching-quality or full parity acceptance.
+- The owner then separately requested installation of the **original**, without technical messages
+  or autoanswers, into the normal phone chat list. A separately gated one-record diagnostic used
+  `saveNative` inside a transaction, rejected existing/deleted IDs, verified the original bytes and
+  preserved prior sessions. That targeted check passed with **zero model requests**; the original
+  title was confirmed visible at the top of recent chats. This installed chat intentionally remains
+  for the owner to try through the selected ChatGPT connection; its staging cache was removed.
+  Neither a production ZIP-import UI nor native graph installation/conflict resolution is delivered.
+
 **Remaining within stage 2:** broader in-run input/permission cases (including answers/dismissals
 while generating); provider/stream and process-death cases beyond the explicit boundaries above;
 Electron shell/broader UI coverage;

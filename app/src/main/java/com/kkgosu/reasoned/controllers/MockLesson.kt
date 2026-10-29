@@ -131,7 +131,7 @@ internal class MockLesson(private val app: ReasonedApplication, saved: Bundle? =
     private fun text(id: Int) = app.getString(id)
 
     companion object {
-        private const val FIXTURE = "native-sample-probe-plan-teach-v4"
+        private const val FIXTURE = "native-sample-probe-plan-teach-v5"
         private const val MODEL = "sample-offline"
         private fun message(text: String) = JSONObject().put("type", "message").put("role", "assistant").put("status", "completed")
             .put("content", JSONArray().put(JSONObject().put("type", "output_text").put("text", text)))
@@ -172,6 +172,18 @@ internal class MockLesson(private val app: ReasonedApplication, saved: Bundle? =
                 > A quotation with **bold** and inline math ${'$'}x^2${'$'}.
 
                 [Example link — opens a browser only when tapped](https://example.org)
+            """.trimIndent(),
+            """
+                ### Important callout
+                Offline, authored test content — not learner evidence.
+
+                > [!IMPORTANT]
+                > Это **важное замечание** в авторском офлайн-примере, а не сообщение из настоящего урока.
+                > Длинный тестовый текст должен переноситься внутри блока и оставаться доступным для выделения.
+                >
+                > The label should be bold, the marker hidden, and this paragraph inside the same quote border.
+
+                Ordinary prose after the callout must remain outside the border.
             """.trimIndent(),
             """
                 ### Tables: wrapping, alignment and emphasis

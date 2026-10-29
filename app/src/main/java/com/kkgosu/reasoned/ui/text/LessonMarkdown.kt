@@ -36,11 +36,17 @@ import io.noties.markwon.image.AsyncDrawableSpan
 import io.noties.markwon.inlineparser.InlineProcessor
 import io.noties.markwon.inlineparser.MarkwonInlineParserPlugin
 import io.noties.markwon.utils.SpanUtils
+import org.commonmark.node.AbstractVisitor
+import org.commonmark.node.BlockQuote
 import org.commonmark.node.Code
 import org.commonmark.node.FencedCodeBlock
+import org.commonmark.node.HardLineBreak
 import org.commonmark.node.Heading
 import org.commonmark.node.IndentedCodeBlock
 import org.commonmark.node.Node
+import org.commonmark.node.Paragraph
+import org.commonmark.node.SoftLineBreak
+import org.commonmark.node.StrongEmphasis
 import org.commonmark.node.Text
 import ru.noties.jlatexmath.JLatexMathDrawable
 import java.util.regex.Pattern
@@ -61,6 +67,33 @@ internal fun lessonMarkdown(context: Context): Markwon = Markwon.builder(context
         .build()))
     .usePlugin(DiagramPlugin(context))
     .usePlugin(object : AbstractMarkwonPlugin() {
+        override fun beforeRender(node: Node) {
+            node.accept(object : AbstractVisitor() {
+                override fun visit(blockQuote: BlockQuote) {
+                    val paragraph = blockQuote.firstChild as? Paragraph
+                    val text = paragraph?.firstChild as? Text
+                    val marker = "[!IMPORTANT]"
+                    if (paragraph != null && text != null && text.literal.startsWith(marker) &&
+                        (text.literal.length == marker.length || text.literal[marker.length].isWhitespace())) {
+                        text.literal = text.literal.removePrefix(marker).trimStart()
+                        if (text.literal.isEmpty()) {
+                            val next = text.next
+                            text.unlink()
+                            if (next is SoftLineBreak || next is HardLineBreak) next.unlink()
+                        }
+                        // Reuse the native quote border and Markdown spans, including nested body content.
+                        blockQuote.prependChild(Paragraph().apply {
+                            appendChild(StrongEmphasis().apply {
+                                appendChild(Text(context.getString(R.string.markdown_important)))
+                            })
+                        })
+                        if (paragraph.firstChild == null) paragraph.unlink()
+                    }
+                    super.visit(blockQuote)
+                }
+            })
+        }
+
         override fun configureVisitor(builder: MarkwonVisitor.Builder) {
             builder.blockHandler(object : BlockHandlerDef() {
                 override fun blockEnd(visitor: MarkwonVisitor, node: Node) {
