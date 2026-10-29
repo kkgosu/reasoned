@@ -3,15 +3,21 @@
 ## Status
 
 This is an implementation plan and compatibility investigation, **not an implemented
-export/import feature**. No round-trip or cross-engine continuation has been verified.
+export/import feature**. No transfer round trip has been verified; an authored
+Android → LearnHarness → Android runtime cycle now passes offline with fake providers,
+not through a transfer installer.
 Reasoned currently remains a standalone Android app. Its existing privacy/export statements
 remain accurate until the feature is implemented.
 
 Stage 1 now has a [frozen native-contract inventory and executable reference matrix](LEARNHARNESS_NATIVE_CONTRACT.md)
-with [authored offline fixtures](../fixtures/learnharness/v1/README.md). The 45 checks pass against
-hash-pinned LearnHarness readers/folds. Stage 2 has started with native persistence and pure
-Kotlin restoration/projection checks (details below), not a native execution adapter. Cross-engine
-continuation remains unverified; stages 3–6 remain unimplemented.
+with [authored offline fixtures](../fixtures/learnharness/v1/README.md). The expanded reader/fold
+suite passes 87 checks including six Android snapshots; a separate native-runtime runner passes
+9 checks with 14 faux requests. Stage 2 has native persistence, pure Kotlin
+restoration, question/answer appends, gated probe → plan → teaching and practice UI/provider paths (details below).
+A bounded desktop web-UI smoke test also passes (5 checks, 6 faux requests). Full native runtime
+adaptation, broader cross-engine continuation and Electron/full UI acceptance remain unverified.
+Stage 3 now has a pure native-subgraph selection foundation; package validation/assembly, legacy
+conversion and stages 4–6 remain unimplemented.
 
 LearnHarness is the source of truth for the learning-data format and learning-runtime semantics;
 Reasoned adapts to it, not the other way around. The LearnHarness library is the canonical home
@@ -23,6 +29,30 @@ Authority does not mean silently discarding phone progress or automatically choo
 version in a conflict. The agreed manual resolution still applies. Native Android UI, SQLite,
 coroutine lifecycle and provider adapters can remain; Electron, Node.js and Pi are not prerequisites
 for implementing the same persisted learning contracts.
+
+## Agreed engine direction and next milestones
+
+The agreed direction is **an Android/Kotlin executor of LearnHarness learning contracts**, not an
+embedded Node/Electron engine and not two permanently independent teaching semantics. Extend the
+existing native runtime rather than rewrite it. Android keeps its Views, SQLite, foreground-only
+coroutine lifecycle, permission checks and explicit connection/billing ownership. LearnHarness stays
+unchanged except for a future separately implemented transfer integration.
+
+1. First deliver explicit export/import for the supported native subset. Start with pure selected-
+   lesson/subgraph selection and bounded validation; then preview, conflict-safe installation and
+   document UI. Preserve unsupported content and report blockers; never advertise full continuation
+   just because a record round-trips. Do not wait for every stage-2 parity feature to start this work.
+2. After that subset passes transfer and continuation gates, make the existing native path the main
+   path for newly created Reasoned lessons. Validate creation, model/billing capture, restoration and
+   provider/tool behavior before changing the default. This is planned, not implemented now.
+3. Keep the legacy runner for existing lessons. Legacy conversion is a separate explicit operation
+   with an honest missing-history report; no automatic migration, fabricated native past or silent
+   model change. Retire legacy execution only after a separately verified migration path exists.
+
+Bounded native learner-text steering is now implemented; broader in-run inputs, Electron shell and
+tool/artifact parity remain tracked gaps, not reasons to keep expanding stage 2 indefinitely before
+a bounded transfer implementation. Safety, hidden-
+answer protection, provenance and dependency validation are still mandatory gates for that subset.
 
 ## Agreed scope
 
@@ -255,7 +285,8 @@ must never resume generation or background jobs automatically.
 
 ## Implementation order and deliverables
 
-Implement and validate one stage at a time; this plan does not authorize live-provider calls.
+Implement and validate one bounded milestone at a time; the agreed native-subset transfer may
+proceed with explicit stage-2 capability gaps. This plan does not authorize live-provider calls.
 Reasoned changes happen in this repository. LearnHarness integration needs a separate checkout
 of the pinned reference; do not edit the byte-preserved vendored files in Android assets.
 
@@ -273,8 +304,9 @@ parser or this document's description.
 **Reference delivered:** [native inventory/matrix](LEARNHARNESS_NATIVE_CONTRACT.md),
 [`fixtures/learnharness/v1/`](../fixtures/learnharness/v1/README.md) and
 [`scripts/check-learnharness-contract.mjs`](../scripts/check-learnharness-contract.mjs).
-45 native checks passed offline; setup, exact scope and limitations are recorded with the fixtures.
-That reference work did not change the Android engine/store or implement a transfer feature.
+The original 45 native checks, expanded to 62 for question/answer construction, pass offline;
+setup, exact scope and limitations are recorded with the fixtures. Reference work itself does
+not change the Android engine/store or implement a transfer feature.
 
 ### 2. Adapt Android persistence and runtime to LearnHarness
 
@@ -306,9 +338,10 @@ changes billing source, reveals a hidden answer or runs an imported job.
   compaction cut, filters/flattens markers and makes interrupted results ephemeral. This returns
   native pi-shaped messages, **not** a Responses payload. Full answers stay separate from the
   learner-only compact answer projection. None of these functions renders or executes artifacts.
-- Until the native execution adapter exists, `SessionRuntime.open` explicitly refuses native-backed
-  sessions before legacy handoff/migration/publication. It must not interpret their local checkpoint
-  as authority or run the legacy engine against them. There is no production import action yet.
+- The foundation initially refused all native-backed sessions before legacy handoff/migration.
+  The teaching adapter in 2c below now opens a supported subset locally; unsupported records stay
+  blocked. Native archives never run through the legacy engine or take their local checkpoint as
+  transcript authority. There is no production import action yet.
 
 Validation: the seven `NativeChatTest` JVM tests pass, including all **24 authored native state
 checkpoints and seven answer cases**, plus refusal, immutability and model-projection checks.
@@ -337,12 +370,428 @@ adb -s emulator-5554 shell am instrument -w -r \
   com.kkgosu.reasoned.debug.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
-**Remaining within stage 2:** native-to-UI/provider projections and actual native event appends;
-question normalization/shuffling/confidence and submitted-answer details; native input-cause/
-foreground-permission gates; native probe/plan handoff and plan authoring; practice dismissal/deferred conclusion; compaction identity capture;
-and offline fake-provider continuation/restoration tests through the actual runtime. Keep native
-execution blocked until those seams work. Do not move to conversion or claim unfinished-lesson
-portability merely because the reference folds or lossless storage pass.
+**Question/answer foundation (2b), not stage-2 completion:**
+
+- `NativeQuestion.kt` projects the five native question tools onto existing `RuntimeQuestion`
+  data/submit validation. Its bounded active-question parser mirrors native value normalization,
+  deterministic FNV-1a/Mulberry32 shuffle over UTF-16, option order, answer-key resolution and
+  missing/legacy optional fields without changing archived arguments or the legacy parser.
+- The client projection contains no grade, answer key, explanation or committed teacher answer.
+  Native reveal rules remain distinct from submission. The native confidence stops/default are
+  recorded; the live legacy UI has **not** been switched to them.
+- Explicit `NativeChat.answerPending`/`dismissQuestion` pure actions check the current call ID,
+  build native full `details` and learner-only compact `content`, and return a new archive with
+  one result. Existing IDs/opaque fields/history survive; absent version is stamped on this new
+  write, not on reads. Dismissal is a pause, not an incorrect answer. Duplicate/stale targets,
+  failed/aborted generations, forged graded input and invalid/over-limit actions are refused.
+  No action saves itself, grants foreground permission, invokes a provider or runs a job.
+- Shared [`questions.json`](../fixtures/learnharness/v1/questions.json) vectors cover **16 question
+  projections, 29 submissions and eight refused calls**, checked against the pinned native
+  functions/dock construction and Kotlin. The full JVM suite passes, including seven new
+  `NativeQuestionTest` tests for projection/append/dismissal, hidden-answer safety and refusal
+  without archive mutation. The reference checker now passes **62 checks**.
+- Debug/test APK assembly passed. The same focused API-36 emulator command above now passes
+  **`OK (6 tests)`**: the five native store tests plus the v2 migration regression. The added case
+  persists/reopens a submitted native answer with confidence 90, full teacher commitment, compact
+  learner-only content and unchanged earlier message/display identities. Temporary databases were
+  deleted; Wi-Fi/mobile-data settings were restored; there were no real provider calls.
+
+To run both pure Kotlin reference suites, add
+`--tests com.kkgosu.reasoned.NativeQuestionTest` to the JVM command above.
+The active-question parser uses Android limits (32 options, bounded strings; local answer text
+2,000 characters). This is not proof of every TypeBox coercion or every historical call being
+executable. Unsupported active calls must remain archived and be disclosed before enabling
+continuation; do not validate/rewrite the complete historical transcript through this parser.
+
+**Gated teaching runtime (2c), not stage-2 completion:**
+
+- `NativeTeaching.kt` projects an existing native teach-phase lesson and saved plan into the shared
+  transcript, answered cards, question dock and plan page. Native identities drive display rows and
+  plan positions. Historical probe/plan/questions and delivered `send_to_user` prose are supported;
+  saved answer snapshots, not a new grading pass, supply revealed commitments. Out-of-subset
+  historical cards remain archived but block this UI path rather than being coerced. Pending graded
+  questions hide both answer fields and their owning generation's reasoning summary. Failed text
+  is labeled interrupted and excluded from local teacher-prose evidence.
+- `SessionRuntime.open` performs only local restoration. Explicit answer submission commits native
+  full/compact results, cleared submitted drafts and display identities transactionally **before**
+  the request. Native confidence uses `[0, 30, 50, 70, 90, 100]`; legacy confidence is unchanged.
+  New user messages, successful assistant turns, errors and cancellations append without rewriting
+  the earlier native record. Stopped turns do not resume on reopen. Eligible retry omits failed
+  attempts only from provider input and does not resubmit the learner answer.
+- `NativeResponses.kt` bridges native messages to the existing Responses provider. Signature/call-ID
+  conventions follow the upstream lockfile's pi-ai 1.4.0 transport. Completed response JSON stays
+  in `reasonedResponses`, including opaque fields; same-model reasoning signatures are replayed
+  without being rendered. Reported token/cache/reasoning counts are preserved; absent usage/cost
+  fields are not invented. This is **not yet proof that newly appended messages satisfy every
+  desktop usage/accounting consumer**: partial metadata, native turn/extraction logs and failed
+  stream metadata still need acceptance before export can be enabled.
+- At the initial 2c checkpoint, only the selected question mechanic (`quiz` or `explain`) and
+  `ask_user_question` were advertised. Section 2d extends this to probe/plan execution. Existing
+  namespace, replay, argument, plan-reference and output limits still apply. Section 2e adds native
+  practice. Jobs/artifacts and unknown historical tools remain blocked, with the original archive retained and no legacy
+  fallback. Section 2f adds native compaction creation, never a legacy index-based cut.
+  Native research controls are unavailable. Newly created sessions still
+  use the legacy path.
+- Offline `NativeResponsesTest` covers restoration, saved commitments, response/signature/usage
+  mapping, wire-only retry and permission guards. `NativeRuntimeTest` exercises the actual runtime
+  and SQLite with fake providers: commit-before-request, next-question restoration, hidden-answer
+  safety, durable failure/retry, cancellation, don't-know thinking, denied research and transactional
+  refusal. The account fixture also checks routing without changing the selected connection.
+  These are authored cases,
+  **not** a transfer or a continuation test against the installed desktop app. Its files/lesson and
+  real providers have not been touched.
+
+Validation for 2c: the full JVM suite, debug APK and test APK build pass. The latest API-36
+instrumentation run on 2026-10-29 passed **`OK (11 tests)`**: four native runtime cases, five native
+store cases, the v2 migration and the legacy fake-provider regression. An earlier expanded run
+failed the account fixture because it emitted foreign namespace `functions`; the gate correctly
+denied it. The corrected fixture uses the advertised `RuntimeTools.NAMESPACE`, and the full
+11-case rerun now passes. The JVM suite also verifies the declared account namespace and rejects
+`functions`.
+The 62 pinned upstream reference checks still pass separately. IDE analysis found no errors in
+the new transport/projection or changed runtime/fragment files (deprecation/style warnings remain).
+Emulator networking was disabled for instrumentation and restored afterward; temporary fixture
+DBs were deleted, with no app-data clearing or personal-device use. No live model/OAuth/Brave
+requests, installed desktop access, full UI journey or cross-engine acceptance was run.
+
+```sh
+gw ./gradlew.bat :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest --offline
+adb -s emulator-5554 shell am instrument -w -r \
+  -e class 'com.kkgosu.reasoned.NativeRuntimeTest,com.kkgosu.reasoned.NativeSessionStoreTest,com.kkgosu.reasoned.SessionManagementTest#versionTwoMigrationPreservesHistoryAndSupportsRenaming,com.kkgosu.reasoned.RuntimeTest#fakeProviderRunsProbeRouteTeacherAndDurableAnswers' \
+  com.kkgosu.reasoned.debug.test/androidx.test.runner.AndroidJUnitRunner
+```
+
+Use the installation/network-isolation procedure above and in the root contributor instructions;
+these commands do not select or prepare an emulator automatically.
+
+**Native probe → plan → teaching (2d), not stage-2 completion:**
+
+- The native adapter also restores probe and plan phases locally. Probe questions use `probe` or
+  `recall`; `probe_done` preserves the assessment arguments, slim native acknowledgment and one
+  deterministic `probe-handoff` marker. The validated call/result/marker save atomically before
+  the teacher request. Only newly returned, validated local calls execute; opening an archive
+  never dispatches historical calls or requests inference.
+- `NativePlan.kt` implements the pinned Mermaid authoring subset and reuses `StudyPlan` DAG/size
+  validation (1–24 nodes, at most 80 edges, 16,000 source characters). A successful `plan_init`
+  replaces the native tree and retains the full tree only in result details; model content carries
+  node IDs and the pinned reminder. Invalid maps return a durable refusal without replacing the
+  old tree; repairs share an eight-step/180-second foreground turn bound.
+- Presenting the initial/revised planning map stops for a natural learner reply. There is no
+  legacy route approval or invented verdict event. Phase remains `plan` until a node-tagged
+  `quiz`/`explain` call; mid-teaching rewrites do not create another approval barrier. Reopening
+  and empty Retry at the presented-plan barrier do not request a model. Assessment and plan rows
+  use existing display roles and remain outside teacher-prose extraction.
+- `plans.json` supplies nine shared success/refusal vectors, verified by both Kotlin and the real
+  upstream parser/tree constructor. The pinned checker now passes **71 checks**. `NativePlanTest`
+  also checks acknowledgment/details parity, phase boundaries, immutability and refusal rollback.
+- The full JVM suite and debug/test APK assembly pass. The latest API-36 offline selection passes
+  **`OK (12 tests)`**: five native runtime cases, five native store cases, migration and legacy
+  runtime regression. The new fake-provider flow covers probe answer → handoff → invalid-map
+  repair → plan persistence/reopen → explicit natural reply → hidden teaching question. An initial
+  test fixture incorrectly emitted an account namespace for API-key mode; correcting that fixture,
+  not the permission gate, produced the passing run. Emulator networking was restored afterward.
+  No real provider, installed desktop data or full UI/desktop acceptance was used.
+
+**Native practice lifecycle (2e), not stage-2 completion:**
+
+- `NativePractice.kt` adapts native `problem`/`conclude` to the existing runtime and practice
+  screen. Only clean acknowledgments activate/free the slot. The original problem call commits
+  the hidden solution; conclude reveals that exact text, never a re-authored solution. Practice
+  reasoning summaries remain hidden. Verdicts are model judgments, not mastery evidence.
+- Each active-problem send commits a native `practice-thinking` marker with the exact problem
+  call ID before requesting a response. Multiple submissions, prose hints, failures and wire-only
+  retry preserve the same problem and do not duplicate learner evidence. Reopening is local-only.
+- Conclude accepts native nullable rung/missClass and does not impose the legacy minimum-attempt
+  gate. Its acknowledgment permits one closing-prose response; all further tools in that turn
+  are denied, including on retry. A new problem requires later explicit learner input. The Next
+  action writes `practice-next`; ordinary follow-up text remains ordinary learner text.
+- Dismissal appends only UI-only `problem-dismissed`, preserves the unsent draft and neither
+  reveals the solution nor invokes a provider. The next explicit text/Next input atomically
+  prepends the pinned synthetic conclude/ack pair once. The marker never enters provider input.
+- Native targets are optional; new empty target arrays canonicalize to absent while raw provider
+  JSON is retained. Newly posed target IDs validate against the whole current Android graph,
+  not only selected material. Name-to-ID healing and other coercions are not implemented; use
+  canonical IDs. Graph-context snapshots remain source context, not imported graph assertions.
+  Android bounds remain 24 problems, 40 submissions each, eight targets, 2,000 submission,
+  4,000 statement and 6,000 solution characters. Extra tools/jobs/artifacts remain blocked.
+- `NativePracticeTest` checks authored checkpoints, exact marker/ack/deferred-pair parity,
+  hidden/revealed commitments, optional targets, nullable judgments, limits and permission gates.
+  The native checker passes **72 checks**, including exact practice input builders. A proposed
+  extra upstream practice-tool schema execution check could not load `ls.ts` in the partial
+  source snapshot; it is not part of the reported count or claimed tool-factory acceptance.
+- The full JVM suite and debug/test APK assembly pass. API-36 offline instrumentation passes
+  **`OK (14 tests)`**: seven native runtime, five native store, migration and legacy regression.
+  New fake-provider cases cover practice pose → durable thinking → failure/retry → another
+  attempt → conclude/reveal → closing prose → reopen/pause → Next → silent dismissal/deferred
+  conclusion, plus denial of automatic re-pose after conclude and safe closing-only retry.
+  Emulator networking was restored. No real provider, desktop data or full UI journey was used.
+
+**Native compaction (2f), not stage-2 completion:**
+
+- `NativeCompaction.kt` follows the pinned native content-only token sizing, usage anchor,
+  20,000-token kept-tail walk and stable `firstKeptMessageId` boundary. Aborted/error/all-zero
+  usage cannot anchor the estimate; a later marker invalidates older usage. JSON scaffolding
+  and opaque reasoning ciphertext are not counted as text tokens. Seven shared `compaction.json`
+  vectors pass in Kotlin and the real upstream functions; the native checker passes **79 checks**.
+- The existing foreground command/mutex gates a tool-free summary request before native provider
+  continuation and at successful turn settle. It uses the same captured model, effort and
+  connection, the existing compaction prompt, the prior summary plus newly dropped span, and
+  exact plan nodes/edges/statuses. Learner input remains write-ahead durable, including before
+  turn-start summarization. Android keeps this work foreground-only and serialized: it does not
+  add the desktop background registry or permit simultaneous drafting/sending during compaction.
+  Opening a saved lesson never starts a summary.
+- A valid nonempty completed response atomically appends the native marker and its `turns` usage
+  entry, retaining raw provider JSON and all earlier transcript/opaque fields/display identities.
+  Missing cache/cost/reasoning fields remain absent. The provider alone receives summary + exact
+  retained tail. Pending question commitments and full learner transcript remain untouched;
+  summaries do not become teacher prose, answer cards or graph evidence. Chained summaries
+  advance the previous boundary; no-progress cuts do not spend another summary call.
+- Failure, empty/incomplete output, denied tools and cancellation cannot replace the prior cut.
+  A failed settle summary does not append a failed teacher or steal the pending question; the
+  next explicit input can retry the gate. Completed reported usage survives rejection in local
+  totals/run accounting. Section 2g adds native parallel-log accounting for these failures.
+  The fixed native tail can itself exceed a small window; an unshrinkable request is blocked,
+  never silently truncated. Compaction-divider UI remains unimplemented.
+- Full JVM tests and debug/test APK builds pass. API-36 offline instrumentation passes
+  **`OK (17 tests)`**: ten native runtime, five native store, migration and legacy regression.
+  Three new runtime cases cover successful settle/reopen with the same hidden question,
+  incomplete summary → durable answer → turn-start summary → continuation, and cancellation
+  with no failed teacher or parallel paid turn. The first run was interrupted by another
+  instrumentation process. Two fixture failures were then corrected by selecting the advertised
+  recall mechanic/account namespace, without relaxing tool guards; the complete rerun passes.
+  Emulator Wi-Fi/mobile data were already off and were left off. No real provider, installed
+  desktop files or full UI/desktop acceptance was used.
+
+**Native accounting and authored desktop-reader acceptance (2g), not stage-2 completion:**
+
+- `NativeResponses` now shares validated usage normalization between executable assistant output
+  and the money channel. Each foreground conversation invocation appends one native `TurnUsage`
+  with one `CallUsage` per provider call, including local tool repair/handoff/closing steps. Entry
+  IDs are idempotent and independent of message provenance: retries are new invocations, not
+  duplicate appends. Existing native logs and unknown fields are never rewritten. The final
+  assistant/failure owns the entry; model/provider stamps follow the explicitly selected connection.
+- Reported usage is captured before tool/output validation. Denied tools, incomplete output and
+  malformed authoring cannot erase a valid report or charge it twice. Failed/cancelled compaction
+  appends a parallel entry linked to the existing transcript, with `reasonedPurpose=compaction`
+  and `reasonedStatus`; it creates neither a compaction marker nor a failed teacher. Successful
+  summaries retain their marker provenance and atomic marker/usage save. Conversation logs
+  settle in the existing non-cancellable `finally` checkpoint, not a new job or writer.
+- SSE terminal failures carry their bounded response to the native runner without leaking its
+  diagnostic text into error strings/UI/logs. Completed finished-item execution stays strict;
+  differing terminal-only output metadata is retained as `reasonedTerminalOutput`. Raw terminal
+  metadata/signatures remain archival data, not executable fallback. Failed assistant records
+  retain valid usage and bounded terminal JSON; rejected summary JSON rides its usage entry.
+- Fresh input/cache-read/cache-write stay disjoint, with reasoning a subset of output. Counts
+  must be bounded nonnegative integers; invalid usage is retained only in opaque raw response,
+  never trusted as counters. Missing fields stay absent, including cache, reasoning and cost.
+  An attempted call with no trustworthy report contributes `{}` to `steps`, **not zero spend**.
+  Android totals accumulate known reported counts only; they are not a complete invoice. No
+  catalog price, cache-retention bucket, billing source or charge is invented/switched.
+- The complete JVM suite and debug/test APK builds pass. API-36 offline instrumentation passes
+  **`OK (18 tests)`**: eleven native runtime, five store, migration and legacy regression. Added
+  coverage checks multi-step grouping, cache splits, denied tool → terminal failure → network
+  failure → invalid usage → successful retry, unknown vs zero counts, summary failure/cancellation
+  and reopen/no duplicate request. Emulator networking was already disabled and remains disabled.
+- Four unmodified `SessionStore` snapshots from authored Android fake-provider tests (teaching,
+  practice, compaction and failures) pass the pinned LearnHarness `chatStore` read, native
+  view/model/phase/pending/problem folds, idempotent usage append and resave. Token sums, unknown
+  steps, per-invocation grouping, provenance, opaque fields and original snapshot bytes are checked.
+  This is **83 checks with `--android-records` (79 baseline + 4 Android cases)**, not a hand-authored
+  imitation of Android output. Snapshot files live only in the debug test cache/ignored build
+  output; no learner data is pulled. Reproduction is in the fixture README.
+- Remaining limits: no desktop server/agent/provider execution, desktop UI or transfer installer
+  was exercised. At the 2g checkpoint, abrupt death before the final turn-log append was not
+  recovery-tested; section 2h below adds bounded recovery without inferring missing usage.
+  Unreported spend after EOF/network loss/cancellation is unknowable. This is terminal response
+  capture, not a byte-for-byte SSE event journal or acceptance of every provider/artifact shape.
+  Installed desktop data, credentials and real models remain untouched.
+
+**Native accounting recovery after process death (2h), still not stage-2 completion:**
+
+- A local `checkpoint.nativeTurn` stores pending call state, accumulated normalized steps and
+  bounded receipt metadata alongside known counters. It is not inserted into portable native
+  history or model input. Receipts checkpoint before tool/output acceptance; the final append
+  and checkpoint clearing commit atomically. No schema migration, new writer or background job.
+- Startup recovery is one SQLite transaction: finalize an interrupted native turn once, retain
+  `{}` for a possibly in-flight call with unknown usage, reconcile local run counts/status, and
+  clear the journal. Already committed final entries also repair a stale `running` row. A failed
+  transaction retains the original checkpoint/archive/run state for a later safe retry.
+- Unexpected conversation death is a retryable native error, not intentional `aborted` Stop.
+  Opening remains local-only; only explicit Retry can continue. A killed summarizer retains the
+  old cut, pending hidden question and display IDs, without a failed teacher or automatic request.
+- Offline JVM tests and debug/test APK builds pass. The API-36 ordinary run has **19 passing
+  checks plus two opt-in harness skips** (`OK (21 tests)`). Five synthetic checkpoint boundaries
+  cover in-flight, receipt-before-acceptance, accepted output, compaction and final-log/run-status
+  ordering, including cache splits, rollback and repeated recovery.
+- Two separate real process-kill fixtures pass their fresh reader assertions (`OK (1 test)` each):
+  kill during a second teaching request after a committed local tool step, and kill during settle
+  compaction after a newly committed hidden question. Writer `Process crashed` output is expected,
+  not itself a passing test. Ordinary suites cannot kill their runner without explicit opt-in.
+- With both recovery snapshots, the pinned reader/fold/resave checker passes **85 checks**
+  (79 baseline + 4 original Android + 2 recovery). Snapshots stay synthetic, local and ignored.
+  This does not cover death before a receipt reaches SQLite, every SSE boundary, task/UI
+  restoration, or desktop execution/transfer. Emulator networking remains off; no real models
+  or installed desktop data were used. Reproduction is in the fixture README.
+
+**Offline Android → LearnHarness runtime continuation (2i), still not stage-2 completion:**
+
+- `scripts/check-learnharness-runtime.mjs` opens the six unchanged authored Android snapshots
+  in scratch and drives the pinned real desktop chat handler, turn registry/SSE settlement,
+  teacher/practice Agent loop, native tools and fs persistence with the existing faux provider.
+  **7 checks pass, 10 faux requests, zero runtime network attempts.**
+- Covers write-ahead quiz answers and practice thinking, native plan refusal/repair, duplicate
+  call-ID reminting, original practice solution reveal and explicit Next, existing compaction
+  summary/tail projection, retained failed attempts/costs, and explicit process-death Retry
+  without answer duplication. Original transcript/turn prefixes and opaque fields remain intact.
+- All 146 scoped upstream source/prompt bytes and lock metadata are pinned. Data/home/credential
+  environment are isolated; runtime fetch/sockets are denied. The synthetic catalog pin/dummy
+  key and every write are scratch-only. No installed lessons, keys or real models are used;
+  no worker runs. Reproduction and exact limits are in the fixture README.
+- This is narrow one-direction runtime continuation, not desktop Electron/UI, live-model,
+  reverse Android continuation, graph/artifact execution or transfer-installation acceptance.
+  Upstream's test gate disables automatic extraction/compaction; no desktop summary is generated.
+
+**Desktop continuation → Android offline runtime (2j), still not stage-2 completion:**
+
+- The real desktop runner can save all six post-settlement fs records to a new test-output
+  directory only after its assertions pass; it refuses to overwrite an existing destination.
+  These are unchanged store bytes, not a production transfer package or installer.
+- An opt-in `NativeRuntimeTest` reads only bounded authored debug-cache files and restores them
+  through existing `SessionStore.saveNative`/`NativeTeaching`/`SessionRuntime`. The API-36 run
+  passes **`OK (1 test)` with all six cases**, using a fake Responses provider and networking off.
+  No production Android runtime change was necessary.
+- Covers desktop question identity/hidden commitments and write-ahead graded answers with both
+  thinking channels, practice restoration and exact solution reveal, and existing compaction
+  projection. All previous message/usage-turn prefixes and opaque fields survive Android
+  continuation; new usage is separate. Display IDs persist through local reopen without inference.
+- The test explicitly selects its fake local model/connection. Local counters start at zero;
+  it preserves archived usage rather than claiming production import/accounting reconstruction.
+  Source cache files stay unchanged and temporary databases are deleted. Real lessons, credentials
+  and models remain untouched. Reproduction is in the fixture README.
+- Debug/test APK builds pass. The ordinary native runtime class reports **11 passes and three
+  safe opt-in skips** (`OK (14 tests)`). This is a narrow authored Android → LearnHarness → Android
+  runtime cycle, not UI, live-provider, graph/artifact, transfer validation or installer acceptance.
+
+**Pinned desktop web UI smoke acceptance (2k), still not stage-2 completion:**
+
+- `scripts/check-learnharness-ui.mjs` drives the real Next pages/components/routes in a fresh,
+  isolated Chromium profile against the six authored desktop continuations. Only `POST /api/chat`
+  delegates to the real handler with its existing faux-engine factory; no renderer/tool/store is
+  replaced. **5 checks pass, 6 faux requests, zero real provider requests.**
+- Covers local opening without generation; quiz reveal, native option order, confidence and both
+  thinking channels durable before inference; Why disclosure after grading; practice's exact saved
+  solution reveal, explicit Next and silent acknowledged discard; full history/compaction dividers
+  without displaying the summary as teacher prose; and failed-turn Retry without erasing prior
+  usage/history. Existing native prefixes and opaque fields survive.
+- `ui-upstream.json` pins 313 source/config/asset files and upstream dependency lock metadata.
+  Data/home/auth are scratch-only; browser external requests and runtime public sockets are denied.
+  One Next npm update check was blocked, not allowed; missing dictation keys return the expected
+  local 503 (dictation is outside scope). This run made no font-compilation connections.
+- Evidence includes six authored screenshots and `result.json` in ignored output. The runner uses
+  a two-minute deadline, saves failure diagnostics, verifies/restores only Next's generated type
+  include in the disposable checkout, and closes the owned server/browser. Initial setup/test
+  races were corrected before the passing run; no production Android or upstream UI code changed.
+- This is browser-rendered desktop UI, **not the Electron shell**, live providers, graph/artifact
+  execution, production transfer/install or exhaustive restoration/permission coverage. See the
+  fixture README for reproduction. Installed LearnHarness, its lessons and keys stayed untouched.
+
+**Native question dismissal and negative permission acceptance (2l), still bounded:**
+
+- Android's native question overflow action uses the existing native dismissal append and atomic
+  projection/save. It rejects stale call IDs, does not grade/reveal the question or request inference,
+  and preserves unsent drafts. Reopen, repeated dismissal and Retry stay local; explicit text resumes.
+  Public reasoning attached to a dismissed question remains hidden, without deleting it from history.
+- Ten fake-provider cases reject research, figures, spawning, file reads, permission-grant attempts,
+  wrong-phase tools, foreign/API namespaces, replayed call IDs and multiple calls. Rejected calls never
+  enter executable history; reported usage is still saved once. Active commands do not queue another
+  Send/Retry/dismissal; Stop remains cancellation, not an automatic continuation.
+- Focused JVM tests and debug/test APK builds pass. API-36 `NativeRuntimeTest`: **13 passed,
+  three opt-in skips** (`OK (16 tests)`), with emulator networking off. The new Android menu is
+  compiled, not a device-click/UI acceptance claim. No real provider or installed desktop data used.
+
+**Native parallel-question batches (2m), still bounded:**
+
+- The native teaching runtime accepts question-only batches within existing output/size bounds;
+  every call is validated before any enters the archive. Duplicate/replayed wire IDs, delimiter
+  ambiguity, foreign namespaces, malformed later questions and mixed local/job tool batches are
+  rejected. Legacy, practice and other validator callers remain single-call by default.
+- The existing dock advances in authored order. Each answer is saved locally; siblings defer the
+  provider wake until the last answer. Results remain adjacent to their original assistant owner.
+  Dismissals never wake a provider; discarding the whole batch waits for explicit later text.
+  Hidden generation summaries remain suppressed even when an ungraded ask precedes graded siblings.
+- Three fake-provider scenarios (all answered, mixed answer/dismissal, all dismissed) verify order,
+  reopen/Retry without requests, exact history/opaque-field preservation and one reaction/usage turn.
+  Twelve negative envelope cases pass. The JVM suite/debug/test APK builds pass; API-36 native
+  runtime: **14 passed and three opt-in skips** (`OK (17 tests)`), networking off. The pinned native
+  checker adds the same ordered-answer/dismissal law: **86 checks** (80 baseline + six saved Android
+  reader cases). This does not re-establish desktop agent/UI or transfer round-trip acceptance.
+
+**Historical graph reads, private-copy continuation and stream boundaries (2n):**
+
+- Completed historical `list_sessions`, `list_propositions` and `find` calls now replay as passive
+  model history. Each nonfailed read requires one matching later result; missing, duplicated,
+  out-of-order or mismatched results remain blocked. Results are not teacher prose or learner
+  evidence. These tools are **not** exposed for new Android execution; all three new-call attempts
+  remain denied alongside the existing permission tests (15 negative cases total).
+- With the owner's explicit permission, one existing, settled desktop teaching lesson was read
+  locally without logging its content and tested on a disposable offline API-36 emulator. Opening
+  and Retry sent nothing. A deliberately test-routed fake provider then posed an authored quiz on
+  the saved native plan; the answer was committed, followed by fake teacher prose. Both requests
+  stayed local. Reopen kept the hidden generation hidden and made no duplicate request. The complete
+  original message prefix and other native root fields survived; the original desktop file's SHA-256
+  was unchanged. This is **copy-based runtime acceptance**, not a production import, live teaching
+  quality check, real account/model-routing acceptance or transfer round trip. Private cache copies
+  and the temporary database were deleted; no private record joined the authored fixtures/repository.
+- Six fake-provider cases now feed the real Responses SSE parser through the native runtime:
+  EOF after a delta, malformed JSON, failed/incomplete terminal responses, an unfinished tool item,
+  and cancellation during a delta. No partial tool executes, answers are not duplicated, known
+  terminal usage survives, and missing usage stays unknown. Reopen stays local; deliberate Stop
+  does not turn Retry into another request. These use an in-memory stream, not real HTTP sockets.
+- Fresh checks: complete JVM suite **43 passed, one private-record opt-in skip**; debug/test APKs
+  and `lintDebug` pass. Combined native-runtime/store/migration instrumentation reports **22 passed,
+  four opt-in skips** (`OK (26 tests)`). The private-copy and six-desktop-record opt-ins separately
+  each pass (`OK (1 test)`). Both genuine process-death boundaries were rerun: each writer deliberately
+  kills its process, and each subsequent recovery reader passes (`OK (1 test)`). Networking stayed off.
+  The pinned reference suite passes **87 checks**, and the desktop runtime runner passes **7 checks,
+  10 faux requests, zero network attempts**. Earlier desktop UI evidence was not rerun in this slice.
+
+**Native learner-text steering at response boundaries (2o):**
+
+- The native session overflow menu accepts plain learner text during a live conversation, separately
+  from the disabled answer/composer controls. Up to eight messages of 2,000 characters each queue
+  locally; they neither answer a question nor grant tools/change model or billing. The dialog warns
+  that delivery can add model usage. Compaction, legacy sessions and settled runs reject queueing.
+- Queued messages join together after a completed non-stopping response, before the next request in
+  the same run. Questions, presented plans, practice problems, errors and Stop park them until later
+  explicit input/eligible Retry. Opening never drains or requests anything. Delivery appends ordinary
+  native user messages with stable steer IDs; archive append, display projection and queue removal
+  share one SQLite transaction. Stale checkpoints cannot erase queued messages or requeue delivered
+  IDs. Unlike the pinned desktop's memory-only pending queue, Android retains undelivered text across
+  process death in its local checkpoint; it is not fabricated as already-delivered native history.
+- Fake-provider tests cover prose, plan repair, questions, errors, Stop, a response arriving after
+  cancellation, presented plans and practice. They check validation/capacity, ordering, one delivery,
+  known usage, unchanged hidden commitments and local reopen. The conversation process-death reader
+  also checks a persisted steer survives, stays unsent on open and reaches the next explicit retry.
+- API-36 UI acceptance opens the real overflow action/dialog, queues text, displays the pending count
+  and retains an unsent draft when the run settles before Send. This caught a stale disabled menu:
+  invalidation now includes native-turn readiness and compaction, not status alone. It uses an isolated
+  fixture database and fake provider; the application's session library is unchanged.
+- Fresh complete JVM/build/debug-lint checks pass (**43 JVM passes, one opt-in skip**). Combined
+  native runtime/store/migration instrumentation: **24 passed, four opt-in skips** (`OK (28 tests)`).
+  Both process-death recovery readers separately pass after intentional writer-process termination.
+  The pinned reference suite stays at **87 checks**. Two real LearnHarness Agent/handler checks now
+  exercise co-delivery and question-parked steers: **9 checks, 14 faux requests, zero network attempts**;
+  the six desktop fixture outputs stay unchanged in scope. No live model, private lesson or Electron
+  UI was used in this slice.
+
+**Remaining within stage 2:** broader in-run input/permission cases (including answers/dismissals
+while generating); provider/stream and process-death cases beyond the explicit boundaries above;
+Electron shell/broader UI coverage;
+and broader cross-engine/offline continuation/restoration. The bounded native subset is green,
+not full native adaptation. Keep unsupported execution blocked.
+The agreed bounded-transfer milestone may proceed for the verified native subset while these gaps
+remain explicit. Block unsupported continuation and incomplete dependencies; do not claim full
+unfinished-lesson portability or switch new-session defaults merely because these slices pass.
 
 ### 3. Implement pure conversion and selected-subgraph export
 
@@ -352,9 +801,33 @@ in other transcripts. Validate actual file dependencies. Keep package validation
 separate from store mutation. Put only selection/version/origin/receipt bookkeeping around the
 native payload; do not define an alternative educational schema for the desktop to adopt.
 
+The selected file format is **ZIP with `manifest.json`**, containing original LearnHarness JSON/
+JSONL payloads rather than a new lesson schema. The manifest carries transfer bookkeeping and a
+completeness/dependency report. Assembly/validation is still pending; it must not mutate stores.
+
 **Deliverable:** a validated transfer payload in either direction, with a completeness report.
 **Gate:** unchanged native round trips preserve content; authored phone progress can be read by
 LearnHarness; external references, unsupported versions and legacy limitations are tested.
+
+**Pure native-graph selection foundation (3a), not a transfer package:**
+
+- `NativeGraphSelection.kt` selects raw node/chain assertions by selected native-chat provenance.
+  It retains the first defining node assertion plus selected link-appends; selected chains keep their
+  required endpoints and the first equivalent argument's canonical ID. It does not traverse incident
+  chains, copy external transcripts, normalize unknown fields or rewrite original assertion lines.
+- It reports external `(chatId, messageId)` anchors, verifies selected-chat anchors, refuses unknown
+  graph versions, dangling endpoints and conflicting chain IDs, and bounds snapshot/line/count sizes.
+  It consumes local native snapshots: this is **not** an untrusted-package validator, a store reader,
+  or a claim that source files, artifacts, checkpoints or extraction coverage are portable.
+- Four JVM tests pass. The shared authored selection vector folds through pinned LearnHarness
+  `getGraph`/`deriveView` without importing unrelated chains; the reference checker now passes
+  **87 checks** (81 baseline + six saved Android reader cases). No live provider, installed desktop
+  data, device test or transfer installation was involved in this increment. Android Studio reports
+  no errors; the selector is not yet connected to a production export action.
+
+Next: assemble selected native records and applicable graph/source metadata into a bounded payload,
+report missing dependencies/capabilities, then implement preview and conflict-safe installation.
+Do not substitute the legacy SQLite renderer graph or reuse its coverage as native graph evidence.
 
 ### 4. Implement receiver-side preview, conflicts and safe installation in both apps
 

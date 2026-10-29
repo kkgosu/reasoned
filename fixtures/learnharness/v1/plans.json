@@ -1,0 +1,26 @@
+{
+  "description": "Authored offline Mermaid plan cases; validated against pinned LearnHarness parser and createTree. Android also applies its existing 24-node/80-edge limits.",
+  "cases": [
+    {
+      "name": "direction labels chains and arrow synonyms",
+      "mermaid": "flowchart LR\nbase[First principles] ==> derive(\"Derive it\") -.-> apply['Apply it']\nbase --> derive",
+      "tree": {"version":1,"nodes":[{"id":"base","title":"First principles"},{"id":"derive","title":"Derive it"},{"id":"apply","title":"Apply it"}],"edges":[{"from":"base","to":"derive"},{"from":"derive","to":"apply"}]}
+    },
+    {
+      "name": "first useful label and stable underscore slugs",
+      "mermaid": "%% authored test\ngraph TB\na_one --> b-two\na_one[First title]\na_one[Ignored later title]\nb-two(Second title)",
+      "tree": {"version":1,"nodes":[{"id":"a_one","title":"First title"},{"id":"b-two","title":"Second title"}],"edges":[{"from":"a_one","to":"b-two"}]}
+    },
+    {
+      "name": "BOM whitespace and case insensitive header",
+      "mermaid": "\ufeffGrApH bt\r\n  %% authored comment\r\n lone[\" A single node \"]\r\n",
+      "tree": {"version":1,"nodes":[{"id":"lone","title":"A single node"}],"edges":[]}
+    },
+    {"name":"uppercase ids refused","mermaid":"graph TD\nCapital[No]","tree":null},
+    {"name":"self edges refused","mermaid":"graph TD\na --> a","tree":null},
+    {"name":"cycles refused","mermaid":"graph TD\na --> b --> a","tree":null},
+    {"name":"styles refused","mermaid":"graph TD\na[A]\nstyle a fill:red","tree":null},
+    {"name":"semicolons refused","mermaid":"graph TD;\na[A]","tree":null},
+    {"name":"empty plans refused","mermaid":"graph TD\n%% No nodes","tree":null}
+  ]
+}

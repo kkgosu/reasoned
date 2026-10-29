@@ -45,23 +45,27 @@ class LessonMarkdownTest {
     }
 
     @Test
-    fun sampleSessionIncludesNativeMarkdownAndMathFixtures() {
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            val app = ApplicationProvider.getApplicationContext<ReasonedApplication>()
-            val lesson = com.kkgosu.reasoned.controllers.MockLesson(app.resources)
-            val renderer = lessonMarkdown(app)
-            val samples = lesson.state.value.items
-                .filterIsInstance<com.kkgosu.reasoned.model.LessonDisplayItem.TextDisplayItem>()
-                .map { renderer.toMarkdown(it.text) }
-            fun count(type: Class<*>) = samples.sumOf { it.getSpans(0, it.length, type).size }
-            assertTrue(count(TableRowSpan::class.java) >= 6)
-            assertTrue(count(io.noties.markwon.core.spans.StrongEmphasisSpan::class.java) >= 8)
-            assertTrue(count(io.noties.markwon.core.spans.CodeSpan::class.java) >= 4)
-            assertTrue(count(io.noties.markwon.ext.latex.JLatexAsyncDrawableSpan::class.java) >= 10)
-            val state = lesson.state.value
-            assertEquals(state.items.size, state.items.map { it.id }.distinct().size)
-            assertTrue(state.nextId > state.items.maxOf { it.id })
-            assertEquals(state, com.kkgosu.reasoned.controllers.MockLesson(app.resources, lesson.save()).state.value)
+    fun sampleSessionIncludesNativeMarkdownAndMathFixtures() = kotlinx.coroutines.runBlocking {
+        val app = ApplicationProvider.getApplicationContext<ReasonedApplication>()
+        val lesson = com.kkgosu.reasoned.controllers.MockLesson(app)
+        try {
+            val opening = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { lesson.runtime.open(lesson.sessionId) }
+            kotlinx.coroutines.withTimeout(8000) { opening.join() }
+            InstrumentationRegistry.getInstrumentation().runOnMainSync {
+                val renderer = lessonMarkdown(app)
+                val samples = lesson.session().items.map { renderer.toMarkdown(it.text) }
+                fun count(type: Class<*>) = samples.sumOf { it.getSpans(0, it.length, type).size }
+                assertTrue(count(TableRowSpan::class.java) >= 6)
+                assertTrue(count(io.noties.markwon.core.spans.StrongEmphasisSpan::class.java) >= 8)
+                assertTrue(count(io.noties.markwon.core.spans.CodeSpan::class.java) >= 4)
+                assertTrue(count(io.noties.markwon.ext.latex.JLatexAsyncDrawableSpan::class.java) >= 10)
+                val state = lesson.session()
+                assertEquals(state.items.size, state.items.map { it.id }.distinct().size)
+                assertEquals(0, lesson.requests)
+            }
+        } finally {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { lesson.runtime.stop() }.join()
+            lesson.store.close()
         }
     }
 
@@ -161,6 +165,45 @@ class LessonMarkdownTest {
             assertEquals(1, content.childCount)
             assertEquals(View.VISIBLE, text.visibility)
             assertEquals("Title", text.text.toString())
+        }
+    }
+
+    @Test
+    fun probeAssessmentKeepsStrandsInSeparateBlocksAndSummaryLast() {
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            val app = ApplicationProvider.getApplicationContext<ReasonedApplication>()
+            val assessment = com.kkgosu.reasoned.model.ProbeAssessment(
+                (1..3).map { com.kkgosu.reasoned.model.ProbeAssessment.Strand("Strand $it", "Evidence **$it**") },
+                "Overall conclusion"
+            )
+            val row = com.kkgosu.reasoned.model.LessonDisplayItem.TextDisplayItem(
+                1, assessment.transcript(), com.kkgosu.reasoned.model.LessonDisplayItem.Role.ASSESSMENT)
+            val state = com.kkgosu.reasoned.model.RuntimeSession(
+                goal = "Test", model = "offline", items = listOf(row), assessment = assessment)
+            val item = state.displayItems.single()
+            assertEquals(item, com.kkgosu.reasoned.model.LessonDisplayItem.restore(item.save()))
+            val adapter = com.kkgosu.reasoned.ui.adapters.LessonAdapter(lessonMarkdown(app))
+            adapter.submit(state.displayItems)
+            val holder = adapter.onCreateViewHolder(android.widget.FrameLayout(app), adapter.getItemViewType(0))
+            adapter.onBindViewHolder(holder, 0)
+            val strands = holder.itemView.findViewById<android.widget.LinearLayout>(R.id.assessment_strands)
+            assertEquals(3, strands.childCount)
+            repeat(3) { index ->
+                val block = strands.getChildAt(index) as android.widget.LinearLayout
+                assertTrue(block.background is android.graphics.drawable.GradientDrawable)
+                assertEquals("Strand ${index + 1}", (block.getChildAt(0) as TextView).text.toString())
+                val body = (block.getChildAt(1) as MarkdownContentView).getChildAt(0) as TextView
+                assertEquals("Evidence ${index + 1}", body.text.toString())
+                assertTrue(body.isTextSelectable)
+            }
+            val summary = holder.itemView.findViewById<TextView>(R.id.assessment_summary)
+            assertEquals("Overall conclusion", summary.text.toString())
+            val parent = summary.markdownBody.parent as android.view.ViewGroup
+            assertTrue(parent.indexOfChild(strands) < parent.indexOfChild(summary.markdownBody))
+            adapter.submit(state.copy(assessment = assessment.copy(strands = assessment.strands.take(1), summary = "")).displayItems)
+            adapter.onBindViewHolder(holder, 0)
+            assertEquals(1, strands.childCount)
+            assertEquals(View.GONE, summary.markdownBody.visibility)
         }
     }
 

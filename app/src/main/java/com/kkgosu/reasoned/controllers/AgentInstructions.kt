@@ -5,7 +5,7 @@ import android.content.res.AssetManager
 internal object AgentInstructions {
     const val VERSION = "learnharness-0795ef197cca-v9"
 
-    fun compose(assets: AssetManager, phase: String): String {
+    fun compose(assets: AssetManager, phase: String, native: Boolean = false): String {
         val agent = when (phase) {
             "probe" -> "prober"
             "teacher", "practice" -> phase
@@ -27,7 +27,8 @@ internal object AgentInstructions {
             assets.open("$root/$it").bufferedReader().use { reader -> reader.readText().trim() }
         }
             .filter { it.isNotEmpty() }.joinToString("\n\n---\n\n")
-        val compatibility = assets.open("agents/android-compatibility.md").bufferedReader()
+        val compatibility = assets.open(if (!native) "agents/android-compatibility.md"
+            else if (phase == "practice") "agents/native-practice-compatibility.md" else "agents/native-teaching-compatibility.md").bufferedReader()
             .use { it.readText().trim() }
         return "$source\n\n---\n\n$compatibility"
     }

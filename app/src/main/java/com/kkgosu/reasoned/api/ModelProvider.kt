@@ -7,4 +7,4 @@ fun interface ModelProvider {
     suspend fun respond(request: JSONObject, delta: suspend (String) -> Unit): JSONObject
 }
 
-class ProviderFailure(val reason: String) : IOException(reason)
+class ProviderFailure(val reason: String, internal val response: JSONObject? = null) : IOException(reason)

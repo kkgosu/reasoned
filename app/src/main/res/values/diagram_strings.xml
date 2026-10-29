@@ -2,11 +2,9 @@
 <resources>
     <item name="diagram_attach_listener" type="id" />
     <item name="diagram_fit" type="id" />
-    <item name="diagram_source" type="id" />
     <string name="diagram_mermaid">Mermaid diagram</string>
     <string name="diagram_svg">SVG figure</string>
-    <string name="diagram_source">Diagram source</string>
     <string name="diagram_loading">Rendering…</string>
-    <string name="diagram_failed">This diagram could not be rendered safely. Its source remains available in the menu.</string>
+    <string name="diagram_failed">This diagram could not be rendered safely.</string>
     <string name="diagram_reviewed">FIGURE · MODEL-REVIEWED</string>
 </resources>

@@ -915,6 +915,73 @@ class RuntimeTest {
     }
 
     @Test
+    fun scrollButtonNotesAndAnswersReturnFromHistoryToLatestMessage() = runBlocking {
+        val name = "scroll-ui-${UUID.randomUUID()}.db"
+        val store = SessionStore(app, name)
+        val runtime = SessionRuntime(app, store, ModelProvider { _, _ ->
+            response(tool = "ask_user_question", args = JSONObject()
+                .put("question", "Offline follow-up?").put("details", "")
+                .put("multiSelect", false).put("options", JSONArray()))
+        })
+        val delegate = ReasonedApplication::class.java.getDeclaredField("runtimeDelegate")
+            .apply { isAccessible = true }
+        val previous = delegate.get(app)
+        try {
+            delegate.set(app, lazyOf(runtime))
+            val session = RuntimeSession(goal = "Scroll fixture", model = "fake-model", phase = "teacher",
+                items = (0L..39L).map { LessonDisplayItem.TextDisplayItem(it, "Offline history paragraph $it.") })
+            store.save(session)
+            ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+                scenario.onActivity { it.openSession(session.id) }
+                withTimeout(5000) { runtime.state.first { it?.id == session.id } }
+                InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
+                for (action in listOf("button", "note", "answer")) {
+                    scenario.onActivity { activity ->
+                        activity.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.lesson_list).scrollToPosition(0)
+                    }
+                    InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
+                    scenario.onActivity { activity ->
+                        val list = activity.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.lesson_list)
+                        assertTrue("History must stay scrollable before sending", list.canScrollVertically(1))
+                        assertNotNull(list.foreground)
+                        assertTrue(list.paddingBottom >= activity.resources.getDimensionPixelSize(R.dimen.space_32))
+                        val button = activity.findViewById<View>(R.id.scroll_to_bottom)
+                        assertEquals(if (activity.findViewById<View>(R.id.question_panel).visibility == View.VISIBLE)
+                            View.INVISIBLE else View.VISIBLE, button.visibility)
+                        assertTrue(button.width >= activity.resources.getDimensionPixelSize(R.dimen.touch_target))
+                        if (action == "button") button.performClick()
+                        else {
+                            activity.findViewById<EditText>(if (action == "answer") R.id.question_thinking else R.id.lesson_composer)
+                                .setText(if (action == "answer") "Offline answer" else "Offline note")
+                            activity.findViewById<Button>(R.id.composer_action).performClick()
+                        }
+                    }
+                    withTimeout(8000) {
+                        if (action != "button") runtime.state.first {
+                            it?.status == "question" && it.answers == if (action == "answer") 1 else 0
+                        }
+                        var atBottom = false
+                        while (!atBottom) {
+                            scenario.onActivity { activity ->
+                                val list = activity.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.lesson_list)
+                                atBottom = !list.canScrollVertically(1) && list.scrollState == androidx.recyclerview.widget.RecyclerView.SCROLL_STATE_IDLE
+                            }
+                            if (!atBottom) kotlinx.coroutines.delay(20)
+                        }
+                    }
+                    scenario.onActivity { activity ->
+                        assertEquals(View.INVISIBLE, activity.findViewById<View>(R.id.scroll_to_bottom).visibility)
+                    }
+                }
+            }
+        } finally {
+            join(withContext(Dispatchers.Main) { runtime.stop() })
+            delegate.set(app, previous)
+            store.close(); app.deleteDatabase(name)
+        }
+    }
+
+    @Test
     fun inlineMathKeepsItsBaselineWhenLineSpacingChanges() {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val renderer = lessonMarkdown(app)

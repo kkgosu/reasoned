@@ -6,6 +6,7 @@ import com.kkgosu.reasoned.api.ChatGptAuth
 
 /** Actionable plan errors without exposing provider diagnostics or changing the session's billing. */
 internal fun Context.runtimeError(reason: String): String = when (reason) {
+    "native_runtime_unavailable" -> getString(R.string.native_runtime_unavailable)
     "subscription_sharing_usage_limit_exceeded" -> getString(R.string.chatgpt_error_limit)
     "subscription_sharing_user_not_eligible" -> getString(R.string.chatgpt_error_eligibility)
     "subscription_sharing_usage_unavailable", "subscription_sharing_user_unavailable", "chatgpt_http_503" -> getString(

@@ -79,8 +79,8 @@ class GraphNodeFragment : ToolbarFragment(R.layout.fragment_shell) {
                             .setOnMenuItemClickListener {
                                 if (BuildConfig.DEBUG && sample) Nav.go(
                                     activity,
-                                    LearningSessionFragment::class.java,
-                                    null
+                                    RuntimeSessionFragment::class.java,
+                                    Bundle().apply { putBoolean("sample", true) }
                                 )
                                 else Nav.go(
                                     activity,

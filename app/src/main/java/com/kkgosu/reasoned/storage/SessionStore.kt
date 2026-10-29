@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import com.kkgosu.reasoned.api.NativeResponses
 import com.kkgosu.reasoned.controllers.QuestionContract
 import com.kkgosu.reasoned.model.ContextSummary
 import com.kkgosu.reasoned.model.LessonDisplayItem.Role
@@ -18,10 +19,11 @@ import com.kkgosu.reasoned.model.StudyPlan
 import com.kkgosu.reasoned.model.answerText
 import com.kkgosu.reasoned.utils.objects
 import com.kkgosu.reasoned.utils.strings
+import org.json.JSONArray
 import org.json.JSONObject
 
 /** One concrete SQLite owner. Transactions couple rendered messages, tool state and learner evidence. */
-internal class SessionStore(context: Context, name: String = "sessions.db") :
+internal class SessionStore(context: Context, name: String? = "sessions.db") :
     SQLiteOpenHelper(context, name, null, 4) {
     override fun onConfigure(db: SQLiteDatabase) {
         db.setForeignKeyConstraintsEnabled(true)
@@ -149,7 +151,8 @@ internal class SessionStore(context: Context, name: String = "sessions.db") :
             question,
             json.getString("draft"),
             json.getInt("selection"),
-            ((json.getInt("confidence").coerceIn(0, 100) + 10) / 20) * 20,
+            if (native != null) json.getInt("confidence").coerceIn(0, 100)
+            else ((json.getInt("confidence").coerceIn(0, 100) + 10) / 20) * 20,
             json.getBoolean("expanded"),
             json.getString("route"),
             json.getString("routeCall"),
@@ -191,7 +194,9 @@ internal class SessionStore(context: Context, name: String = "sessions.db") :
                 ?.strings(QuestionContract.MAX_OPTIONS, 4000)
                 ?: listOfNotNull(question?.values?.getOrNull(json.getInt("selection"))),
             nativeRecord = native,
-            nativeDisplayIds = nativeIds(readableDatabase, id)
+            nativeDisplayIds = nativeIds(readableDatabase, id),
+            nativeTurn = json.optJSONObject("nativeTurn")?.toString().orEmpty(),
+            nativeSteers = json.optJSONArray("nativeSteers")?.toString() ?: "[]"
         )
     }
 
@@ -232,9 +237,19 @@ internal class SessionStore(context: Context, name: String = "sessions.db") :
             ).use { row ->
                 check(!row.moveToFirst() || row.getInt(0) == 0) { "Cannot discard a native archive" }
             }
+            // An in-flight command holds an older snapshot. Never overwrite a concurrently queued steer.
+            val checkpoint = JSONObject(state.checkpoint())
+            if (native != null) {
+                val pending = (pendingNativeSteers(db, state.id) + JSONArray(state.nativeSteers).objects())
+                    .distinctBy { it.getString("id") }
+                if (pending.isNotEmpty()) {
+                    val delivered = native.snapshot().getJSONArray("messages").objects().map { it.getString("id") }.toSet()
+                    checkpoint.put("nativeSteers", JSONArray(pending.filter { it.getString("id") !in delivered }))
+                }
+            }
             val values = ContentValues().apply {
                 put("id", state.id); put("goal", state.goal); put("model", state.model)
-                put("checkpoint", state.checkpoint()); put("updated", System.currentTimeMillis())
+                put("checkpoint", checkpoint.toString()); put("updated", System.currentTimeMillis())
                 put("native_record", native?.raw)
             }
             // UPDATE, not REPLACE: replacing the parent would cascade-delete its evidence.
@@ -313,6 +328,56 @@ internal class SessionStore(context: Context, name: String = "sessions.db") :
         }
     }
 
+    private fun pendingNativeSteers(db: SQLiteDatabase, id: String): List<JSONObject> = db.rawQuery(
+        "SELECT checkpoint FROM sessions WHERE id=? AND deleted=0", arrayOf(id)
+    ).use { row ->
+        if (row.moveToFirst()) JSONObject(row.getString(0)).optJSONArray("nativeSteers")?.objects().orEmpty()
+        else emptyList()
+    }
+
+    /** Separate from the foreground command mutex: queue only while that conversation is live. */
+    @Synchronized
+    fun queueNativeSteer(id: String, run: String, text: String): String {
+        require(text.isNotBlank() && text.length <= 2000)
+        val s = load(id) ?: error("Session missing")
+        check(s.nativeRecord != null && s.status == "running" && s.nativeTurn.isNotEmpty())
+        val entry = JSONObject(s.nativeTurn).getJSONObject("entry")
+        check(entry.getString("id") == run && entry.optString("reasonedPurpose") == "conversation")
+        val pending = JSONArray(s.nativeSteers)
+        require(pending.length() < 8)
+        val message = NativeResponses.user(text, System.currentTimeMillis())
+            .put("id", "steer_${java.util.UUID.randomUUID()}")
+        save(s.copy(nativeSteers = pending.put(message).toString()))
+        return pending.toString()
+    }
+
+    /** Allocate native identities and commit archive + derived UI together, including rollback.
+     * Drain only at an explicit live-run boundary, never on restore or at a question/plan stopper. */
+    @Synchronized
+    fun saveNative(state: RuntimeSession, consumeSteers: Boolean = false): RuntimeSession {
+        require(state.nativeRecord != null)
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            save(state)
+            val pending = pendingNativeSteers(db, state.id)
+            var ready = state.copy(nativeSteers = JSONArray(pending).toString())
+            if (consumeSteers && pending.isNotEmpty()) {
+                var chat = state.nativeRecord
+                pending.forEach { chat = NativeResponses.append(chat!!, it, System.currentTimeMillis()) }
+                ready = ready.copy(nativeRecord = chat, nativeSteers = "[]", status = "running")
+                save(ready) // Archive append and queue removal share this transaction.
+            }
+            val projected = com.kkgosu.reasoned.model.NativeTeaching.project(
+                ready.copy(nativeDisplayIds = nativeIds(db, state.id)))
+            save(projected)
+            db.setTransactionSuccessful()
+            return projected
+        } finally {
+            db.endTransaction()
+        }
+    }
+
     @Synchronized
     fun run(
         id: String,
@@ -333,13 +398,53 @@ internal class SessionStore(context: Context, name: String = "sessions.db") :
     @Synchronized
     fun recover() {
         val db = writableDatabase
-        db.execSQL("UPDATE runs SET status='interrupted' WHERE status='running'")
-        val ids = db.rawQuery("SELECT id FROM sessions", null).use { cursor ->
-            buildList { while (cursor.moveToNext()) add(cursor.getString(0)) }
-        }
-        ids.forEach { id ->
-            load(id)?.takeIf { it.status == "running" }
-                ?.let { save(it.copy(status = "interrupted")) }
+        db.beginTransaction()
+        try {
+            val ids = db.rawQuery("SELECT id FROM sessions WHERE deleted=0", null).use { cursor ->
+                buildList { while (cursor.moveToNext()) add(cursor.getString(0)) }
+            }
+            ids.forEach { id ->
+                var s = load(id) ?: return@forEach
+                if (s.nativeTurn.isNotEmpty()) {
+                    val pending = JSONObject(s.nativeTurn)
+                    val entry = pending.getJSONObject("entry").put("reasonedStatus", "interrupted")
+                    val steps = entry.getJSONArray("steps")
+                    if (pending.getBoolean("inFlight")) steps.put(JSONObject()) // Unreported spend is unknown.
+                    var chat = requireNotNull(s.nativeRecord)
+                    if (entry.optString("reasonedPurpose") != "compaction" &&
+                        (pending.getBoolean("inFlight") || pending.getBoolean("responsePending"))) {
+                        val now = System.currentTimeMillis()
+                        // Unexpected death is retryable; native 'aborted' is an intentional learner stop.
+                        val failed = NativeResponses.failure(s.model, s.connection, "", false, "interrupted", now,
+                            entry.optJSONObject("reasonedResponses"))
+                        chat = NativeResponses.append(chat, failed, now)
+                        entry.put("messageId", failed.getString("id"))
+                        s = s.copy(error = "interrupted")
+                    }
+                    if (steps.length() > 0) chat = NativeResponses.appendTurn(chat, entry)
+                    s = saveNative(s.copy(nativeRecord = chat, nativeTurn = "", status = "interrupted"))
+                } else if (s.status == "running") {
+                    s = s.copy(status = "interrupted")
+                    save(s)
+                }
+                // A final native commit may precede the local run-status update at process death.
+                val running = db.rawQuery("SELECT id FROM runs WHERE session=? AND status='running'", arrayOf(id)).use { rows ->
+                    buildList { while (rows.moveToNext()) add(rows.getString(0)) }
+                }
+                if (running.isEmpty()) return@forEach
+                val turns = s.nativeRecord?.snapshot()?.optJSONArray("turns")?.objects().orEmpty().associateBy { it.getString("id") }
+                running.forEach runLoop@{ runId ->
+                    val entry = turns[runId] ?: return@runLoop
+                    val steps = entry.getJSONArray("steps").objects()
+                    run(runId, s, entry.optString("reasonedStatus", "completed"),
+                        steps.sumOf { step -> listOf("inputTokens", "cacheReadTokens", "cacheWriteTokens").sumOf { step.optLong(it) } },
+                        steps.sumOf { it.optLong("outputTokens") })
+                }
+            }
+            db.execSQL("UPDATE runs SET status='interrupted' WHERE status='running'")
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
         }
     }
 }

@@ -11,7 +11,6 @@ with zipfile.ZipFile(root / "app/build/outputs/apk/debug/app-debug.apk") as apk:
 for suffix in (
     "controllers.MockLesson",
     "model.SampleGraph",
-    "fragments.LearningSessionFragment",
     "fragments.StyleReferenceFragment",
 ):
     name = "com.kkgosu.reasoned." + suffix

@@ -1,0 +1,2476 @@
+{
+  "description": "Authored native question/input vectors. Expected projections and answers generated with hash-pinned upstream pure functions; no providers or React rendering.",
+  "now": 1790812802000,
+  "cases": [
+    {
+      "name": "fixture-probe",
+      "call": {
+        "id": "call_probe_1",
+        "name": "probe",
+        "arguments": {
+          "question": "Which numbers are even?",
+          "options": [
+            {
+              "label": "Two",
+              "value": "two"
+            },
+            {
+              "label": "Three",
+              "value": "three"
+            },
+            {
+              "label": "Four",
+              "value": "four"
+            }
+          ],
+          "multiSelect": true,
+          "explanation": "Two and four are divisible by two.",
+          "correctAnswer": [
+            "two",
+            "four"
+          ]
+        }
+      },
+      "phase": "probe",
+      "expect": {
+        "client": {
+          "id": "call_probe_1",
+          "kind": "quiz",
+          "question": "Which numbers are even?",
+          "mode": "multi-select",
+          "options": [
+            {
+              "label": "Three",
+              "value": "three"
+            },
+            {
+              "label": "Four",
+              "value": "four"
+            },
+            {
+              "label": "Two",
+              "value": "two"
+            }
+          ]
+        },
+        "needsReveal": false,
+        "correctIndices": [
+          2,
+          3
+        ],
+        "questionType": null
+      },
+      "answers": [
+        {
+          "request": {
+            "values": [
+              "two",
+              "four"
+            ],
+            "thinking": " Both divide into pairs. ",
+            "confidence": 90
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "probe",
+            "questionText": "Which numbers are even?",
+            "options": [
+              {
+                "index": 1,
+                "label": "Three"
+              },
+              {
+                "index": 2,
+                "label": "Four"
+              },
+              {
+                "index": 3,
+                "label": "Two"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "Four",
+                "value": "four",
+                "index": 2
+              },
+              {
+                "label": "Two",
+                "value": "two",
+                "index": 3
+              }
+            ],
+            "thinking": "Both divide into pairs.",
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              2,
+              3
+            ],
+            "explanation": "Two and four are divisible by two.",
+            "correct": true,
+            "confidence": 90
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 2,
+                "label": "Four"
+              },
+              {
+                "index": 3,
+                "label": "Two"
+              }
+            ],
+            "correct": true,
+            "confidence": 90,
+            "thinking": "Both divide into pairs."
+          }
+        },
+        {
+          "request": {
+            "values": [
+              "three"
+            ],
+            "confidence": 50
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "probe",
+            "questionText": "Which numbers are even?",
+            "options": [
+              {
+                "index": 1,
+                "label": "Three"
+              },
+              {
+                "index": 2,
+                "label": "Four"
+              },
+              {
+                "index": 3,
+                "label": "Two"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "Three",
+                "value": "three",
+                "index": 1
+              }
+            ],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              2,
+              3
+            ],
+            "explanation": "Two and four are divisible by two.",
+            "correct": false,
+            "confidence": 50
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 1,
+                "label": "Three"
+              }
+            ],
+            "correct": false,
+            "confidence": 50
+          }
+        },
+        {
+          "request": {
+            "dontKnow": true,
+            "confidence": 90,
+            "thinking": " I cannot decide. "
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "probe",
+            "questionText": "Which numbers are even?",
+            "options": [
+              {
+                "index": 1,
+                "label": "Three"
+              },
+              {
+                "index": 2,
+                "label": "Four"
+              },
+              {
+                "index": 3,
+                "label": "Two"
+              }
+            ],
+            "dontKnow": true,
+            "answers": [],
+            "thinking": "I cannot decide.",
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              2,
+              3
+            ],
+            "explanation": "Two and four are divisible by two.",
+            "correct": false
+          },
+          "compact": {
+            "kind": "quiz",
+            "dontKnow": true,
+            "thinking": "I cannot decide."
+          }
+        }
+      ]
+    },
+    {
+      "name": "fixture-prediction",
+      "call": {
+        "id": "call_predict",
+        "name": "quiz",
+        "arguments": {
+          "question": "Is zero even?",
+          "options": [
+            {
+              "label": "Yes",
+              "value": "yes"
+            },
+            {
+              "label": "No",
+              "value": "no"
+            }
+          ],
+          "explanation": "Zero equals two times zero.",
+          "correctAnswer": "yes",
+          "type": "predict",
+          "nodeId": "definition"
+        }
+      },
+      "phase": "teach",
+      "expect": {
+        "client": {
+          "id": "call_predict",
+          "kind": "quiz",
+          "question": "Is zero even?",
+          "mode": "single-select",
+          "options": [
+            {
+              "label": "Yes",
+              "value": "yes"
+            },
+            {
+              "label": "No",
+              "value": "no"
+            }
+          ]
+        },
+        "needsReveal": false,
+        "correctIndices": [
+          1
+        ],
+        "questionType": "predict"
+      },
+      "answers": [
+        {
+          "request": {
+            "values": [
+              "yes"
+            ],
+            "confidence": 30
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "quiz",
+            "questionType": "predict",
+            "questionText": "Is zero even?",
+            "options": [
+              {
+                "index": 1,
+                "label": "Yes"
+              },
+              {
+                "index": 2,
+                "label": "No"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "Yes",
+                "value": "yes",
+                "index": 1
+              }
+            ],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              1
+            ],
+            "explanation": "Zero equals two times zero.",
+            "correct": true,
+            "confidence": 30
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 1,
+                "label": "Yes"
+              }
+            ],
+            "correct": true,
+            "confidence": 30
+          }
+        },
+        {
+          "request": {
+            "values": [
+              "no"
+            ],
+            "confidence": 100
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "quiz",
+            "questionType": "predict",
+            "questionText": "Is zero even?",
+            "options": [
+              {
+                "index": 1,
+                "label": "Yes"
+              },
+              {
+                "index": 2,
+                "label": "No"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "No",
+                "value": "no",
+                "index": 2
+              }
+            ],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              1
+            ],
+            "explanation": "Zero equals two times zero.",
+            "correct": false,
+            "confidence": 100
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 2,
+                "label": "No"
+              }
+            ],
+            "correct": false,
+            "confidence": 100
+          }
+        }
+      ]
+    },
+    {
+      "name": "fixture-explain",
+      "call": {
+        "id": "call_explain",
+        "name": "explain",
+        "arguments": {
+          "question": "Explain why zero is even.",
+          "correctAnswer": "An integer is even when it equals twice an integer.",
+          "type": "check",
+          "nodeId": "zero"
+        }
+      },
+      "phase": "teach",
+      "expect": {
+        "client": {
+          "id": "call_explain",
+          "kind": "explain",
+          "question": "Explain why zero is even.",
+          "mode": "text",
+          "options": []
+        },
+        "needsReveal": true,
+        "correctIndices": [],
+        "questionType": null
+      },
+      "answers": [
+        {
+          "request": {
+            "text": " Zero is two times zero. ",
+            "thinking": " Using the definition. ",
+            "readingThinking": " I wondered about zero. "
+          },
+          "answer": {
+            "kind": "explain",
+            "tool": "explain",
+            "questionText": "Explain why zero is even.",
+            "options": [],
+            "dontKnow": false,
+            "answers": [],
+            "thinking": "Using the definition.",
+            "readingThinking": "I wondered about zero.",
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "text": "Zero is two times zero.",
+            "committed": "An integer is even when it equals twice an integer."
+          },
+          "compact": {
+            "kind": "explain",
+            "text": "Zero is two times zero.",
+            "thinking": "Using the definition.",
+            "thinkingWhileReading": "I wondered about zero."
+          }
+        },
+        {
+          "request": {
+            "dontKnow": true
+          },
+          "answer": {
+            "kind": "explain",
+            "tool": "explain",
+            "questionText": "Explain why zero is even.",
+            "options": [],
+            "dontKnow": true,
+            "answers": [],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "committed": "An integer is even when it equals twice an integer."
+          },
+          "compact": {
+            "kind": "explain",
+            "dontKnow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "ask-text",
+      "call": {
+        "id": "call_ask-text",
+        "name": "ask_user_question",
+        "arguments": {
+          "question": "[Authored test] What should we focus on?",
+          "details": ""
+        }
+      },
+      "phase": "plan",
+      "expect": {
+        "client": {
+          "id": "call_ask-text",
+          "kind": "ask",
+          "question": "[Authored test] What should we focus on?",
+          "context": "",
+          "mode": "text",
+          "options": []
+        },
+        "needsReveal": false,
+        "correctIndices": [],
+        "questionType": null
+      },
+      "answers": [
+        {
+          "request": {
+            "text": " Examples first. "
+          },
+          "answer": {
+            "kind": "ask",
+            "tool": "ask_user_question",
+            "questionText": "[Authored test] What should we focus on?",
+            "options": [],
+            "dontKnow": false,
+            "answers": [],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "text": "Examples first."
+          },
+          "compact": {
+            "kind": "ask",
+            "text": "Examples first."
+          }
+        },
+        {
+          "request": {
+            "text": " Another topic. ",
+            "thinking": " A learner note. ",
+            "confidence": 90
+          },
+          "answer": {
+            "kind": "ask",
+            "tool": "ask_user_question",
+            "questionText": "[Authored test] What should we focus on?",
+            "options": [],
+            "dontKnow": false,
+            "answers": [],
+            "thinking": "A learner note.",
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "text": "Another topic."
+          },
+          "compact": {
+            "kind": "ask",
+            "text": "Another topic.",
+            "thinking": "A learner note."
+          }
+        }
+      ]
+    },
+    {
+      "name": "ask-multi-other",
+      "call": {
+        "id": "call_ask-multi-other",
+        "name": "ask_user_question",
+        "arguments": {
+          "question": "[Authored test] Preferences?",
+          "options": [
+            {
+              "label": " Examples ",
+              "value": " examples ",
+              "description": " Concrete cases. "
+            },
+            {
+              "label": "Proofs"
+            },
+            {
+              "label": "Pictures",
+              "value": "pictures",
+              "description": ""
+            }
+          ],
+          "multiSelect": true
+        }
+      },
+      "phase": "plan",
+      "expect": {
+        "client": {
+          "id": "call_ask-multi-other",
+          "kind": "ask",
+          "question": "[Authored test] Preferences?",
+          "mode": "multi-select",
+          "options": [
+            {
+              "label": "Examples",
+              "value": "examples",
+              "description": "Concrete cases."
+            },
+            {
+              "label": "Proofs",
+              "value": "Proofs"
+            },
+            {
+              "label": "Pictures",
+              "value": "pictures"
+            }
+          ]
+        },
+        "needsReveal": false,
+        "correctIndices": [],
+        "questionType": null
+      },
+      "answers": [
+        {
+          "request": {
+            "values": [
+              "pictures",
+              "examples"
+            ],
+            "other": " Counterexamples too. ",
+            "thinking": " Mix them. "
+          },
+          "answer": {
+            "kind": "ask",
+            "tool": "ask_user_question",
+            "questionText": "[Authored test] Preferences?",
+            "options": [
+              {
+                "index": 1,
+                "label": "Examples"
+              },
+              {
+                "index": 2,
+                "label": "Proofs"
+              },
+              {
+                "index": 3,
+                "label": "Pictures"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "Examples",
+                "value": "examples",
+                "index": 1
+              },
+              {
+                "label": "Pictures",
+                "value": "pictures",
+                "index": 3
+              }
+            ],
+            "thinking": "Mix them.",
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "other": "Counterexamples too."
+          },
+          "compact": {
+            "kind": "ask",
+            "answers": [
+              {
+                "index": 1,
+                "label": "Examples"
+              },
+              {
+                "index": 3,
+                "label": "Pictures"
+              }
+            ],
+            "other": "Counterexamples too.",
+            "thinking": "Mix them."
+          }
+        },
+        {
+          "request": {
+            "other": " Another approach. "
+          },
+          "answer": {
+            "kind": "ask",
+            "tool": "ask_user_question",
+            "questionText": "[Authored test] Preferences?",
+            "options": [
+              {
+                "index": 1,
+                "label": "Examples"
+              },
+              {
+                "index": 2,
+                "label": "Proofs"
+              },
+              {
+                "index": 3,
+                "label": "Pictures"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "other": "Another approach."
+          },
+          "compact": {
+            "kind": "ask",
+            "other": "Another approach."
+          }
+        }
+      ]
+    },
+    {
+      "name": "numeric-correction",
+      "call": {
+        "id": "call_numeric-correction",
+        "name": "probe",
+        "arguments": {
+          "question": "[Authored test] Choose a claim.",
+          "options": [
+            {
+              "label": 17,
+              "value": 17
+            },
+            {
+              "label": "18",
+              "value": "18"
+            }
+          ],
+          "explanation": "Authored teacher commitment, not learner speech.",
+          "correctAnswer": 17,
+          "details": "  Context stays authored.  "
+        }
+      },
+      "phase": "probe",
+      "expect": {
+        "client": {
+          "id": "call_numeric-correction",
+          "kind": "quiz",
+          "question": "[Authored test] Choose a claim.",
+          "context": "  Context stays authored.  ",
+          "mode": "single-select",
+          "options": [
+            {
+              "label": "17",
+              "value": "17"
+            },
+            {
+              "label": "18",
+              "value": "18"
+            }
+          ]
+        },
+        "needsReveal": false,
+        "correctIndices": [
+          1
+        ],
+        "questionType": null
+      },
+      "answers": [
+        {
+          "request": {
+            "values": [
+              "17"
+            ],
+            "confidence": 90.5
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "probe",
+            "questionText": "[Authored test] Choose a claim.",
+            "options": [
+              {
+                "index": 1,
+                "label": "17"
+              },
+              {
+                "index": 2,
+                "label": "18"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "17",
+                "value": "17",
+                "index": 1
+              }
+            ],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              1
+            ],
+            "explanation": "Authored teacher commitment, not learner speech.",
+            "correct": true,
+            "confidence": 91
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 1,
+                "label": "17"
+              }
+            ],
+            "correct": true,
+            "confidence": 91
+          }
+        },
+        {
+          "request": {
+            "values": [
+              "18"
+            ],
+            "confidence": 999
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "probe",
+            "questionText": "[Authored test] Choose a claim.",
+            "options": [
+              {
+                "index": 1,
+                "label": "17"
+              },
+              {
+                "index": 2,
+                "label": "18"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "18",
+                "value": "18",
+                "index": 2
+              }
+            ],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              1
+            ],
+            "explanation": "Authored teacher commitment, not learner speech.",
+            "correct": false,
+            "confidence": 100
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 2,
+                "label": "18"
+              }
+            ],
+            "correct": false,
+            "confidence": 100
+          }
+        },
+        {
+          "request": {
+            "values": [
+              "17"
+            ],
+            "confidence": -5
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "probe",
+            "questionText": "[Authored test] Choose a claim.",
+            "options": [
+              {
+                "index": 1,
+                "label": "17"
+              },
+              {
+                "index": 2,
+                "label": "18"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "17",
+                "value": "17",
+                "index": 1
+              }
+            ],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              1
+            ],
+            "explanation": "Authored teacher commitment, not learner speech.",
+            "correct": true,
+            "confidence": 0
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 1,
+                "label": "17"
+              }
+            ],
+            "correct": true,
+            "confidence": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "exact-keys",
+      "call": {
+        "id": "call_🙂_проверка_﻿",
+        "name": "quiz",
+        "arguments": {
+          "question": "[Authored test] Choose a claim.",
+          "options": [
+            {
+              "label": "Array-looking key",
+              "value": "[\"a\",\"b\"]"
+            },
+            {
+              "label": "Punctuation",
+              "value": "\"hi\"."
+            },
+            {
+              "label": "Code",
+              "value": "`code`"
+            }
+          ],
+          "explanation": "Authored teacher commitment, not learner speech.",
+          "correctAnswer": "[\"a\",\"b\"]",
+          "type": "check",
+          "nodeId": "authored"
+        }
+      },
+      "phase": "teach",
+      "expect": {
+        "client": {
+          "id": "call_🙂_проверка_﻿",
+          "kind": "quiz",
+          "question": "[Authored test] Choose a claim.",
+          "mode": "single-select",
+          "options": [
+            {
+              "label": "Punctuation",
+              "value": "\"hi\"."
+            },
+            {
+              "label": "Code",
+              "value": "`code`"
+            },
+            {
+              "label": "Array-looking key",
+              "value": "[\"a\",\"b\"]"
+            }
+          ]
+        },
+        "needsReveal": true,
+        "correctIndices": [
+          3
+        ],
+        "questionType": "check"
+      },
+      "answers": [
+        {
+          "request": {
+            "values": [
+              "[\"a\",\"b\"]"
+            ],
+            "confidence": 50
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "quiz",
+            "questionType": "check",
+            "questionText": "[Authored test] Choose a claim.",
+            "options": [
+              {
+                "index": 1,
+                "label": "Punctuation"
+              },
+              {
+                "index": 2,
+                "label": "Code"
+              },
+              {
+                "index": 3,
+                "label": "Array-looking key"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "Array-looking key",
+                "value": "[\"a\",\"b\"]",
+                "index": 3
+              }
+            ],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              3
+            ],
+            "explanation": "Authored teacher commitment, not learner speech.",
+            "correct": true,
+            "confidence": 50
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 3,
+                "label": "Array-looking key"
+              }
+            ],
+            "correct": true,
+            "confidence": 50
+          }
+        },
+        {
+          "request": {
+            "values": [
+              "\"hi\"."
+            ],
+            "confidence": 70
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "quiz",
+            "questionType": "check",
+            "questionText": "[Authored test] Choose a claim.",
+            "options": [
+              {
+                "index": 1,
+                "label": "Punctuation"
+              },
+              {
+                "index": 2,
+                "label": "Code"
+              },
+              {
+                "index": 3,
+                "label": "Array-looking key"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "Punctuation",
+                "value": "\"hi\".",
+                "index": 1
+              }
+            ],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              3
+            ],
+            "explanation": "Authored teacher commitment, not learner speech.",
+            "correct": false,
+            "confidence": 70
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 1,
+                "label": "Punctuation"
+              }
+            ],
+            "correct": false,
+            "confidence": 70
+          }
+        }
+      ]
+    },
+    {
+      "name": "encoded-options",
+      "call": {
+        "id": "call_encoded-options",
+        "name": "quiz",
+        "arguments": {
+          "question": "[Authored test] Choose a claim.",
+          "options": "[{\"label\":\" A \",\"value\":\"a\"},{\"label\":\" B \",\"value\":\"b\"},{\"label\":\" C \",\"value\":\"c\"}]",
+          "explanation": "Authored teacher commitment, not learner speech.",
+          "correctAnswer": "[\"a\",\"b\"]",
+          "type": "\"predict\"",
+          "nodeId": "authored",
+          "multiSelect": "true"
+        }
+      },
+      "phase": "teach",
+      "expect": {
+        "client": {
+          "id": "call_encoded-options",
+          "kind": "quiz",
+          "question": "[Authored test] Choose a claim.",
+          "mode": "multi-select",
+          "options": [
+            {
+              "label": "A",
+              "value": "a"
+            },
+            {
+              "label": "B",
+              "value": "b"
+            },
+            {
+              "label": "C",
+              "value": "c"
+            }
+          ]
+        },
+        "needsReveal": false,
+        "correctIndices": [
+          1,
+          2
+        ],
+        "questionType": "predict"
+      },
+      "answers": [
+        {
+          "request": {
+            "values": [
+              "b",
+              "a"
+            ],
+            "confidence": 90
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "quiz",
+            "questionType": "predict",
+            "questionText": "[Authored test] Choose a claim.",
+            "options": [
+              {
+                "index": 1,
+                "label": "A"
+              },
+              {
+                "index": 2,
+                "label": "B"
+              },
+              {
+                "index": 3,
+                "label": "C"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "A",
+                "value": "a",
+                "index": 1
+              },
+              {
+                "label": "B",
+                "value": "b",
+                "index": 2
+              }
+            ],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              1,
+              2
+            ],
+            "explanation": "Authored teacher commitment, not learner speech.",
+            "correct": true,
+            "confidence": 90
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 1,
+                "label": "A"
+              },
+              {
+                "index": 2,
+                "label": "B"
+              }
+            ],
+            "correct": true,
+            "confidence": 90
+          }
+        },
+        {
+          "request": {
+            "dontKnow": true
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "quiz",
+            "questionType": "predict",
+            "questionText": "[Authored test] Choose a claim.",
+            "options": [
+              {
+                "index": 1,
+                "label": "A"
+              },
+              {
+                "index": 2,
+                "label": "B"
+              },
+              {
+                "index": 3,
+                "label": "C"
+              }
+            ],
+            "dontKnow": true,
+            "answers": [],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              1,
+              2
+            ],
+            "explanation": "Authored teacher commitment, not learner speech.",
+            "correct": false
+          },
+          "compact": {
+            "kind": "quiz",
+            "dontKnow": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "debris-and-empty-value",
+      "call": {
+        "id": "call_debris-and-empty-value",
+        "name": "quiz",
+        "arguments": {
+          "question": "[Authored test] Choose a claim.",
+          "options": [
+            {
+              "label": " Alpha ",
+              "value": ""
+            },
+            {
+              "label": "Beta",
+              "value": "beta"
+            }
+          ],
+          "explanation": "Authored teacher commitment, not learner speech.",
+          "correctAnswer": ": \"Alpha\".",
+          "type": " :\"check\". "
+        }
+      },
+      "phase": "teach",
+      "expect": {
+        "client": {
+          "id": "call_debris-and-empty-value",
+          "kind": "quiz",
+          "question": "[Authored test] Choose a claim.",
+          "mode": "single-select",
+          "options": [
+            {
+              "label": "Alpha",
+              "value": "Alpha"
+            },
+            {
+              "label": "Beta",
+              "value": "beta"
+            }
+          ]
+        },
+        "needsReveal": true,
+        "correctIndices": [
+          1
+        ],
+        "questionType": "check"
+      },
+      "answers": [
+        {
+          "request": {
+            "values": [
+              "Alpha"
+            ],
+            "readingThinking": " Reading note. ",
+            "thinking": " Question note. ",
+            "confidence": 50
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "quiz",
+            "questionType": "check",
+            "questionText": "[Authored test] Choose a claim.",
+            "options": [
+              {
+                "index": 1,
+                "label": "Alpha"
+              },
+              {
+                "index": 2,
+                "label": "Beta"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "Alpha",
+                "value": "Alpha",
+                "index": 1
+              }
+            ],
+            "thinking": "Question note.",
+            "readingThinking": "Reading note.",
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              1
+            ],
+            "explanation": "Authored teacher commitment, not learner speech.",
+            "correct": true,
+            "confidence": 50
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 1,
+                "label": "Alpha"
+              }
+            ],
+            "correct": true,
+            "confidence": 50,
+            "thinking": "Question note.",
+            "thinkingWhileReading": "Reading note."
+          }
+        }
+      ]
+    },
+    {
+      "name": "legacy-quiz-type",
+      "call": {
+        "id": "call_legacy-quiz-type",
+        "name": "quiz",
+        "arguments": {
+          "question": "[Authored test] Choose a claim.",
+          "options": [
+            {
+              "label": "Claim A",
+              "value": "a"
+            },
+            {
+              "label": "Claim B",
+              "value": "b"
+            }
+          ],
+          "explanation": "Authored teacher commitment, not learner speech.",
+          "correctAnswer": "a"
+        }
+      },
+      "phase": "teach",
+      "expect": {
+        "client": {
+          "id": "call_legacy-quiz-type",
+          "kind": "quiz",
+          "question": "[Authored test] Choose a claim.",
+          "mode": "single-select",
+          "options": [
+            {
+              "label": "Claim B",
+              "value": "b"
+            },
+            {
+              "label": "Claim A",
+              "value": "a"
+            }
+          ]
+        },
+        "needsReveal": true,
+        "correctIndices": [
+          2
+        ],
+        "questionType": null
+      },
+      "answers": [
+        {
+          "request": {
+            "values": [
+              "a"
+            ]
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "quiz",
+            "questionText": "[Authored test] Choose a claim.",
+            "options": [
+              {
+                "index": 1,
+                "label": "Claim B"
+              },
+              {
+                "index": 2,
+                "label": "Claim A"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "Claim A",
+                "value": "a",
+                "index": 2
+              }
+            ],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              2
+            ],
+            "explanation": "Authored teacher commitment, not learner speech.",
+            "correct": true
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 2,
+                "label": "Claim A"
+              }
+            ],
+            "correct": true
+          }
+        },
+        {
+          "request": {
+            "values": [
+              "b"
+            ],
+            "confidence": 0
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "quiz",
+            "questionText": "[Authored test] Choose a claim.",
+            "options": [
+              {
+                "index": 1,
+                "label": "Claim B"
+              },
+              {
+                "index": 2,
+                "label": "Claim A"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "Claim B",
+                "value": "b",
+                "index": 1
+              }
+            ],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              2
+            ],
+            "explanation": "Authored teacher commitment, not learner speech.",
+            "correct": false,
+            "confidence": 0
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 1,
+                "label": "Claim B"
+              }
+            ],
+            "correct": false,
+            "confidence": 0
+          }
+        }
+      ]
+    },
+    {
+      "name": "explain-prediction",
+      "call": {
+        "id": "call_explain-prediction",
+        "name": "explain",
+        "arguments": {
+          "type": "\"predict\"",
+          "nodeId": "authored",
+          "question": "[Authored test] Explain before teaching.",
+          "correctAnswer": " An immutable reference. ",
+          "details": "Unmodified context"
+        }
+      },
+      "phase": "teach",
+      "expect": {
+        "client": {
+          "id": "call_explain-prediction",
+          "kind": "explain",
+          "question": "[Authored test] Explain before teaching.",
+          "context": "Unmodified context",
+          "mode": "text",
+          "options": []
+        },
+        "needsReveal": false,
+        "correctIndices": [],
+        "questionType": null
+      },
+      "answers": [
+        {
+          "request": {
+            "text": " Learner explanation. ",
+            "readingThinking": " Separate thought. ",
+            "confidence": 50
+          },
+          "answer": {
+            "kind": "explain",
+            "tool": "explain",
+            "questionText": "[Authored test] Explain before teaching.",
+            "options": [],
+            "dontKnow": false,
+            "answers": [],
+            "readingThinking": "Separate thought.",
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "text": "Learner explanation.",
+            "committed": " An immutable reference. "
+          },
+          "compact": {
+            "kind": "explain",
+            "text": "Learner explanation.",
+            "thinkingWhileReading": "Separate thought."
+          }
+        }
+      ]
+    },
+    {
+      "name": "recall",
+      "call": {
+        "id": "call_recall",
+        "name": "recall",
+        "arguments": {
+          "question": "[Authored test] Recall a definition.",
+          "correctAnswer": "A teacher-authored definition."
+        }
+      },
+      "phase": "probe",
+      "expect": {
+        "client": {
+          "id": "call_recall",
+          "kind": "explain",
+          "question": "[Authored test] Recall a definition.",
+          "mode": "text",
+          "options": []
+        },
+        "needsReveal": false,
+        "correctIndices": [],
+        "questionType": null
+      },
+      "answers": [
+        {
+          "request": {
+            "text": " A learner-authored definition. "
+          },
+          "answer": {
+            "kind": "explain",
+            "tool": "recall",
+            "questionText": "[Authored test] Recall a definition.",
+            "options": [],
+            "dontKnow": false,
+            "answers": [],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "text": "A learner-authored definition.",
+            "committed": "A teacher-authored definition."
+          },
+          "compact": {
+            "kind": "explain",
+            "text": "A learner-authored definition."
+          }
+        },
+        {
+          "request": {
+            "dontKnow": true,
+            "thinking": " A gap. "
+          },
+          "answer": {
+            "kind": "explain",
+            "tool": "recall",
+            "questionText": "[Authored test] Recall a definition.",
+            "options": [],
+            "dontKnow": true,
+            "answers": [],
+            "thinking": "A gap.",
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "committed": "A teacher-authored definition."
+          },
+          "compact": {
+            "kind": "explain",
+            "dontKnow": true,
+            "thinking": "A gap."
+          }
+        }
+      ]
+    },
+    {
+      "name": "ask-single",
+      "call": {
+        "id": "call_ask-single",
+        "name": "ask_user_question",
+        "arguments": {
+          "question": "[Authored test] Select one.",
+          "options": [
+            {
+              "label": "First"
+            },
+            {
+              "label": "Second"
+            }
+          ]
+        }
+      },
+      "phase": "teach",
+      "expect": {
+        "client": {
+          "id": "call_ask-single",
+          "kind": "ask",
+          "question": "[Authored test] Select one.",
+          "mode": "single-select",
+          "options": [
+            {
+              "label": "First",
+              "value": "First"
+            },
+            {
+              "label": "Second",
+              "value": "Second"
+            }
+          ]
+        },
+        "needsReveal": false,
+        "correctIndices": [],
+        "questionType": null
+      },
+      "answers": [
+        {
+          "request": {
+            "values": [
+              "Second"
+            ]
+          },
+          "answer": {
+            "kind": "ask",
+            "tool": "ask_user_question",
+            "questionText": "[Authored test] Select one.",
+            "options": [
+              {
+                "index": 1,
+                "label": "First"
+              },
+              {
+                "index": 2,
+                "label": "Second"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "Second",
+                "value": "Second",
+                "index": 2
+              }
+            ],
+            "answeredAt": "2026-10-01T00:00:02.000Z"
+          },
+          "compact": {
+            "kind": "ask",
+            "answers": [
+              {
+                "index": 2,
+                "label": "Second"
+              }
+            ]
+          }
+        },
+        {
+          "request": {
+            "other": " Another option. "
+          },
+          "answer": {
+            "kind": "ask",
+            "tool": "ask_user_question",
+            "questionText": "[Authored test] Select one.",
+            "options": [
+              {
+                "index": 1,
+                "label": "First"
+              },
+              {
+                "index": 2,
+                "label": "Second"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "other": "Another option."
+          },
+          "compact": {
+            "kind": "ask",
+            "other": "Another option."
+          }
+        }
+      ]
+    },
+    {
+      "name": "unicode-trim",
+      "call": {
+        "id": "call_unicode-trim",
+        "name": "probe",
+        "arguments": {
+          "question": "[Authored test] Choose a claim.",
+          "options": [
+            {
+              "label": "﻿Name ",
+              "value": "﻿key "
+            },
+            {
+              "label": "Other",
+              "value": "other"
+            }
+          ],
+          "explanation": "Authored teacher commitment, not learner speech.",
+          "correctAnswer": "key"
+        }
+      },
+      "phase": "probe",
+      "expect": {
+        "client": {
+          "id": "call_unicode-trim",
+          "kind": "quiz",
+          "question": "[Authored test] Choose a claim.",
+          "mode": "single-select",
+          "options": [
+            {
+              "label": "Other",
+              "value": "other"
+            },
+            {
+              "label": "Name",
+              "value": "key"
+            }
+          ]
+        },
+        "needsReveal": false,
+        "correctIndices": [
+          2
+        ],
+        "questionType": null
+      },
+      "answers": [
+        {
+          "request": {
+            "values": [
+              "key"
+            ],
+            "thinking": "﻿trimmed ",
+            "confidence": 50
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "probe",
+            "questionText": "[Authored test] Choose a claim.",
+            "options": [
+              {
+                "index": 1,
+                "label": "Other"
+              },
+              {
+                "index": 2,
+                "label": "Name"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "Name",
+                "value": "key",
+                "index": 2
+              }
+            ],
+            "thinking": "trimmed",
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              2
+            ],
+            "explanation": "Authored teacher commitment, not learner speech.",
+            "correct": true,
+            "confidence": 50
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 2,
+                "label": "Name"
+              }
+            ],
+            "correct": true,
+            "confidence": 50,
+            "thinking": "trimmed"
+          }
+        }
+      ]
+    },
+    {
+      "name": "duplicate-correct-keys",
+      "call": {
+        "id": "call_duplicate-correct-keys",
+        "name": "probe",
+        "arguments": {
+          "question": "[Authored test] Choose a claim.",
+          "options": [
+            {
+              "label": "Claim A",
+              "value": "a"
+            },
+            {
+              "label": "Claim B",
+              "value": "b"
+            }
+          ],
+          "explanation": "Authored teacher commitment, not learner speech.",
+          "correctAnswer": [
+            "a",
+            "a"
+          ]
+        }
+      },
+      "phase": "probe",
+      "expect": {
+        "client": {
+          "id": "call_duplicate-correct-keys",
+          "kind": "quiz",
+          "question": "[Authored test] Choose a claim.",
+          "mode": "single-select",
+          "options": [
+            {
+              "label": "Claim B",
+              "value": "b"
+            },
+            {
+              "label": "Claim A",
+              "value": "a"
+            }
+          ]
+        },
+        "needsReveal": false,
+        "correctIndices": [
+          2
+        ],
+        "questionType": null
+      },
+      "answers": [
+        {
+          "request": {
+            "values": [
+              "a"
+            ],
+            "confidence": 50
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "probe",
+            "questionText": "[Authored test] Choose a claim.",
+            "options": [
+              {
+                "index": 1,
+                "label": "Claim B"
+              },
+              {
+                "index": 2,
+                "label": "Claim A"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "Claim A",
+                "value": "a",
+                "index": 2
+              }
+            ],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              2
+            ],
+            "explanation": "Authored teacher commitment, not learner speech.",
+            "correct": true,
+            "confidence": 50
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 2,
+                "label": "Claim A"
+              }
+            ],
+            "correct": true,
+            "confidence": 50
+          }
+        }
+      ]
+    },
+    {
+      "name": "max-options",
+      "call": {
+        "id": "call_many_🙂_options",
+        "name": "quiz",
+        "arguments": {
+          "question": "[Authored test] Choose a claim.",
+          "options": [
+            {
+              "label": "Option 0",
+              "value": "v0"
+            },
+            {
+              "label": "Option 1",
+              "value": "v1"
+            },
+            {
+              "label": "Option 2",
+              "value": "v2"
+            },
+            {
+              "label": "Option 3",
+              "value": "v3"
+            },
+            {
+              "label": "Option 4",
+              "value": "v4"
+            },
+            {
+              "label": "Option 5",
+              "value": "v5"
+            },
+            {
+              "label": "Option 6",
+              "value": "v6"
+            },
+            {
+              "label": "Option 7",
+              "value": "v7"
+            },
+            {
+              "label": "Option 8",
+              "value": "v8"
+            },
+            {
+              "label": "Option 9",
+              "value": "v9"
+            },
+            {
+              "label": "Option 10",
+              "value": "v10"
+            },
+            {
+              "label": "Option 11",
+              "value": "v11"
+            },
+            {
+              "label": "Option 12",
+              "value": "v12"
+            },
+            {
+              "label": "Option 13",
+              "value": "v13"
+            },
+            {
+              "label": "Option 14",
+              "value": "v14"
+            },
+            {
+              "label": "Option 15",
+              "value": "v15"
+            },
+            {
+              "label": "Option 16",
+              "value": "v16"
+            },
+            {
+              "label": "Option 17",
+              "value": "v17"
+            },
+            {
+              "label": "Option 18",
+              "value": "v18"
+            },
+            {
+              "label": "Option 19",
+              "value": "v19"
+            },
+            {
+              "label": "Option 20",
+              "value": "v20"
+            },
+            {
+              "label": "Option 21",
+              "value": "v21"
+            },
+            {
+              "label": "Option 22",
+              "value": "v22"
+            },
+            {
+              "label": "Option 23",
+              "value": "v23"
+            },
+            {
+              "label": "Option 24",
+              "value": "v24"
+            },
+            {
+              "label": "Option 25",
+              "value": "v25"
+            },
+            {
+              "label": "Option 26",
+              "value": "v26"
+            },
+            {
+              "label": "Option 27",
+              "value": "v27"
+            },
+            {
+              "label": "Option 28",
+              "value": "v28"
+            },
+            {
+              "label": "Option 29",
+              "value": "v29"
+            },
+            {
+              "label": "Option 30",
+              "value": "v30"
+            },
+            {
+              "label": "Option 31",
+              "value": "v31"
+            }
+          ],
+          "explanation": "Authored teacher commitment, not learner speech.",
+          "correctAnswer": [
+            "v0",
+            "v16",
+            "v31"
+          ],
+          "type": "predict",
+          "multiSelect": true
+        }
+      },
+      "phase": "teach",
+      "expect": {
+        "client": {
+          "id": "call_many_🙂_options",
+          "kind": "quiz",
+          "question": "[Authored test] Choose a claim.",
+          "mode": "multi-select",
+          "options": [
+            {
+              "label": "Option 8",
+              "value": "v8"
+            },
+            {
+              "label": "Option 2",
+              "value": "v2"
+            },
+            {
+              "label": "Option 10",
+              "value": "v10"
+            },
+            {
+              "label": "Option 24",
+              "value": "v24"
+            },
+            {
+              "label": "Option 13",
+              "value": "v13"
+            },
+            {
+              "label": "Option 17",
+              "value": "v17"
+            },
+            {
+              "label": "Option 19",
+              "value": "v19"
+            },
+            {
+              "label": "Option 15",
+              "value": "v15"
+            },
+            {
+              "label": "Option 22",
+              "value": "v22"
+            },
+            {
+              "label": "Option 28",
+              "value": "v28"
+            },
+            {
+              "label": "Option 31",
+              "value": "v31"
+            },
+            {
+              "label": "Option 16",
+              "value": "v16"
+            },
+            {
+              "label": "Option 29",
+              "value": "v29"
+            },
+            {
+              "label": "Option 11",
+              "value": "v11"
+            },
+            {
+              "label": "Option 7",
+              "value": "v7"
+            },
+            {
+              "label": "Option 26",
+              "value": "v26"
+            },
+            {
+              "label": "Option 4",
+              "value": "v4"
+            },
+            {
+              "label": "Option 3",
+              "value": "v3"
+            },
+            {
+              "label": "Option 14",
+              "value": "v14"
+            },
+            {
+              "label": "Option 30",
+              "value": "v30"
+            },
+            {
+              "label": "Option 0",
+              "value": "v0"
+            },
+            {
+              "label": "Option 6",
+              "value": "v6"
+            },
+            {
+              "label": "Option 9",
+              "value": "v9"
+            },
+            {
+              "label": "Option 23",
+              "value": "v23"
+            },
+            {
+              "label": "Option 1",
+              "value": "v1"
+            },
+            {
+              "label": "Option 25",
+              "value": "v25"
+            },
+            {
+              "label": "Option 12",
+              "value": "v12"
+            },
+            {
+              "label": "Option 20",
+              "value": "v20"
+            },
+            {
+              "label": "Option 21",
+              "value": "v21"
+            },
+            {
+              "label": "Option 5",
+              "value": "v5"
+            },
+            {
+              "label": "Option 27",
+              "value": "v27"
+            },
+            {
+              "label": "Option 18",
+              "value": "v18"
+            }
+          ]
+        },
+        "needsReveal": false,
+        "correctIndices": [
+          11,
+          12,
+          21
+        ],
+        "questionType": "predict"
+      },
+      "answers": [
+        {
+          "request": {
+            "values": [
+              "v31",
+              "v0",
+              "v16"
+            ],
+            "confidence": 70
+          },
+          "answer": {
+            "kind": "quiz",
+            "tool": "quiz",
+            "questionType": "predict",
+            "questionText": "[Authored test] Choose a claim.",
+            "options": [
+              {
+                "index": 1,
+                "label": "Option 8"
+              },
+              {
+                "index": 2,
+                "label": "Option 2"
+              },
+              {
+                "index": 3,
+                "label": "Option 10"
+              },
+              {
+                "index": 4,
+                "label": "Option 24"
+              },
+              {
+                "index": 5,
+                "label": "Option 13"
+              },
+              {
+                "index": 6,
+                "label": "Option 17"
+              },
+              {
+                "index": 7,
+                "label": "Option 19"
+              },
+              {
+                "index": 8,
+                "label": "Option 15"
+              },
+              {
+                "index": 9,
+                "label": "Option 22"
+              },
+              {
+                "index": 10,
+                "label": "Option 28"
+              },
+              {
+                "index": 11,
+                "label": "Option 31"
+              },
+              {
+                "index": 12,
+                "label": "Option 16"
+              },
+              {
+                "index": 13,
+                "label": "Option 29"
+              },
+              {
+                "index": 14,
+                "label": "Option 11"
+              },
+              {
+                "index": 15,
+                "label": "Option 7"
+              },
+              {
+                "index": 16,
+                "label": "Option 26"
+              },
+              {
+                "index": 17,
+                "label": "Option 4"
+              },
+              {
+                "index": 18,
+                "label": "Option 3"
+              },
+              {
+                "index": 19,
+                "label": "Option 14"
+              },
+              {
+                "index": 20,
+                "label": "Option 30"
+              },
+              {
+                "index": 21,
+                "label": "Option 0"
+              },
+              {
+                "index": 22,
+                "label": "Option 6"
+              },
+              {
+                "index": 23,
+                "label": "Option 9"
+              },
+              {
+                "index": 24,
+                "label": "Option 23"
+              },
+              {
+                "index": 25,
+                "label": "Option 1"
+              },
+              {
+                "index": 26,
+                "label": "Option 25"
+              },
+              {
+                "index": 27,
+                "label": "Option 12"
+              },
+              {
+                "index": 28,
+                "label": "Option 20"
+              },
+              {
+                "index": 29,
+                "label": "Option 21"
+              },
+              {
+                "index": 30,
+                "label": "Option 5"
+              },
+              {
+                "index": 31,
+                "label": "Option 27"
+              },
+              {
+                "index": 32,
+                "label": "Option 18"
+              }
+            ],
+            "dontKnow": false,
+            "answers": [
+              {
+                "label": "Option 31",
+                "value": "v31",
+                "index": 11
+              },
+              {
+                "label": "Option 16",
+                "value": "v16",
+                "index": 12
+              },
+              {
+                "label": "Option 0",
+                "value": "v0",
+                "index": 21
+              }
+            ],
+            "answeredAt": "2026-10-01T00:00:02.000Z",
+            "correctIndices": [
+              11,
+              12,
+              21
+            ],
+            "explanation": "Authored teacher commitment, not learner speech.",
+            "correct": true,
+            "confidence": 70
+          },
+          "compact": {
+            "kind": "quiz",
+            "answers": [
+              {
+                "index": 11,
+                "label": "Option 31"
+              },
+              {
+                "index": 12,
+                "label": "Option 16"
+              },
+              {
+                "index": 21,
+                "label": "Option 0"
+              }
+            ],
+            "correct": true,
+            "confidence": 70
+          }
+        }
+      ]
+    }
+  ],
+  "invalid": [
+    {
+      "name": "duplicate-values",
+      "tool": "quiz",
+      "input": {
+        "question": "[Authored test] Choose a claim.",
+        "options": [
+          {
+            "label": "A",
+            "value": "same"
+          },
+          {
+            "label": "B",
+            "value": "same"
+          }
+        ],
+        "explanation": "Authored teacher commitment, not learner speech.",
+        "correctAnswer": "same"
+      }
+    },
+    {
+      "name": "empty-label",
+      "tool": "quiz",
+      "input": {
+        "question": "[Authored test] Choose a claim.",
+        "options": [
+          {
+            "label": " ",
+            "value": "a"
+          },
+          {
+            "label": "B",
+            "value": "b"
+          }
+        ],
+        "explanation": "Authored teacher commitment, not learner speech.",
+        "correctAnswer": "a"
+      }
+    },
+    {
+      "name": "unknown-key",
+      "tool": "quiz",
+      "input": {
+        "question": "[Authored test] Choose a claim.",
+        "options": [
+          {
+            "label": "Claim A",
+            "value": "a"
+          },
+          {
+            "label": "Claim B",
+            "value": "b"
+          }
+        ],
+        "explanation": "Authored teacher commitment, not learner speech.",
+        "correctAnswer": "missing"
+      }
+    },
+    {
+      "name": "multi-answer-without-multi",
+      "tool": "quiz",
+      "input": {
+        "question": "[Authored test] Choose a claim.",
+        "options": [
+          {
+            "label": "Claim A",
+            "value": "a"
+          },
+          {
+            "label": "Claim B",
+            "value": "b"
+          }
+        ],
+        "explanation": "Authored teacher commitment, not learner speech.",
+        "correctAnswer": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "missing-key",
+      "tool": "quiz",
+      "input": {
+        "question": "[Authored test] Choose a claim.",
+        "options": [
+          {
+            "label": "Claim A",
+            "value": "a"
+          },
+          {
+            "label": "Claim B",
+            "value": "b"
+          }
+        ],
+        "explanation": "Authored teacher commitment, not learner speech."
+      }
+    },
+    {
+      "name": "blank-commitment",
+      "tool": "explain",
+      "input": {
+        "question": "[Authored test] Explain.",
+        "correctAnswer": " "
+      }
+    },
+    {
+      "name": "ask-one-option",
+      "tool": "ask_user_question",
+      "input": {
+        "question": "[Authored test] Ask.",
+        "options": [
+          {
+            "label": "One"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ask-empty-options",
+      "tool": "ask_user_question",
+      "input": {
+        "question": "[Authored test] Ask.",
+        "options": []
+      }
+    }
+  ]
+}

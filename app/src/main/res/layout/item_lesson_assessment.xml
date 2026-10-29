@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/space_16">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/surface_outline"
+        android:orientation="vertical"
+        android:padding="@dimen/space_12">
+
+        <TextView
+            android:id="@+id/assessment_label"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/space_8"
+            android:text="@string/runtime_probe_assessment"
+            android:textAppearance="@style/TextAppearance.Harness.Label"
+            android:textColor="@color/muted_foreground" />
+
+        <LinearLayout
+            android:id="@+id/assessment_strands"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+
+        <com.kkgosu.reasoned.ui.text.MarkdownContentView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/assessment_summary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:lineSpacingMultiplier="1.5"
+                android:textAppearance="@style/TextAppearance.Harness.Prose"
+                android:textColor="@color/muted_foreground"
+                android:textIsSelectable="true" />
+        </com.kkgosu.reasoned.ui.text.MarkdownContentView>
+    </LinearLayout>
+</LinearLayout>

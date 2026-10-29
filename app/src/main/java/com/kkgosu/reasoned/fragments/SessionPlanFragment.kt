@@ -8,7 +8,6 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.kkgosu.reasoned.BuildConfig
-import com.kkgosu.reasoned.MainActivity
 import com.kkgosu.reasoned.R
 import com.kkgosu.reasoned.ReasonedApplication
 import com.kkgosu.reasoned.model.StudyPlan
@@ -18,15 +17,18 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.grishka.appkit.fragments.ToolbarFragment
 
 /** Progress styling is presentation-only; the saved transcript's plan diagram stays monochrome. */
-internal fun StudyPlan.progressDiagramMarkdown(context: Context, protocol: String): String = buildString {
-    val (current, visited) = positions(protocol)
+internal fun StudyPlan.progressDiagramMarkdown(context: Context, protocol: String): String =
+    progressDiagramMarkdown(context, positions(protocol))
+
+private fun StudyPlan.progressDiagramMarkdown(context: Context, position: Pair<String?, Set<String>>): String = buildString {
+    val (current, visited) = position
     fun covered(id: String) = id == current || id in visited
     fun color(resource: Int) = "#%06x".format(context.getColor(resource) and 0xffffff)
     val ink = color(R.color.foreground)
@@ -73,19 +75,16 @@ class SessionPlanFragment : ToolbarFragment(R.layout.fragment_shell) {
                     })
                 }
                 try {
-                    val updates = if (BuildConfig.DEBUG && sample) {
-                        val lesson = (activity as MainActivity).mockLesson
-                        lesson.state.map { lesson.plan to lesson.planProtocol(it) }
-                    } else {
-                        val sessionId = arguments!!.getString("session")!!
-                        val saved = withContext(Dispatchers.IO) { app.sessions.load(sessionId) }
-                        app.runtime.state.map { active ->
-                            val session = active?.takeIf { it.id == sessionId } ?: saved
-                            session?.plan to session?.protocol.orEmpty()
-                        }
+                    val lesson = if (BuildConfig.DEBUG && sample) app.sampleLesson() else null
+                    val sessionId = lesson?.sessionId ?: arguments!!.getString("session")!!
+                    val saved = withContext(Dispatchers.IO) { (lesson?.store ?: app.sessions).load(sessionId) }
+                    val updates = (lesson?.runtime ?: app.runtime).state.map { active ->
+                        val session = active?.takeIf { it.id == sessionId } ?: saved
+                        session?.plan to (session?.nativeRecord?.state()?.let { it.current to it.visited }
+                            ?: session?.plan?.positions(session.protocol) ?: (null to emptySet()))
                     }
-                    updates.distinctUntilChangedBy { (plan, protocol) -> plan to plan?.positions(protocol) }
-                        .collect { (plan, protocol) ->
+                    updates.distinctUntilChanged()
+                        .collect { (plan, position) ->
                             list.removeAllViews()
                             if (plan == null) paragraph(getString(R.string.plan_missing))
                             else {
@@ -95,9 +94,9 @@ class SessionPlanFragment : ToolbarFragment(R.layout.fragment_shell) {
                                 list.addView(diagram)
                                 lessonMarkdown(inflater.context).setMarkdown(
                                     diagram,
-                                    plan.progressDiagramMarkdown(inflater.context, protocol)
+                                    plan.progressDiagramMarkdown(inflater.context, position)
                                 )
-                                val (current, visited) = plan.positions(protocol)
+                                val (current, visited) = position
                                 plan.nodes.forEach { node ->
                                     val status = getString(
                                         when {

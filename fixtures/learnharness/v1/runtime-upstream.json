@@ -1,0 +1,20 @@
+{
+  "commit": "3dd52110bbcbcba81645453ce0a8fdc230594c47",
+  "sourceDirectories": ["agent", "core", "server", "store"],
+  "sourceFiles": 146,
+  "sourceTreeSha256": "ea9e4509777554c680a14b2bfd8292080bcfbf4e1dd247ef1314c703199fefc6",
+  "dependencies": [
+    "@earendil-works/pi-agent-core",
+    "@earendil-works/pi-ai",
+    "@mozilla/readability",
+    "d3-force",
+    "katex",
+    "linkedom",
+    "mdast-util-from-markdown",
+    "mdast-util-math",
+    "micromark-extension-math",
+    "tsx",
+    "turndown",
+    "typebox"
+  ]
+}

@@ -9,6 +9,11 @@ sealed class LessonDisplayItem(open val id: Long) {
         val role: Role = Role.PROSE
     ) : LessonDisplayItem(id)
 
+    internal data class AssessmentDisplayItem(
+        override val id: Long,
+        val assessment: ProbeAssessment,
+    ) : LessonDisplayItem(id)
+
     data class FormulaDisplayItem(override val id: Long, val text: String, val spoken: String) :
         LessonDisplayItem(id)
 
@@ -50,6 +55,11 @@ sealed class LessonDisplayItem(open val id: Long) {
                 putString("role", item.role.name)
             }
 
+            is AssessmentDisplayItem -> {
+                putString("type", "assessment")
+                putString("assessment", item.assessment.json().toString())
+            }
+
             is AnsweredDisplayItem -> {
                 putString("type", "answered")
                 putString("question", item.question)
@@ -88,6 +98,10 @@ sealed class LessonDisplayItem(open val id: Long) {
     companion object {
         fun restore(bundle: Bundle): LessonDisplayItem = with(bundle) {
             when (getString("type")) {
+                "assessment" -> AssessmentDisplayItem(
+                    getLong("id"), ProbeAssessment.parse(org.json.JSONObject(getString("assessment").orEmpty()))
+                )
+
                 "answered" -> AnsweredDisplayItem(
                     getLong("id"),
                     getString("question").orEmpty(),

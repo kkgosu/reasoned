@@ -68,8 +68,8 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
             R.id.graph_zoom_out -> graph.zoomBy(1 / 1.5f)
             R.id.open_sample_lesson -> if (BuildConfig.DEBUG) Nav.go(
                 activity,
-                LearningSessionFragment::class.java,
-                null
+                RuntimeSessionFragment::class.java,
+                Bundle().apply { putBoolean("sample", true) }
             )
 
             R.id.graph_sample -> if (BuildConfig.DEBUG) Nav.go(

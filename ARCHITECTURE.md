@@ -136,7 +136,7 @@ Provider HTTP adapter / approved local tools
 
 - **UI:** renders state and sends learner actions. No provider calls, tool execution or graph merging in holders or Canvas drawing.
 - **Educational domain:** learning phases, question/answer contracts, dependency-plan validation, evidence and deterministic graph validation. Keep these Kotlin rules free of Views and network I/O.
-- **Session execution:** the phase-2 fixture already publishes `StateFlow` snapshots, without providers/tools. The phase-4 application-owned runtime coordinates turns, cancellation, pending questions, usage, tool results and persistence.
+- **Session execution:** real and debug sample sessions use the same `SessionRuntime` and `RuntimeSessionFragment`. The sample substitutes an authored local `ModelProvider`; turns, native question contracts, cancellation and persistence use the normal runtime.
 - **Providers/tools:** narrow boundaries where substitution is real (fake provider versus network provider). Prefer a concrete store/controller and constructor parameters; no generic repository, plugin registry or DI container for one implementation.
 - **Persistence:** SQLite transactions now couple session checkpoints, message identities, questions and accepted answers; app-private files will hold later documents/artifacts. Each entity has one owning writer; derivation never silently overwrites evidence.
 
@@ -146,13 +146,13 @@ Do not reproduce the reference's HTTP routes, six-system framework, barrels or s
 
 Mastodon's typed `StatusDisplayItem`/holder pattern is the engineering reference, not code to translate. `LessonDisplayItem` has concrete text, formula and answered-question types; `LessonAdapter` binds specialized holders using AppKit `UsableRecyclerView.Adapter` over LiteX RecyclerView. More row types arrive with actual renderers, not empty scaffolding.
 
-`MockLesson` owns one authored gradient-descent checkpoint. It never interprets arbitrary text as a model request or claims to assess reasoning. Question selection, optional reasoning, confidence, composer draft, transcript IDs and exact partial-response text live in a single activity-owned snapshot, saved before AppKit restores fragments. The fixture has a stable revision/question identity, at most three checkpoint attempts and eight 2,000-character notes, keeping saved state bounded; real transcripts must move to SQLite. Returning Home and reopening the sample retains its state within the task. No force-stop/fresh-task durability is promised.
+`MockLesson` is now a debug-only fixture owner and local `ModelProvider`, not a second learning engine. It seeds a native probe with the authored Markdown/LaTeX specimens, then supplies canned `probe_done`, `plan_init`, prediction and reveal-before-check responses through the real runtime. The sample assessment has three explicitly synthetic strands, not learner evidence. The separate `LearningSessionFragment` and its XML layout were removed.
 
-The fragment uses AppKit `onShown`/`onHidden` to collect/render and run a cancellable coroutine. Hiding/backgrounding cancels view work; an active mock continues from its existing offset on return. Explicit Stop remains paused through recreation. Twelve-character chunks arrive at most once per 60 ms; existing block instances/IDs are reused, only the final text block is replaced, and only that holder receives a payload update. Append-only fixture updates deliberately do not need a generic diff engine. The reader is followed only at the tail; recreation restores RecyclerView state before subsequent updates.
+The sample has its own `SessionRuntime` and in-memory `SessionStore` (SQLite's null database name). It never replaces the application's live provider, writes into real sessions/knowledge, starts extraction, reloads accounts or fetches models. Model/billing controls cannot start network work. The application owns the fixture across navigation/recreation; an activity Bundle saves its versioned native record and draft/selection/confidence/reveal state for local task restoration. A 40-message UI ceiling bounds that Bundle. Old fixture revisions start fresh; no force-stop/fresh-task durability is promised.
 
-The dock is a transcript sibling. Teaching checks are explicitly revealed; collapse preserves the mounted controls and model state. A native scroll form occupies 60% of available content height when expanded, with header/submit outside the scroll region. While editing an answer with the IME, the reading pane/status are temporarily hidden to leave a usable editor even at 200% type; dismissing the keyboard restores them. This uses AppKit-delivered native IME insets, without applying padding a second time. Controls use stable resource IDs, including `labelFor` labels: anonymous labels generate small IDs that can collide with AppKit 1.5.3's fragment containers.
+Sample and real screens share AppKit visibility hooks, dock, native question/answer projection, Markdown renderer, IME handling, bottom fade, down-arrow control and send-follow scrolling. The fragment resolves its fixed child Views once per view creation, keeps them in a private lifecycle-owned field cache, cancels button animation and releases the cache in `onDestroyView`; render, draft and scroll callbacks do not repeat tree searches. Hiding/backgrounding cancels work. Opening/restoring never requests a response. Stop obeys the native runtime's interruption law: a stopped ordinary reply requires a new learner message, rather than the deleted mock's chunk-offset Resume behavior. A short cancellable local provider delay permits testing Stop without network access.
 
-Basic authored sample equations use native Unicode math with spoken descriptions and horizontal overflow. Real sessions now use Markwon's native Markdown/LaTeX spans; specialized rich-content renderers remain deferred. Visual targets, comparisons and captures are in DESIGN_SYSTEM.
+The dock remains a transcript sibling; teaching checks require explicit reveal, and collapsing preserves controls and model state. The transcript stays visible with the IME, with AppKit owning system-bar/keyboard insets. Authored sample equations use the same Markwon/LaTeX renderer as real content. Visual targets and historical captures are in DESIGN_SYSTEM.
 
 - Stable IDs derive from persistent block/tool identities, never list positions or collision-prone string hashes alone.
 - Project session events into display items separately from agent execution.
@@ -402,19 +402,122 @@ reasoning is not summarized as learner evidence. Oversized uncuttable exchanges 
 than dropping pending work. Archive safety bounds are separate: 10,000 rendered blocks, 16 million
 text characters and 16 MB UTF-8 protocol. Compaction never creates teaching or graph evidence.
 
-Hiding the runtime screen or stopping the Activity cancels the foreground job; there is no service/background-execution promise. Cancellation closes the HTTP call/body, including blocked reads. Finally checkpoints run non-cancellably on IO; streamed partial text is marked interrupted and excluded from model context. Startup marks unfinished runs/sessions interrupted; Retry starts a new charged request rather than claiming token-level resume. Reported usage accumulates completed responses/runs; interrupted or rejected responses may have billed usage the client cannot report. Draft writes debounce 200 ms and flush on actions/hiding. Native saved state carries no real transcript or credentials.
+Hiding the runtime screen or stopping the Activity cancels the foreground job; there is no service/background-execution promise. Cancellation closes the HTTP call/body, including blocked reads. Finally checkpoints run non-cancellably on IO; streamed partial text is marked interrupted and excluded from model context. Startup marks unfinished runs/sessions interrupted; Retry starts a new charged request rather than claiming token-level resume. Legacy usage accumulates completed responses/runs. The native path also retains trustworthy reported terminal usage from rejected/incomplete responses in its parallel log; unreported spend after network loss/cancellation remains unknown. Draft writes debounce 200 ms and flush on actions/hiding. Native saved state carries no real transcript or credentials.
 
 SQLite v4 preserves sessions, messages, questions, answers and runs, with additive migrations
 from v1/v2/v3 for knowledge tables, display-title/deletion metadata and optional native-record
 storage. `sessions.native_record` retains original LearnHarness JSON separately from local
 checkpoints; `native_display_ids` allocates stable numeric identities for native messages/content
 blocks in the same save transaction. Legacy histories remain legacy; no events are fabricated.
-Native persistence/pure restoration checks are implemented, but the native execution adapter is
-not: opening native-backed sessions is blocked before the legacy runner can alter them. New
-lessons still use the existing engine. The four native persistence tests plus the existing v2
-migration regression passed on an API-36 emulator (`OK (5 tests)`), using temporary fixture DBs
-and no provider calls. This does not verify cross-engine continuation. See stage 2 in
+Native persistence/pure restoration and question/answer projections are implemented. `NativeQuestion`
+reuses `RuntimeQuestion` data/submit validation but follows native normalization, deterministic shuffle,
+answer-free client projection and full answer details. Pure answer/dismissal appends return a new
+native archive and never trigger continuation by themselves. `NativeTeaching` now projects the
+supported native probe/plan/teach subset into the shared transcript, question dock and plan page;
+`NativeResponses` bridges it to the existing provider. Explicit answers are saved before a request;
+opening/reopening never requests inference. Hidden commitments/reasoning stay out of pending rows,
+and retry/cancellation preserve original history. The native question overflow dismissal targets
+its captured call ID and saves a silent native result, without grading, revealing hidden reasoning,
+or invoking a provider. Unsent drafts remain local; repeated dismissal, reopen and Retry do not
+resume it. Later explicit text can continue. Native question-only batches now advance through the
+same dock in authored order: intermediate answers save locally, and only the last answer wakes one
+reaction request. Dismissals never wake; results stay adjacent to their calling assistant. Every call
+is validated before archive mutation; mixed tools and duplicate/replayed IDs remain denied. Legacy,
+practice and other callers keep single-call validation. Hidden generation summaries stay suppressed
+while any graded sibling is pending, even behind an ungraded ask. Completed historical graph reads
+(`list_sessions`, `list_propositions`, `find`) replay only with matching later results; they are not
+teacher prose, learner evidence or newly executable tools. A private, owner-authorized desktop lesson
+copy now passes offline Android restoration → authored quiz → answer → fake prose, preserving its
+original history and desktop file bytes; test copies/databases were removed. Six real-parser/in-memory
+SSE failure/cancellation cases preserve answers and known usage without committing partial tools.
+The complete JVM suite, debug/test builds and debug lint pass. Combined API-36 native runtime/store/
+migration checks report 24 passed/four explicit opt-in skips (`OK (28 tests)`); private-copy, desktop
+continuation and both real process-death recovery opt-ins separately pass. Fifteen negative envelope
+cases keep new graph reads, jobs and permission escalation denied. Native learner-text steering uses
+an eight-message/2,000-character-per-message local checkpoint queue, not answer or tool permission
+input. All queued messages append atomically to the native archive/UI before the next request at a
+non-stopping response boundary. Questions, plans, practice problems, errors and Stop park them until
+explicit later input/eligible Retry; compaction rejects them and opening never drains. Stale saves
+preserve undelivered IDs and cannot requeue delivered IDs. Android deliberately persists undelivered
+text across process death, unlike desktop's memory-only queue. Offline API-36 runtime and real-menu/
+dialog tests cover delivery, capacity, cancellation, parked recovery and retained text when Send races
+settlement. Broader in-run answer/dismissal and UI/tool compatibility remain unverified. Completed
+provider JSON is retained separately
+from its native projection; unavailable usage/cost fields are not fabricated. New sessions remain
+legacy. Native `probe_done` saves its assessment/acknowledgment/handoff atomically before the
+teacher request. `NativePlan` parses the pinned Mermaid authoring subset using existing bounded
+DAG validation; `plan_init` stores the full tree in details and slim node IDs in model content.
+Invalid maps leave the old tree intact and permit bounded repair. Initial/revised planning ends
+for a natural learner reply, with no synthetic approval event; the first tagged quiz/explain call
+starts teaching. `NativePractice` adds clean-ack problem ownership, hidden precommitted solutions,
+write-ahead thinking markers, explicit Next, nullable conclude judgments and original-solution
+reveal on the existing practice screen. Conclude permits closing prose only, never same-turn
+re-pose. Silent dismissal preserves the draft and defers its synthetic conclude/ack pair until
+explicit later input. Retry does not duplicate work; reopen never generates. New target IDs
+validate against the whole local graph; omitted/empty targets remain untagged. Android size
+bounds apply; name/coercion healing is not implemented. Unknown tools and artifacts stay blocked
+without a legacy fallback. `NativeCompaction` adds native record-id cuts and usage-anchored
+estimation, invalidating pre-marker anchors and retaining a 20,000-token tail. The existing foreground
+command serializes a same-model/effort/connection, tool-free summary before continuation and at
+successful settle; learner input is still committed before requests. Native markers and successful
+summary `turns` usage commit atomically, without dropping transcript, changing question commitments
+or creating prose/graph evidence. Prior summary plus newly dropped span and exact plan structure
+feed the existing compaction prompt. Failed/incomplete/empty/cancelled summaries leave the old cut
+intact; failed settle summaries do not append failed teachers. Reopen is local-only. Android does
+not add a desktop-style background registry or compaction-divider UI.
+`NativeResponses` now captures validated money before tool/output acceptance: one append-only,
+idempotent native `turns` entry per foreground invocation, one step per provider call, and new
+entries for retries. The final assistant/failure is its provenance; failed/cancelled summaries
+use the parallel log without creating a marker/failed teacher. Reports retain disjoint cache
+buckets and absent fields (unknown is not zero); known counts also reach local totals/runs.
+Invalid counts are not trusted. Bounded terminal failure responses reach the runner through
+`ProviderFailure` without entering error strings/logs; differing terminal-only output metadata
+is retained as `reasonedTerminalOutput`, never executed as fallback. Successful compaction keeps
+its atomic marker/usage save. Local `checkpoint.nativeTurn` journals each possibly in-flight call
+and each validated usage receipt alongside known totals, before accepting generated content.
+It is not part of the portable archive. Final native append and journal clearing commit together.
+Startup recovery atomically finalizes interrupted accounting, leaves unreported steps as `{}`,
+repairs local run totals/status and clears the checkpoint exactly once. Unexpected conversation
+death creates a retryable native error; deliberate Stop remains `aborted`. Interrupted compaction
+adds neither a marker nor a failed teacher and preserves the pending question. Reopen never pays.
+Full SSE journaling, missing provider reports, full desktop/Electron UI and live-provider acceptance are not claimed.
+The JVM suite and debug/test APK builds pass. The latest API-36 ordinary run has nineteen passing
+checks (eleven runtime, six store, migration and legacy regression) and two opt-in process-death
+harness methods skipped (`OK (21 tests)`). Store recovery covers in-flight/received/accepted/finalized
+checkpoints, cache splits, idempotency and transactional rollback. Separate two-process conversation
+and compaction fixtures kill the app process without `finally`; both fresh reader runs pass
+`OK (1 test)`, including local-only reopen, preserved hidden commitments and explicit conversation retry.
+These are accounting/process-restart tests, not task/UI restoration acceptance.
+An earlier account-fixture namespace error was corrected without weakening the permission gate;
+namespace guards are also JVM-tested. Six unchanged authored Android runtime snapshots pass
+the pinned desktop store/readers/folds/idempotent usage append/resave (85 checks with all Android
+snapshots; 83 with the original four; 79 baseline). A separate pinned real desktop handler/Agent/tool/fs
+runner now passes seven authored Android → LearnHarness continuation checks (ten faux requests,
+zero runtime network attempts). It covers answer/thinking write-ahead, plan repair, call-ID reminting,
+practice commitment reveal/Next, existing summary projection, and explicit recovery continuation,
+while retaining original transcript/turn prefixes and opaque fields. Data/home/credentials are
+isolated; runtime networking is denied. This is not Electron/UI, live-provider, reverse Android
+continuation, graph/artifact execution or export/import acceptance; the upstream test gate skips
+automatic extraction/compaction. A separate opt-in API-36 test now restores and continues all six
+post-settlement desktop records through the existing Android native runtime (`OK (1 test)`).
+It preserves complete message/usage prefixes, opaque fields and hidden commitments, commits new
+answers/thinking before fake inference, and verifies exact practice reveal, compaction projection
+and local reopen without new requests. The ordinary native runtime class passes eleven tests and
+skips three opt-in methods (`OK (14 tests)`). Test-local model/connection and zero-based local
+counters are explicit; this is not production import or historical-counter reconstruction.
+No production runtime change was needed. This bounded authored Android → LearnHarness → Android
+cycle is not UI, live-provider, graph/artifact or transfer-installation acceptance. See stage 2 in
 [the interoperability plan](docs/LEARNHARNESS_SYNC.md).
+A separate pinned Next/Chromium smoke runner (`scripts/check-learnharness-ui.mjs`) now passes
+five UI checks with six faux requests and no real provider calls against those desktop records.
+It covers quiz reveal/confidence/both thinking channels, practice reveal/Next/silent discard,
+compaction history/dividers and explicit failed-turn Retry, retaining native history/usage prefixes.
+The real pages/routes/tools/stores stay intact; only the chat handler's existing engine factory
+is injected. Source/assets and dependency metadata are pinned; data/home/auth/browser profile
+are disposable. Next's npm update poll is blocked; dictation's expected no-key 503 is outside scope.
+Six authored screenshots and a result report are local ignored evidence. The server/browser closed
+and their processes/ports were checked absent. This is not Electron shell, live-provider,
+graph/artifact or transfer-installation acceptance; stage 2 remains incomplete.
 
 Drawer long-press
 opens a native context menu; rename input and delete confirmation use native dialogs. Renaming
@@ -460,8 +563,18 @@ compatibility baseline, runtime differences, related-subgraph scope and manual c
 recorded in [docs/LEARNHARNESS_SYNC.md](docs/LEARNHARNESS_SYNC.md). Direct synchronization of the
 live SQLite database and desktop JSON/JSONL stores is not part of that plan. Stage 1's
 [frozen native contract and offline reference checks](docs/LEARNHARNESS_NATIVE_CONTRACT.md)
-are available. Native persistence/restoration foundations have started; native execution
-adaptation and transfer remain unimplemented.
+are available. Native persistence/restoration, question/answer foundations and a gated teaching
+UI/provider path are implemented; full native runtime adaptation and transfer remain unfinished.
+The agreed direction is to extend this Kotlin native-contract executor, not embed the desktop engine
+or maintain two independent teaching logics indefinitely. First ship bounded native transfer with
+explicit capability/dependency blockers; after its gates pass, make the native path primary for new
+lessons. Existing lessons keep legacy execution until a separate explicit migration is validated.
+Android lifecycle, storage, UI and billing/permission boundaries remain authoritative on the device.
+`NativeGraphSelection` now provides pure provenance-based native assertion selection, preserving first
+definitions, canonical chain identity, required endpoints and raw unknown fields without incident-
+chain expansion. Four JVM tests and a shared pinned-native fold vector pass (87 reference checks with
+six saved Android snapshots). It is not wired to export and is not external-package validation;
+source/dependency completeness, native graph installation and coverage compatibility remain gates.
 
 ### Optional ChatGPT plan connection
 
@@ -501,7 +614,7 @@ bypasses TextView selection/focus-induced scroll, while ordinary prose selection
 keyboard/TalkBack spans remain native. Equal transcript rows no longer report a spurious adapter
 change/re-follow. Ordinary code blocks and LaTeX retain their native rendering. `DiagramFragment` is
 a native fullscreen bitmap canvas with pinch/pan, double-tap/toolbar fit, labeled accessibility zoom
-actions and selectable source; reopening does not call a model.
+actions; raw source is not exposed in the UI. Reopening does not call a model.
 
 `DiagramRenderer` serializes all local jobs through one short-lived WebView at a time. The
 unmodified Mermaid 11.17.0 browser bundle is pinned/hash-recorded locally, using strict security,

@@ -529,6 +529,15 @@
       "m_teach"
     ]
   },
+  "graphSelection": {
+    "chats": ["chat_contract_teach"],
+    "nodeLines": [0, 1, 2, 3],
+    "chainLines": [0],
+    "externalProvenance": [
+      {"chatId": "chat_external", "messageId": "m_external"},
+      {"chatId": "src_contract_notes", "messageId": ""}
+    ]
+  },
   "dependencies": {
     "externalChats": [
       "chat_external"

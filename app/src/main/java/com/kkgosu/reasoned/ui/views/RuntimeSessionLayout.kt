@@ -12,7 +12,7 @@ class RuntimeSessionLayout(context: Context, attrs: AttributeSet?) : LinearLayou
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         val panel = findViewById<View>(R.id.question_panel)
         if (panel.visibility != View.VISIBLE) return
-        val transcript = findViewById<View>(R.id.lesson_list)
+        val transcript = findViewById<View>(R.id.lesson_transcript)
         val extra = resources.getDimensionPixelSize(R.dimen.runtime_question_extra_height)
             .coerceAtMost(transcript.measuredHeight)
         if (extra == 0) return

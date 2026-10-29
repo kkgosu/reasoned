@@ -1,0 +1,7 @@
+{
+  "commit": "3dd52110bbcbcba81645453ce0a8fdc230594c47",
+  "sourceDirectories": ["app", "components", "lib", "src", "public", "electron"],
+  "rootFiles": ["package.json", "package-lock.json", "next.config.ts", "postcss.config.mjs", "tsconfig.json", "components.json", "config.ts", "LICENSE"],
+  "sourceFiles": 313,
+  "sourceTreeSha256": "9ec063e234ef5b9f6949fcae0a774b2a1dadd8591ce35f2fc1d9bbe4a762bd9a"
+}

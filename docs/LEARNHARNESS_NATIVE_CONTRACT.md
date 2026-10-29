@@ -5,8 +5,12 @@
 Stage 1 of [the interoperability plan](LEARNHARNESS_SYNC.md): freeze the actual native
 contract and establish authored, offline reference cases. **This reference does not establish
 cross-engine continuation, conversion, import installation, transfer UI or network sync.**
-The subsequent Android persistence/restoration foundation is recorded under stage 2 of the plan;
-native execution adaptation is still incomplete.
+The subsequent Android persistence/restoration, pure question/answer appends and gated
+probe → plan → teaching, practice and native-compaction paths are recorded under stage 2 of the plan. Native execution
+adaptation is still incomplete. Six authored Android runtime snapshots now pass the pinned
+desktop store/readers/folds/resave. A separate runtime runner now demonstrates narrow offline
+Android → LearnHarness continuation with a faux provider; the resulting six records also
+continue in Android (see below). Neither establishes full desktop/UI or transfer acceptance.
 
 The authority is LearnHarness `main` at
 [`3dd52110bbcbcba81645453ce0a8fdc230594c47`](https://github.com/amosblomqvist/learnharness/tree/3dd52110bbcbcba81645453ce0a8fdc230594c47),
@@ -14,7 +18,7 @@ not a moving branch, this document, or Reasoned's existing checkpoint schema. Th
 idea, teaching approach and visual direction are Amos Blomqvist's LearnHarness.
 
 [`fixtures/learnharness/v1/upstream.json`](../fixtures/learnharness/v1/upstream.json) records
-SHA-256 hashes of 41 reference source/config/license files, chat/graph version 1, and the
+SHA-256 hashes of 42 reference source/config/license files, chat/graph version 1, and the
 upstream-locked TypeBox 1.3.27 package/integrity. Reference sources stay in a separate checkout;
 byte-preserved Android prompt assets are untouched. Changing the baseline requires an explicit
 manifest, inventory and fixture review; do not merely update a commit label.
@@ -52,7 +56,7 @@ incorrectly reject honest history.
 | Plan/teach: `src/core/phases.ts`, `src/core/contracts/plan.ts` | Phase is probe until successful probe completion, then plan until the first node-tagged `quiz`/`explain` call. Presenting a plan or a natural learner reply alone does not flip teach. Current/visited nodes derive from tagged calls, even before answering; wrong answers do not mark nodes done. Native and grouped-view folds agree on the checked checkpoints. |
 | Practice: `src/agent/tools/practice.ts`, `src/core/native-messages.ts`, `src/core/input-events.ts` | A problem commits `statement`, `mode` (`recall/discrimination/composition`), optional graph target IDs and hidden `modelSolution`. Clean pose ack activates it; only clean conclude ack/dismissal frees it. Thinking is a `practice-thinking` marker. Conclude records outcome, verdict, rung, miss class and retest; reveal uses the original solution. Silent `problem-dismissed` is UI-only; the next input prepends a synthetic conclude pair with outcome dismissed. That deliberately slim synthetic call is not an ordinary newly authored conclude. `practice-next` is explicit learner permission, not automatic progression. |
 | Interruption/retry: `native-messages.ts`, `input-events.ts` | Failed/aborted attempts stay in the archive. Wire projection strips record IDs, filters/flattens markers, and repairs unanswered calls from completed generations with ephemeral interrupted results. Error/aborted generations get no fabricated orphan results. Retry drops only eligible failed-tail IDs from temporary agent history, without resubmitting input or rewriting disk history. |
-| Compaction: `src/core/compaction.ts`, `native-messages.ts` | Full transcript stays persisted. Newest `compaction` marker references `firstKeptMessageId`, summary/header, token count, time and optional model. Model input becomes summary plus retained tail; missing reference falls back to full history. Do not export only this projection. A trailing compaction marker is not itself an unconsumed result: the reference pins the native continuation fold's exact tail law. |
+| Compaction: `src/core/compaction.ts`, `native-messages.ts` | Seven shared cutoff/estimate vectors pin content-only sizing, cache-inclusive usage anchors, marker invalidation, oversized results and no-progress/UI-metadata boundaries. Full transcript stays persisted. Newest `compaction` marker references `firstKeptMessageId`, summary/header, token count, time and optional model. Model input becomes summary plus retained tail; missing reference falls back to full history. Do not export only this projection. A trailing compaction marker is not itself an unconsumed result: the reference pins the native continuation fold's exact tail law. |
 | Coverage: `src/core/coverage.ts` | Only learner-facing teacher prose is extracted: ordinary assistant text and successful `send_to_user` prose. Learner text, answers, questions, thinking blocks, other tools/results and custom markers are invisible. Fingerprints include native message identity. Editing only an answer does not reopen extraction. Some older contract comments describe broader coverage; this executable code is authoritative. |
 | Usage: `src/core/contracts/chat.ts`, `contracts/jobs.ts` | Preserve native assistant stamps and parallel turn/extraction/job logs independently. Turn ID, not just message ID, is the billing-log idempotency key. Unreported token/cache/reasoning fields remain absent, never manufactured as zero. Authored fixture usage and signatures are explicitly fake test data. |
 
@@ -91,18 +95,68 @@ node scripts/check-learnharness-contract.mjs --upstream ../learnharness-contract
 | Reference | Executed native acceptance checks |
 | --- | --- |
 | Teach transcript, 12 checkpoints | Pending probe → answer → bare/clean completion → handoff → plan review/reply → tagged prediction/answer → free recall/answer → compaction. Phase, pending call, continuation, current/visited and native/view parity. |
-| Practice transcript, 10 checkpoints | Bare/acked pose, thinking, bare/acked conclude, next, another pose, silent dismissal, deferred conclusion, next. Active problem, pending dismissal and exact continuation behavior. |
+| Practice transcript, 10 checkpoints | Bare/acked pose, thinking, bare/acked conclude, next, another pose, silent dismissal, deferred conclusion, next. Active problem, pending dismissal and exact continuation behavior; native input builders match the authored markers and deferred pair exactly. |
 | Interruption transcript, 2 checkpoints | Failed request retry IDs, deliberate abort, no orphan wire results, archive unchanged. |
 | Seven answer cases | Multi-select values/shuffled display order, wrong prediction/confidence, free recall/both thinking channels, don't-know, Other, legacy note and dismissal. Full details versus compact model content. |
+| `questions.json`: 16 questions, 29 submissions, eight refused calls | Same vectors run through Kotlin and native parsing/QuestionData construction, UTF-16 seeded shuffle, normalization, answer-free client projection, reveal rules, exact answer details, confidence/rounding and compact model content. Native append/pending/continuation/input-cause checks also accept every submitted vector. |
+| `plans.json`: nine authoring cases | Shared Kotlin/native parser and DAG checks: direction headers, quoted labels, slug IDs, chains/arrow synonyms, deduplication, comments/BOM, self-loops/cycles and unsupported syntax. Android retains its bounded DAG limits. |
+| Parallel questions | Ordered native/view pending selection, sibling answers/dismissals adjacent to one owner, deferred continuation until the last answer, and all-dismissed pause. Android fake-provider runtime checks all answered/mixed/all dismissed batches. |
+| Selected graph assertions | A shared original-line selection keeps first node definitions, selected link-appends, chain endpoints and external provenance, without unrelated incident chains. Pinned native folds verify canonical definitions/chain identity; four Kotlin selection tests also cover ordering, preservation and refusal. Not an external-package validator. |
 | Shared graph/source ledgers | First-definition identity, later aliases/provenance, canonical equivalent-chain merge, required source metadata, external chat references, derived canvas geometry and native prose coverage. |
 | Artifacts and pending job | Inline result/view projection and PNG content survive; delivered versus pending are distinct. Only a local existing-job acknowledgment is exercised, with spawning forbidden. |
 | Guard/read-write cases | Matching-source hashes, lazy/unsupported versions, refusal without mutation, read-only bytes, native corrupt-line tolerance, opaque-field/full-archive preservation on native resave and idempotent usage append. |
 
-Recorded result: **45 checks passed**, Node.js 24.12.0, hash-matching upstream source snapshot
+Recorded result: **81 checks passed**, Node.js 24.12.0, hash-matching upstream source snapshot
 plus integrity-verified locked TypeBox. All fs adapter writes are confined to disposable
 `LH_DATA_DIR`; there are no live providers, browser execution, renderer tests or Android runs.
 This is a native-contract acceptance matrix, **not** a LearnHarness → Reasoned → LearnHarness
 round trip or proof of cross-engine continuation. The downstream stages remain gated.
+
+With `--android-records <authored-test-snapshots>`, the same checker additionally reads four
+unmodified `SessionStore` snapshots emitted by offline API-36 fake-provider tests, and two optional
+real-process-death recovery snapshots when present. Recorded result: **87 checks (81 baseline +
+4 original Android + 2 recovery cases)**; the original four alone produce 85. Native readers,
+view/model/phase/pending/problem folds, usage-step grouping/sums/provenance, idempotent usage replay
+and native resave pass for teaching, practice, compaction, failures and interrupted accounting.
+The conversation recovery is retryable; interrupted compaction preserves its hidden pending
+question without a new marker or failed teacher. Snapshot bytes and opaque fields remain intact.
+The cases use an isolated `LH_DATA_DIR`; installed desktop data, real providers, desktop agents/UI,
+graph conversion and transfer installation are not exercised by that reader checker.
+
+Separately, `scripts/check-learnharness-runtime.mjs` passes **9 checks with 14 faux requests and
+zero runtime network attempts** through the pinned real chat handler, teacher/practice Agent loop,
+native tools, turn/SSE settlement and fs stores. All six Android snapshots continue only after
+explicit synthetic input; answers/thinking persist before inference, original commitments and
+compaction cuts survive, and old transcript/usage prefixes remain intact. Two extra authored checks
+exercise live learner steers: co-delivery after prose and parking at a question until explicit answer.
+They use a scratch chat outside the six exported fixtures. The 146 scoped runtime
+source/prompt files and dependency lock metadata are pinned by `runtime-upstream.json`.
+Scratch-only data/home, cleared credential environment and runtime fetch/socket denial isolate the
+run. Automatic extraction/compaction are disabled by upstream's test gate. This is not Electron/UI,
+live-provider, reverse Android continuation, graph/artifact execution or transfer installation.
+The resulting six unchanged desktop fs records also pass an opt-in API-36 Android restoration/
+continuation test (`OK (1 test)`): original history/usage prefixes and opaque fields stay intact,
+answers/thinking commit before fake inference, commitments and compaction projections survive,
+and reopening/settled Retry make no new request. Existing Android runtime/persistence code suffices;
+test-local model/connection and local zero-based counters are explicit, not an import policy.
+This is a bounded authored Android → LearnHarness → Android runtime cycle, not transfer-package
+validation/installation, UI or live-provider acceptance. The ordinary Android runtime class has
+17 passing tests and four opt-in skips (`OK (21 tests)`), including native steering/runtime and
+menu-dialog acceptance. See the fixture README for reproduction
+and limits; stage 2 is still incomplete.
+
+A separate `scripts/check-learnharness-ui.mjs` now passes **5 desktop web-UI checks with 6 faux
+requests and zero real provider calls** in an isolated Chromium profile. It exercises the pinned
+Next pages/routes with the existing handler engine-factory seam: local reopen, quiz reveal/order,
+confidence and both thinking channels persisted before inference, practice exact reveal/Next/silent
+discard, compaction history/dividers without showing the summary, and explicit failed-turn Retry.
+Old native message/usage prefixes and opaque fields survive. `ui-upstream.json` pins 313 upstream
+source/config/asset files; source bytes and fixture inputs are preserved after the known Next type
+include is verified/restored. External requests are blocked (including Next's npm update poll);
+no-key dictation remains unavailable, not tested. Six authored screenshots/result metadata are
+ignored local evidence; the owned server/browser were shut down. This is **not Electron shell**,
+live-provider, graph/artifact, Android UI or transfer/install acceptance. Stage 2 remains incomplete.
+See the fixture README for reproduction and the bounded result.
 
 The shared-graph case intentionally includes `n_shared` defined in an external chat, later linked
 by the selected lesson, and `n_notes` required by `arg_selected`. A future selected-lesson export

@@ -115,10 +115,16 @@ links, wrapped/aligned and horizontally scrolling wide tables, code, inline math
 Markdown headings keep a single line break before their body rather than an extra empty line;
 ordinary paragraph spacing is unchanged. The sample includes short and wrapping headings.
 No credentials or provider requests are needed. Scroll upward from the sample's question to inspect
-them; use system font scaling to check larger text. **Sample session → overflow → Learning plan**
-opens the real plan screen with an authored four-step sample, initially showing visited/current/upcoming.
-Answering a sample question advances its positional highlight; recreation retains that sample progress.
-The synthetic plan tags exist only in memory and never enter session storage or the knowledge graph.
+them; use system font scaling to check larger text. Sample session now opens the same `RuntimeSessionFragment` and layout as a real chat, using the
+same `SessionRuntime` with an authored offline provider and a separate in-memory SQLite store.
+Its scenario is Probe → three-strand sample assessment → four-step plan → prediction → revealed
+teaching check → local notes. The common bottom fade, down-arrow button, send-follow scrolling,
+question controls and IME behavior therefore need no duplicate sample implementation.
+**Sample session → overflow → Learning plan** opens the real plan screen: steps initially remain
+upcoming, then the runtime's native question node IDs advance the positional highlight.
+Recreation restores the sample without requesting another response. Model/thinking selectors are
+disabled and Context explains the offline fixture; no credentials, billing or graph extraction are
+involved. Synthetic plan/history data never enters the real session database or knowledge graph.
 
 Open **Style reference** from Home. It demonstrates three font roles, the complete size ladder, a minimal outlined surface, primary/secondary actions and a multiline restoration draft. It deliberately uses a static ScrollView: building a RecyclerView adapter for a fixed typography specimen would add no value. LiteX/AppKit RecyclerView now renders the phase-2 lesson.
 
@@ -200,7 +206,27 @@ capture and never restores the password field. No key appears in review frames.
 
 Providers & models offers explicit API-key versus ChatGPT-plan radio choices in equal-width, vertically aligned native rows. Forms use 24-dp outer gutters, 16-dp section spacing and 8-dp action gaps. Disabled buttons use 40% alpha; the graph tooltip opts out because its alpha belongs to selection fades. Short connection status replaces introductory walls of text; full retention/billing/privacy guidance remains in About & privacy and the plan acknowledgement. Plan mode hides API-key entry and shows separate account selection, browser sign-in/add/sign-out, refreshed model selection and Manage usage. Native notices distinguish plan usage/possible credits from API billing; a first successful plan connection requires an acknowledgement before model selection or session creation. Saved sessions retain their connection even if setup changes. Plan sessions expose the account/usage link without putting credentials into the transcript. Secure setup screenshot blocking is unchanged; browser authentication is external, never an embedded login.
 
-Start session is one disclosed action: local checkpoint then first request, without a second preview gate. Runtime refinements use a 24-dp rounded composer, unboxed 1–4-line input, Send/Stop icons, session model/thinking selectors and a small context ring. Controls retain 48-dp touch targets; model/thinking controls scroll horizontally instead of clipping at enlarged type. No pretend attachment or voice actions are shown. The ring reports the last request's input share of catalog capacity, or ? when unknown; tapping explains limits and holds account/Manage usage details. The always-visible plan button is removed. A native progress row follows the last message rather than appearing at the top; it stays last as streaming rows arrive. Composer controls use bounded 8-dp-corner button ripples, not borderless circular ripples. The question panel restores the existing outlined surface. Questions use native Markdown/LaTeX, choices and a six-position 0/20/40/60/80/100 confidence slider. The question panel fades/changes bounds on arrival; answer entry stays in the bottom dock, and the transcript remains visible during probing/IME resize. API-30+ native IME frames animate the inset. These latest changes are build/lint checked only, not claimed verified at 200% text or on-device.
+Start session is one disclosed action: local checkpoint then first request, without a second preview gate. Runtime refinements use a 24-dp rounded composer, unboxed 1–4-line input, Send/Stop icons, session model/thinking selectors and a small context ring. Controls retain 48-dp touch targets; model/thinking controls scroll horizontally instead of clipping at enlarged type. No pretend attachment or voice actions are shown. The ring reports the last request's input share of catalog capacity, or ? when unknown; tapping explains limits and holds account/Manage usage details. The always-visible plan button is removed. A native progress row follows the last message rather than appearing at the top; it stays last as streaming rows arrive. Composer controls use bounded 8-dp-corner button ripples, not borderless circular ripples.
+The runtime transcript fades into the page over its bottom 32 dp, with matching bottom padding so
+the final message stays readable. A newly committed learner note or answer smoothly scrolls to the
+tail even from history; ordinary updates retain the existing follow-only-when-at-bottom behavior.
+A circular down-arrow button overlays the bottom trailing edge of the transcript while newer
+content is below the viewport; tapping returns to the tail. It fades in and out over 200 ms,
+including when reaching the bottom or expanding the question panel. A reversed transition continues
+from the current opacity rather than jumping; hiding disables the touch target immediately and
+makes it invisible only after the fade. With system animations disabled, visibility changes are
+immediate. The button retains a 48-dp native
+ripple touch target and accessible label. The composer has no top margin, joining the bottom fade
+without a gap. Disabled system animations use immediate scrolling.
+Focused offline sample tests cover the shared controls, draft restoration, scroll button and real
+IME at the emulator's current font scale. Explicit tail jumps align the end of tall Markdown rows
+and remain at the tail during formula/dock reflow until the learner scrolls away. Large-font, RTL,
+TalkBack and visual/motion acceptance for this refinement remain pending. The question panel restores the existing outlined surface. Questions use native Markdown/LaTeX, choices and a six-position 0/20/40/60/80/100 confidence slider. The question panel fades/changes bounds on arrival; answer entry stays in the bottom dock, and the transcript remains visible during probing/IME resize. API-30+ native IME frames animate the inset. These latest changes are build/lint checked only, not claimed verified at 200% text or on-device.
+
+Probe conclusion follows LearnHarness's assessment anatomy: one outlined rounded card, a separate
+inset dark rounded block per assessed strand, and the overall summary last inside the outer card.
+The number of strand blocks follows the assessment, not a fixed three. Native prose fonts,
+selectable Markdown and flexible heights are retained. Device/large-text acceptance is pending.
 
 Answer-card refinement follows the owner's LearnHarness reference: a subtle learner band and thin divider before the next agent turn, not chat bubbles. One answered card holds the Markdown question, outlined choices with selected/correct symbols, and a six-color confidence rail. Correctness is independent of self-reported confidence; missing keys stay ungraded. Written reference answers open without claiming automatic semantic grading. Your thinking, Why and public Agent’s thinking summaries have independent native disclosure controls; encrypted reasoning is never shown. This refinement is build/lint checked only; on-device layout and accessibility review remain pending.
 
@@ -209,7 +235,8 @@ SVG text labels; authored SVG retains its colors on a white render background. P
 prose column and open by tapping the image, without a separate Open diagram label or decorative
 card. Inline/fullscreen share the same bounded 2048px bitmap cache instead of rendering twice. Short
 fence titles or SVG title/Mermaid accTitle supply accessible image labels. Fullscreen inspection
-uses a native canvas, pinch/pan, fit and source menu and labeled accessibility zoom actions. It
+uses a native canvas, pinch/pan, a Fit menu action and labeled accessibility zoom actions; raw
+diagram source is not exposed in the UI. It
 shows only Rendering… while loading or an error on failure; the completed image has no
 gesture-hint/status banner. Image text is rasterized, so enlarged-text readers can zoom rather than
 expecting reflow. Only successful maker jobs receive a FIGURE · MODEL-REVIEWED label; ordinary

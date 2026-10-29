@@ -2,6 +2,9 @@ package com.kkgosu.reasoned.controllers
 
 import com.kkgosu.reasoned.api.ProviderFailure
 import com.kkgosu.reasoned.api.openAiErrorCode
+import com.kkgosu.reasoned.model.NativeChat
+import com.kkgosu.reasoned.model.NativeQuestion
+import com.kkgosu.reasoned.model.NativePractice
 import com.kkgosu.reasoned.model.ProbeAssessment
 import com.kkgosu.reasoned.model.RuntimeSession
 import com.kkgosu.reasoned.model.StudyPlan
@@ -31,7 +34,9 @@ internal object RuntimeTools {
             session.researchAllowed,
             session.mechanic
         ),
-        allowRepair: Boolean = false
+        allowRepair: Boolean = false,
+        nativeTargets: Set<String> = emptySet(),
+        allowQuestionBatch: Boolean = false
     ): Validated {
         if (!response.isNull("error")) throw ProviderFailure(
             openAiErrorCode(response.toString()) ?: "incomplete"
@@ -50,6 +55,7 @@ internal object RuntimeTools {
         val text = StringBuilder()
         val thinking = StringBuilder()
         var call: JSONObject? = null
+        val callIds = mutableSetOf<String>()
         var toolError = ""
         output.objects().forEach { item ->
             when (item.getString("type")) {
@@ -86,15 +92,25 @@ internal object RuntimeTools {
                 }
 
                 "function_call" -> {
-                    if (call != null) throw ProviderFailure("multiple_tool_calls")
+                    // Only native dock questions may share a response; mixed/local tools stay single-call.
+                    if (call != null && !(allowQuestionBatch && session.nativeRecord != null && session.phase != "practice" &&
+                        call.optString("name") in questionNames && item.optString("name") in questionNames))
+                        throw ProviderFailure("multiple_tool_calls")
                     if (item.optString("status") !in listOf("", "completed")) throw ProviderFailure(
                         "invalid_output_tool_status"
                     )
-                    call = item
+                    if (call == null) call = item // Native batches expose the first question; every call is validated below.
                     val id = item.strictString("call_id", 200)
+                    // Native transport reserves | for the provider item-id suffix; bare wire IDs cannot contain it.
+                    if (session.nativeRecord != null && '|' in id) throw ProviderFailure("invalid_output")
+                    if (!callIds.add(id)) throw ProviderFailure("tool_replay")
                     // A replay must not create a second question/answer or apply an already-acknowledged tool.
-                    if (JSONArray(session.protocol).objects()
-                            .any { it.optString("call_id") == id }
+                    if (JSONArray(session.protocol).objects().any { it.optString("call_id") == id } ||
+                        session.nativeRecord?.snapshot()?.getJSONArray("messages")?.objects()?.any { message ->
+                            message.optString("role") == "assistant" && message.optJSONArray("content")?.objects()?.any {
+                                it.optString("type") == "toolCall" && it.optString("id").substringBefore('|') == id
+                            } == true
+                        } == true
                     ) throw ProviderFailure("tool_replay")
                     val name = item.strictString("name", 40)
                     val namespace =
@@ -128,7 +144,10 @@ internal object RuntimeTools {
                             "validating arguments: keys=${args.length()}; expected=${expected.size}"
                         )
                         val keys = args.keys().asSequence().toSet()
-                        if (keys != expected) throw ProviderFailure("invalid_tool_arguments")
+                        if (session.nativeRecord != null) {
+                            val required = schema.getJSONObject("parameters").getJSONArray("required").strings(32, 80).toSet()
+                            if (!expected.containsAll(keys) || !keys.containsAll(required)) throw ProviderFailure("invalid_tool_arguments")
+                        } else if (keys != expected) throw ProviderFailure("invalid_tool_arguments")
                         when (name) {
                             "list_propositions" -> args.strictString("session", 200)
                             "research" -> {
@@ -138,7 +157,12 @@ internal object RuntimeTools {
                                 args.strictString("question", 4000)
                             }
 
-                            "problem" -> {
+                            "problem" -> if (session.nativeRecord != null) {
+                                if (session.nativeRecord.snapshot().optString("kind") != "practice" || session.nativeRecord.state().activeProblem != null || session.problems.size >= 24)
+                                    throw ProviderFailure("practice_problem_active_or_limit")
+                                val problem = NativePractice.problem(id, args)
+                                if (problem.targets.any { it !in nativeTargets }) throw ProviderFailure("practice_target")
+                            } else {
                                 if (!session.practiceReady || session.activeProblem != null || session.problems.size >= 24) throw ProviderFailure(
                                     "practice_problem_active_or_limit"
                                 )
@@ -160,7 +184,10 @@ internal object RuntimeTools {
                                 )
                             }
 
-                            "conclude" -> {
+                            "conclude" -> if (session.nativeRecord != null) {
+                                val active = session.nativeRecord.state().activeProblem ?: throw ProviderFailure("practice_no_problem")
+                                NativePractice.conclude(NativePractice.problem(active.id, active.input!!), args)
+                            } else {
                                 val active = session.activeProblem
                                     ?: throw ProviderFailure("practice_no_problem")
                                 if (active.attempts.isEmpty()) throw ProviderFailure("practice_no_attempt")
@@ -212,7 +239,11 @@ internal object RuntimeTools {
                                         "invalid_plan_reference"
                                     )
                                 }
-                                QuestionContract.parse(id, args, session.phase, name)
+                                if (session.nativeRecord == null) QuestionContract.parse(id, args, session.phase, name)
+                                else {
+                                    val nativeId = id + item.optString("id").takeIf { it.isNotEmpty() }?.let { "|$it" }.orEmpty()
+                                    NativeQuestion.parse(NativeChat.Call(nativeId, name, args), if (session.phase == "probe") "probe" else "teach")
+                                }
                             }
 
                             "visual" -> {
@@ -222,7 +253,13 @@ internal object RuntimeTools {
                                 )
                             }
 
-                            "plan_init" -> StudyPlan.parse(args)
+                            "plan_init" -> if (session.nativeRecord == null) StudyPlan.parse(args)
+                                else args.strictString("mermaid", 16_000)
+                            "probe_done" -> {
+                                if (session.nativeRecord == null || session.nativeRecord.state().phase != "probe" || session.question != null)
+                                    throw ProviderFailure("invalid_probe_handoff")
+                                ProbeAssessment.parse(args.getJSONObject("assessment"))
+                            }
                             "finish_probe" -> {
                                 if (session.answers < 1 || session.question != null) throw ProviderFailure(
                                     "invalid_probe_handoff"
@@ -239,6 +276,7 @@ internal object RuntimeTools {
                         val code = when (error) {
                             is ProviderFailure -> error.reason
                             is org.json.JSONException -> "invalid_tool_arguments"
+                            is IllegalArgumentException -> if (session.nativeRecord != null) "invalid_tool_arguments" else throw error
                             else -> throw error
                         }
                         val local = name == "plan_init" || name in questionNames

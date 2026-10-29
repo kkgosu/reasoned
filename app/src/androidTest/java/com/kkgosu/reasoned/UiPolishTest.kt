@@ -40,7 +40,6 @@ class UiPolishTest {
         R.layout.fragment_graph_search,
         R.layout.fragment_home,
         R.layout.fragment_learning_preferences,
-        R.layout.fragment_learning_session,
         R.layout.fragment_new_session,
         R.layout.fragment_research_sources,
         R.layout.fragment_runtime_session,
@@ -51,6 +50,7 @@ class UiPolishTest {
         R.layout.dialog_session_name,
         R.layout.view_graph_search_toolbar,
         R.layout.item_lesson_answered,
+        R.layout.item_lesson_assessment,
         R.layout.item_lesson_text,
         R.layout.item_session_navigation,
         R.layout.item_graph_search,
@@ -218,7 +218,11 @@ class UiPolishTest {
                         View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY)
                     )
                     root.layout(0, 0, width, height)
-                    check(root)
+                    try {
+                        check(root)
+                    } catch (failure: AssertionError) {
+                        throw AssertionError("${context.resources.getResourceEntryName(layout)}: ${failure.message}", failure)
+                    }
                     if (layout == R.layout.item_lesson_answered) {
                         val contentInset = context.resources.getDimensionPixelSize(R.dimen.space_16)
                         for (id in listOf(

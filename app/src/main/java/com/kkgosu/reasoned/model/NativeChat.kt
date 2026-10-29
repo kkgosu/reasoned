@@ -3,6 +3,7 @@ package com.kkgosu.reasoned.model
 import com.kkgosu.reasoned.utils.objects
 import org.json.JSONArray
 import org.json.JSONObject
+import java.util.UUID
 
 /**
  * Immutable original LearnHarness record, not a Responses request or an Android checkpoint.
@@ -112,12 +113,44 @@ internal class NativeChat private constructor(val raw: String, val id: String) {
             visits.lastOrNull(), visits.dropLast(1).toSet(), retry)
     }
 
+    /** A pending question is a projection of its original call, never a persisted placeholder. */
+    fun pendingQuestion(): NativeQuestion? {
+        val state = state()
+        val call = state.pending ?: return null
+        val owner = snapshot().getJSONArray("messages").objects().last { it.optString("role") == "assistant" }
+        require(!owner.failed()) { "A failed generation cannot pose a native question" }
+        return NativeQuestion.parse(call, state.phase)
+    }
+
+    /** Explicit learner action only. Produces a new record; does not save, continue or call providers. */
+    fun answerPending(callId: String, request: JSONObject, now: Long = System.currentTimeMillis()): NativeChat {
+        val pending = pendingQuestion()
+        require(pending != null && pending.question.callId == callId) { "Answer targets no pending native question" }
+        return appendAnswer(callId, pending.tool, pending.answer(request, now), now)
+    }
+
+    fun dismissQuestion(callId: String, now: Long = System.currentTimeMillis()): NativeChat {
+        val pending = pendingQuestion()
+        require(pending != null && pending.question.callId == callId) { "Dismissal targets no pending native question" }
+        val answer = JSONObject().put("kind", pending.kind).put("questionText", pending.question.text)
+            .put("dontKnow", false).put("answers", JSONArray()).put("dismissed", true).put("answeredAt", nativeTime(now))
+        return appendAnswer(callId, pending.tool, answer, now)
+    }
+
+    private fun appendAnswer(callId: String, tool: String, answer: JSONObject, now: Long): NativeChat {
+        val record = snapshot()
+        record.getJSONArray("messages").put(JSONObject()
+            .put("id", "msg_${now.toString(36)}_${UUID.randomUUID().toString().take(8)}")
+            .put("role", "toolResult").put("toolCallId", callId).put("toolName", tool)
+            .put("content", JSONArray().put(JSONObject().put("type", "text").put("text", compactAnswer(answer).toString())))
+            .put("details", answer).put("isError", false).put("timestamp", now))
+        return parse(record.put("updatedAt", nativeTime(now)).put("version", 1).toString())
+    }
+
     /** Native pi-message projection only, NOT a Responses API payload. Never executes imported data. */
     fun modelMessages(): JSONArray {
         val messages = snapshot().getJSONArray("messages").objects()
-        val compaction = messages.lastOrNull {
-            it.optString("role") == "custom" && it.optString("customType") == "compaction"
-        }
+        val compaction = NativeCompaction.active(messages)
         val kept = compaction?.optJSONObject("details")?.optString("firstKeptMessageId")
         val cut = messages.indexOfFirst { it.optString("id") == kept }.coerceAtLeast(0)
         val result = JSONArray()

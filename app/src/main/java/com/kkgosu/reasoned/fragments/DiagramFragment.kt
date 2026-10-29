@@ -1,6 +1,5 @@
 package com.kkgosu.reasoned.fragments
 
-import android.app.AlertDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -25,7 +24,6 @@ import me.grishka.appkit.fragments.ToolbarFragment
 class DiagramFragment : ToolbarFragment(R.layout.fragment_shell) {
     private var scope: CoroutineScope? = null
     private var figure: DiagramView? = null
-    private var sourceDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState); setHasOptionsMenu(true)
@@ -33,26 +31,11 @@ class DiagramFragment : ToolbarFragment(R.layout.fragment_shell) {
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         menu.add(0, R.id.diagram_fit, 0, R.string.graph_fit)
-        menu.add(0, R.id.diagram_source, 1, R.string.diagram_source)
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
         R.id.diagram_fit -> {
             figure?.fit(); true
-        }
-
-        R.id.diagram_source -> {
-            val text = TextView(activity).apply {
-                setTextAppearance(R.style.TextAppearance_Harness_Prose)
-                text = arguments?.getString("source").orEmpty()
-                setTextIsSelectable(true)
-                val inset = resources.getDimensionPixelSize(R.dimen.space_24)
-                setPadding(inset, inset, inset, inset)
-            }
-            sourceDialog = AlertDialog.Builder(activity).setTitle(R.string.diagram_source)
-                .setView(android.widget.ScrollView(activity).apply { addView(text) })
-                .setPositiveButton(android.R.string.ok, null).show()
-            true
         }
 
         else -> super.onOptionsItemSelected(item)
@@ -106,7 +89,7 @@ class DiagramFragment : ToolbarFragment(R.layout.fragment_shell) {
     }
 
     override fun onDestroyView() {
-        scope?.cancel(); scope = null; sourceDialog?.dismiss(); sourceDialog = null; figure = null
+        scope?.cancel(); scope = null; figure = null
         super.onDestroyView()
     }
 }

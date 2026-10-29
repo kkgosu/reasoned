@@ -24,6 +24,39 @@ class ChatGptPayloadTest {
     }
 
 
+    @Test fun terminalUsageAndMetadataSurviveWithoutAcceptingFailedOrPendingOutput() = runBlocking {
+        val terminal = JSONObject("""{"id":"resp_authored","status":"incomplete","output":[],
+            "usage":{"input_tokens":40,"output_tokens":10},"error":{"message":"private fixture diagnostic"}}""")
+        for (type in listOf("response.failed", "response.incomplete", "response.completed")) {
+            val event = JSONObject().put("type", type).put("response", terminal)
+            try {
+                readResponseStream(Buffer().writeUtf8("data: $event\n\n")) { }; fail("Terminal failure accepted")
+            } catch (failure: ProviderFailure) {
+                assertEquals(terminal.toString(), failure.response!!.toString())
+                assertFalse(failure.toString().contains("private"))
+            }
+        }
+        terminal.remove("error"); terminal.put("status", "completed")
+        val item = JSONObject("""{"type":"reasoning","id":"rs_authored","summary":[]}""")
+        val added = JSONObject().put("type", "response.output_item.added").put("output_index", 0).put("item", item)
+        val completed = JSONObject().put("type", "response.completed").put("response", terminal)
+        try {
+            readResponseStream(Buffer().writeUtf8("data: $added\n\ndata: $completed\n\n")) { }
+            fail("Pending item accepted")
+        } catch (failure: ProviderFailure) {
+            assertEquals("incomplete", failure.reason)
+            assertEquals(40, failure.response!!.getJSONObject("usage").getInt("input_tokens"))
+        }
+        val done = JSONObject().put("type", "response.output_item.done").put("output_index", 0).put("item", item)
+        terminal.put("output", JSONArray().put(JSONObject(item.toString()).put("encrypted_content", "OPAQUE").put("future", "terminal-only")))
+        val event = JSONObject().put("type", "response.completed").put("response", terminal)
+        val stream = "data: $done\n\ndata: $event\n\n"
+        val response = readResponseStream(Buffer().writeUtf8(stream)) { }
+        assertEquals("OPAQUE", response.getJSONArray("output").getJSONObject(0).getString("encrypted_content"))
+        assertEquals("terminal-only", response.getJSONArray("reasonedTerminalOutput").getJSONObject(0).getString("future"))
+        assertEquals(40, response.getJSONObject("usage").getInt("input_tokens"))
+    }
+
     @Test
     fun learnHarnessPayloadAndTerminalFailuresStayBoundedAndRedacted() = runBlocking {
         val raw = JSONObject().put("model", "wrong-model").put("store", true).put("stream", false)

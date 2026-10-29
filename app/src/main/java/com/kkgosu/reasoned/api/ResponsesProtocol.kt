@@ -76,7 +76,7 @@ internal suspend fun readResponseStream(
             }
             data.setLength(0)
             if (event.optJSONObject("response")?.let { !it.isNull("error") } == true)
-                throw ProviderFailure(openAiErrorCode(event.toString()) ?: "incomplete")
+                throw ProviderFailure(openAiErrorCode(event.toString()) ?: "incomplete", event.optJSONObject("response"))
             val type = event.optString("type")
             if (type in listOf(
                     "response.created",
@@ -115,13 +115,13 @@ internal suspend fun readResponseStream(
                 "response.completed" -> {
                     val response = event.getJSONObject("response")
                     if (response.optString("status") != "completed" || pending.isNotEmpty()) throw ProviderFailure(
-                        "incomplete"
+                        "incomplete", response
                     )
                     val terminalCount = response.optJSONArray("output")?.length() ?: -1
                     if (finished.isNotEmpty()) {
                         if (finished.keys.withIndex()
                                 .any { (expected, actual) -> expected != actual }
-                        ) throw ProviderFailure("invalid_output_item_index")
+                        ) throw ProviderFailure("invalid_output_item_index", response)
                         val terminal = response.optJSONArray("output")?.objects().orEmpty()
                         // Pi's processResponsesStream uses finished items, with terminal-only encrypted
                         // reasoning backfilled by item ID. Never execute partial added/delta items.
@@ -138,7 +138,11 @@ internal suspend fun readResponseStream(
                                     ?.let { if (it is String) item.put("encrypted_content", it) }
                             }
                         }
-                        response.put("output", JSONArray(finished.values.toList()))
+                        // Retain terminal-only metadata without changing which finished items can execute.
+                        val assembled = JSONArray(finished.values.toList())
+                        if (response.optJSONArray("output")?.toString() != assembled.toString())
+                            response.put("reasonedTerminalOutput", response.opt("output"))
+                        response.put("output", assembled)
                     }
                     android.util.Log.d(
                         "ReasonedRuntime",
@@ -148,7 +152,7 @@ internal suspend fun readResponseStream(
                 }
 
                 "response.failed", "response.incomplete", "error" -> throw ProviderFailure(
-                    openAiErrorCode(event.toString()) ?: "incomplete"
+                    openAiErrorCode(event.toString()) ?: "incomplete", event.optJSONObject("response")
                 )
                 // Tool arguments are deliberately not executable until response.completed validates the full output.
             }

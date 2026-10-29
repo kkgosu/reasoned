@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.kkgosu.reasoned.R
 import com.kkgosu.reasoned.model.LessonDisplayItem
 import com.kkgosu.reasoned.model.LessonDisplayItem.AnsweredDisplayItem
+import com.kkgosu.reasoned.model.LessonDisplayItem.AssessmentDisplayItem
 import com.kkgosu.reasoned.model.LessonDisplayItem.FormulaDisplayItem
 import com.kkgosu.reasoned.model.LessonDisplayItem.QuestionDisplayItem
 import com.kkgosu.reasoned.model.LessonDisplayItem.Role
@@ -60,6 +61,7 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
 
     override fun getItemViewType(position: Int) =
         if (position == items.size) R.layout.item_lesson_generating else when (items[position]) {
+            is AssessmentDisplayItem -> R.layout.item_lesson_assessment
             is TextDisplayItem -> R.layout.item_lesson_text
             is FormulaDisplayItem -> R.layout.item_lesson_formula
             is QuestionDisplayItem -> R.layout.item_lesson_question
@@ -69,6 +71,7 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(viewType, parent, false)
         return when (viewType) {
+            R.layout.item_lesson_assessment -> AssessmentHolder(view)
             R.layout.item_lesson_formula -> FormulaHolder(view)
             R.layout.item_lesson_question -> QuestionHolder(view)
             R.layout.item_lesson_answered -> AnsweredHolder(view)
@@ -79,6 +82,7 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (holder) {
+            is AssessmentHolder -> holder.bind(items[position] as AssessmentDisplayItem)
             is TextHolder -> holder.bind(items[position] as TextDisplayItem)
             is FormulaHolder -> holder.bind(items[position] as FormulaDisplayItem)
             is QuestionHolder -> holder.bind(items[position] as QuestionDisplayItem)
@@ -153,6 +157,48 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
                 (text.parent as? MarkdownContentView)?.reset()
                 text.text = item.text
             }
+        }
+    }
+
+    private inner class AssessmentHolder(view: View) : RecyclerView.ViewHolder(view) {
+        fun bind(item: AssessmentDisplayItem) = with(itemView) {
+            val strands = findViewById<LinearLayout>(R.id.assessment_strands)
+            strands.removeAllViews()
+            item.assessment.strands.forEach { strand ->
+                val padding = resources.getDimensionPixelSize(R.dimen.space_12)
+                val block = LinearLayout(context).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(padding, padding, padding, padding)
+                    background = GradientDrawable().apply {
+                        cornerRadius = resources.getDimension(R.dimen.radius_12)
+                        setColor(context.getColor(R.color.background))
+                    }
+                    layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply { bottomMargin = resources.getDimensionPixelSize(R.dimen.space_8) }
+                }
+                block.addView(TextView(context).apply {
+                    setTextAppearance(R.style.TextAppearance_Harness_Prose)
+                    setTypeface(typeface, Typeface.BOLD)
+                    text = strand.strand
+                    setTextIsSelectable(true)
+                    if (Build.VERSION.SDK_INT >= 28) isAccessibilityHeading = true
+                })
+                val body = TextView(context).apply {
+                    setTextAppearance(R.style.TextAppearance_Harness_Prose)
+                    setTextColor(context.getColor(R.color.muted_foreground))
+                    setLineSpacing(0f, 1.5f)
+                    setTextIsSelectable(true)
+                }
+                block.addView(MarkdownContentView(context).apply { addView(body) })
+                if (markdown == null) body.text = strand.assessment
+                else markdown.setLessonMarkdown(body, strand.assessment)
+                strands.addView(block)
+            }
+            val summary = findViewById<TextView>(R.id.assessment_summary)
+            if (markdown == null) summary.text = item.assessment.summary
+            else markdown.setLessonMarkdown(summary, item.assessment.summary)
+            summary.markdownBody.visibility = if (item.assessment.summary.isBlank()) View.GONE else View.VISIBLE
         }
     }
 

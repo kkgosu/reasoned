@@ -39,6 +39,28 @@ HEAD),
 `app/build/reports/lint-results-{debug,release}.{html,sarif}`. Do not commit personal device logs,
 databases or credentials.
 
+### Shared sample/runtime chat (targeted checks)
+
+Sample now uses the real runtime fragment, native question contracts and renderer with a local mock
+provider and a separate in-memory database. Debug/app-test APK assembly passed. Five focused tests
+passed (`LessonTest`: 4/4, plus the Markdown fixture check) on the disposable `emulator-5554`,
+with Wi-Fi/mobile data disabled: the full
+probe/assessment/plan/teaching path and Stop/restoration, chat controls/draft/scroll-button restoration,
+plan navigation, the real IME keeping the editor/submit reachable, and authored Markdown/LaTeX
+specimens. No screenshots, credentials or live requests were used. These are not a full-suite,
+large-font, TalkBack or minimum-API acceptance result.
+
+The extra `UiPolishTest.screensKeepBoundedRipplesCenteredActionsAndPaddedStartAlignedInputs` check
+fails at `fragment_about: Centered label/chat title: -1`. About was not changed in this work; no
+baseline reproduction was performed and the assertion remains intact. The diagnostic now names the
+layout rather than only the anonymous view ID.
+
+`gw ./gradlew.bat :app:assembleRelease --offline` exceeded the 30-second command limit. Inspection
+found fresh R8 mapping/usage outputs but a zero-byte release APK; assembly is **not** recorded as
+passed. `python scripts/check-release-samples.py` passed against the debug DEX and those R8 outputs,
+confirming fixture removal, not release packaging/signing. Release assembly/lint still need a
+separately authorized longer run; the timed-out assembly was not retried.
+
 ### Package/responsibility refactor
 
 The root now contains only `MainActivity` and `ReasonedApplication`. Packages follow the reference's

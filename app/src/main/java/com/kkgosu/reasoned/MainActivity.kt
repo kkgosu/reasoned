@@ -13,7 +13,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
-import com.kkgosu.reasoned.controllers.MockLesson
 import com.kkgosu.reasoned.fragments.GraphNodeFragment
 import com.kkgosu.reasoned.fragments.HomeFragment
 import com.kkgosu.reasoned.fragments.NewSessionFragment
@@ -31,9 +30,6 @@ import me.grishka.appkit.FragmentStackActivity
 import me.grishka.appkit.Nav
 
 class MainActivity : FragmentStackActivity() {
-    lateinit var mockLesson: MockLesson
-        private set
-
     private lateinit var drawer: DrawerLayout
     private val drawerScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var drawerLoad: Job? = null
@@ -41,8 +37,8 @@ class MainActivity : FragmentStackActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // AppKit may restore fragments inside super.onCreate; their state owner must exist first.
-        if (BuildConfig.DEBUG) {
-            mockLesson = MockLesson(resources, savedInstanceState?.getBundle("mockLesson"))
+        if (BuildConfig.DEBUG) savedInstanceState?.getBundle("mockLesson")?.let {
+            (application as ReasonedApplication).sampleLesson(it)
         }
         super.onCreate(savedInstanceState)
         // Keep AppKit's actual stack/inset owner; DrawerLayout supplies native scrim, gestures and back handling.
@@ -237,7 +233,7 @@ class MainActivity : FragmentStackActivity() {
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
-        if (BuildConfig.DEBUG) outState.putBundle("mockLesson", mockLesson.save())
+        if (BuildConfig.DEBUG) outState.putBundle("mockLesson", (application as ReasonedApplication).saveSample())
         super.onSaveInstanceState(outState)
     }
 

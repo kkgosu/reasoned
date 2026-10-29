@@ -11,6 +11,7 @@
     "license": "MIT"
   },
   "sha256": {
+    "components/question-dock.tsx": "06323b781e8da99f9a1ed6d7717b4f08a85f9525b21bf8373962a8f453a716d8",
     "config.ts": "4430db25336ece2141e66faa3d22d93aaed08281d31622d1fddd8352b84c6c9d",
     "package.json": "d37bea8527dd4e784ad4dfa4e4f9674015ddacd41a9040a40080fa1495301d17",
     "package-lock.json": "e45fc7b873e51997d4e460b64c7c042eee08370a261a795447847c48d88d385b",

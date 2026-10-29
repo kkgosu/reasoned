@@ -1,5 +1,6 @@
 // Offline reference checks against real, hash-pinned LearnHarness readers/folds.
-// No Android conversion, provider requests, job runner, or artifact execution.
+// Optional authored Android runtime snapshots are read/resaved in disposable scratch only.
+// No transfer installation, provider requests, job runner, or artifact execution.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
@@ -13,9 +14,11 @@ const sha256 = (file) => createHash("sha256").update(fs.readFileSync(file)).dige
 const manifest = json(path.join(fixtures, "upstream.json"));
 const cases = json(path.join(fixtures, "cases.json"));
 assert(process.versions.node.split(".")[0] >= 24, "Use Node.js 24+ (native TypeScript support)");
-assert(process.argv.length === 4 && process.argv[2] === "--upstream",
-  "Usage: node scripts/check-learnharness-contract.mjs --upstream <pinned-LearnHarness-checkout>");
+assert(process.argv[2] === "--upstream" && (process.argv.length === 4 ||
+  (process.argv.length === 6 && process.argv[4] === "--android-records")),
+  "Usage: node scripts/check-learnharness-contract.mjs --upstream <pinned-LearnHarness-checkout> [--android-records <authored-test-snapshots>]");
 const upstream = path.resolve(process.argv[3]);
+const androidRecords = process.argv[5] ? path.resolve(process.argv[5]) : null;
 for (const [file, expected] of Object.entries(manifest.sha256)) {
   assert.equal(sha256(path.join(upstream, file)), expected, `Upstream source differs: ${file}`);
 }
@@ -149,6 +152,18 @@ try {
     assert.deepEqual(teach.messages.find((m) => m.id === "m_plan_result").details.tree, teach.tree);
   });
 
+  for (const test of json(path.join(fixtures, "plans.json")).cases) {
+    await check(`native plan authoring: ${test.name}`, () => {
+      const parsed = parseMermaidPlan(test.mermaid);
+      let tree = null;
+      if (parsed.ok) {
+        try { tree = createTree(parsed.plan.nodes, parsed.plan.edges); }
+        catch (error) { if (error.name !== "PlanTreeError") throw error; }
+      }
+      assert.deepEqual(tree, test.tree);
+    });
+  }
+
   for (const test of cases.answers) {
     await check(test.name, () => {
       assert.deepEqual(questions.compactAnswerForModel(test.answer), test.compact);
@@ -157,6 +172,61 @@ try {
       assert.deepEqual(JSON.parse(result.content[0].text), test.compact);
     });
   }
+
+  const questionCases = json(path.join(fixtures, "questions.json"));
+  for (const test of questionCases.cases) {
+    await check(`native question/answer vectors: ${test.name}`, () => {
+      const before = JSON.stringify(test.call);
+      const tool = test.call.name;
+      const kind = tool === "ask_user_question" ? "ask" : ["recall", "explain"].includes(tool) ? "explain" : "quiz";
+      const parser = kind === "quiz" ? parsers.parseQuizInput : kind === "ask" ? parsers.parseAskInput : parsers.parseExplainInput;
+      const parsed = parser(test.call.arguments);
+      assert(parsed, test.name);
+      const options = questions.normalizeOptions(parsed.options ?? []);
+      const ordered = kind === "quiz" ? questions.shuffleOptions(options, questions.seededRandom(test.call.id)) : options;
+      // Canonical QuestionData construction from the hash-pinned question-dock.tsx (no React/render).
+      const data = {
+        id: test.call.id, kind, question: parsed.question, context: parsed.details,
+        questionType: kind === "quiz" ? questions.normalizeQuizType(parsed.type) : undefined,
+        mode: kind === "explain" ? "text" : kind === "quiz" || parsed.options?.length ?
+          parsed.multiSelect === true ? "multi-select" : "single-select" : "text",
+        options: ordered, createdAt: new Date(questionCases.now).toISOString(),
+      };
+      if (kind === "quiz") {
+        data.correctIndices = questions.resolveCorrect(parsed.correctAnswer, ordered).indices;
+        data.explanation = parsed.explanation;
+      }
+      if (kind === "explain") data.committedAnswer = parsed.correctAnswer;
+      // JSON removes undefined optional fields just as native persistence does.
+      assert.deepEqual(JSON.parse(JSON.stringify(questions.toClientQuestion(data))), test.expect.client);
+      assert.equal(questions.questionNeedsReveal(tool, parsed, test.phase), test.expect.needsReveal);
+      assert.deepEqual(data.correctIndices ?? [], test.expect.correctIndices);
+      assert.equal(data.questionType ?? null, test.expect.questionType);
+      for (const sample of test.answers) {
+        const answer = questions.buildAnswer(data, sample.request, tool);
+        answer.answeredAt = new Date(questionCases.now).toISOString();
+        assert.deepEqual(JSON.parse(JSON.stringify(answer)), sample.answer);
+        assert.deepEqual(questions.compactAnswerForModel(answer), sample.compact);
+        const messages = [{ id: "authored-question-pose", role: "assistant", stopReason: "toolUse",
+          content: [{ ...test.call, type: "toolCall" }], timestamp: questionCases.now - 1 }];
+        const appended = input.inputAppends({ messages }, { type: "answer", toolCallId: test.call.id, answer: sample.answer });
+        assert.equal(appended.length, 1);
+        assert.deepEqual(appended[0].details, sample.answer);
+        assert.deepEqual(JSON.parse(appended[0].content[0].text), sample.compact);
+        assert.equal(native.danglingQuestionOf([...messages, ...appended]), null);
+        assert.equal(native.needsContinuation([...messages, ...appended]), true);
+        assert.equal(native.nativeInputCause(appended[0], messages), "learner");
+      }
+      assert.equal(JSON.stringify(test.call), before, "Display/answer folds must not mutate the call");
+    });
+  }
+  await check("native question parsers refuse all eight malformed authoring cases", () => {
+    assert.equal(questionCases.invalid.length, 8);
+    for (const test of questionCases.invalid) {
+      const parser = test.tool === "quiz" ? parsers.parseQuizInput : test.tool === "explain" ? parsers.parseExplainInput : parsers.parseAskInput;
+      assert.equal(parser(test.input), undefined, test.name);
+    }
+  });
 
   await check("saved answer display order, stable values and exact-set grading agree", () => {
     for (const message of teach.messages.filter((m) => m.role === "toolResult" && m.details?.kind === "quiz")) {
@@ -186,6 +256,30 @@ try {
     assert.equal(native.needsContinuation([...messages, ...dismissed]), false);
   });
 
+  await check("parallel questions resolve in authored order; siblings defer reaction and dismissal pauses", () => {
+    const calls = ["m_predict", "m_explain"].map((id) => teach.messages.find((m) => m.id === id)
+      .content.find((block) => block.type === "toolCall"));
+    const answers = ["m_predict_answer", "m_explain_answer"].map((id) => teach.messages.find((m) => m.id === id).details);
+    for (const mode of ["answer", "mixed", "dismiss"]) {
+      let messages = [{ role: "assistant", id: "authored_batch", content: calls, stopReason: "toolUse", timestamp: 1 }];
+      const original = JSON.stringify(messages[0]);
+      assert.throws(() => input.inputAppends({ messages }, { type: "answer", toolCallId: calls[1].id, answer: answers[1] }), /no pending question/);
+      for (let index = 0; index < calls.length; index++) {
+        assert.equal(native.danglingQuestionOf(messages)?.toolCallId, calls[index].id);
+        assert.equal(findPendingToolCall(projectView(messages))?.toolCallId, calls[index].id);
+        assert.equal(native.needsContinuation(messages), false);
+        const dismiss = mode === "dismiss" || (mode === "mixed" && index === 0);
+        const answer = dismiss ? { ...answers[index], dismissed: true } : answers[index];
+        const event = { type: dismiss ? "dismiss" : "answer", toolCallId: calls[index].id, answer };
+        messages.push(...(dismiss ? input.dismissAppends({ messages }, event) : input.inputAppends({ messages }, event)));
+      }
+      assert.equal(native.danglingQuestionOf(messages), null);
+      assert.equal(native.needsContinuation(messages), mode !== "dismiss");
+      assert.deepEqual(messages.slice(1).map((message) => message.toolCallId), calls.map((call) => call.id));
+      assert.equal(JSON.stringify(messages[0]), original);
+    }
+  });
+
   await check("probe completion requires matching clean result, not a bare or failed call", () => {
     const valid = through(teach, "m_probe_done_result");
     for (const change of [
@@ -204,6 +298,26 @@ try {
     const legacy = structuredClone(valid);
     delete legacy.at(-1).details;
     assert.equal(native.hasProbeDone(legacy), true, "Old clean acknowledgments still count");
+  });
+
+  await check("practice input builders match every authored marker and deferred conclusion", () => {
+    const clean = (m) => { const copy = structuredClone(m); delete copy.id; delete copy.timestamp; return copy; };
+    const last = (id) => practice.messages.find((m) => m.id === id);
+    const scenarios = [
+      ["p_pose_ack", { type: "thinking", problemCallId: "call_problem", text: last("p_thinking").details.text }, ["p_thinking"]],
+      ["p_conclude_ack", { type: "next" }, ["p_next"]],
+      ["p_dismissed", { type: "next" }, ["p_dismiss_conclude", "p_dismiss_ack", "p_next_again"]],
+    ];
+    for (const [id, event, expected] of scenarios) {
+      const appended = input.inputAppends({ kind: "practice", messages: through(practice, id) }, event);
+      assert.deepEqual(appended.map(clean), expected.map((id) => clean(last(id))));
+    }
+    assert.deepEqual(input.dismissAppends({ messages: through(practice, "p_pose_again_ack") },
+      { type: "dismiss-problem", problemCallId: "call_problem_again" }).map(clean), [clean(last("p_dismissed"))]);
+    const after = input.inputAppends({ kind: "practice", messages: through(practice, "p_dismissed") }, { type: "text", text: "Follow-up" });
+    assert.deepEqual(after.slice(0, 2).map(clean), ["p_dismiss_conclude", "p_dismiss_ack"].map((id) => clean(last(id))));
+    assert.equal(after[2].role, "user"); assert.equal(after[2].content, "Follow-up");
+    assert.equal(input.inputAppends({ kind: "practice", messages: [...through(practice, "p_dismissed"), ...after] }, { type: "continue" }).length, 0);
   });
 
   await check("practice gates, immutable pose solution and deferred dismissal appends", () => {
@@ -236,6 +350,16 @@ try {
     assert.equal(native.toLlmMessages(failed).filter((m) => m.role === "toolResult").length, 0);
     assert.deepEqual(input.inputAppends({ messages: through(records.get("chat_contract_interrupted"), "i_error") }, { type: "retry" }), []);
   });
+
+  for (const test of json(path.join(fixtures, "compaction.json")).cases) {
+    await check(`compaction: ${test.name}`, () => {
+      assert.equal(compaction.compactionCutIndex(test.messages, test.keep), test.cut);
+      const estimate = compaction.estimateContextTokens(test.messages);
+      const tokens = estimate.lastUsageIndex !== null ? estimate.tokens :
+        compaction.estimateTokens(native.toLlmMessages(test.messages)) + 7;
+      assert.equal(tokens, test.estimate);
+    });
+  }
 
   await check("compaction cuts model input only; missing cut falls back to full archive", () => {
     const marker = compaction.activeCompactionOf(teach.messages);
@@ -271,6 +395,29 @@ try {
     assert.deepEqual(graphStore.readSources().map((s) => s.id), cases.dependencies.externalSources);
     for (const id of cases.dependencies.externalChats) assert.equal(chatStore.getChat(id), null);
     assert.equal(graphStore.readCheckpoints()[0].chatId, "src_contract_notes");
+  });
+
+  await check("selected native graph assertions retain definitions/endpoints without incident-chain expansion", () => {
+    // Shared with NativeGraphSelectionTest: Kotlin must select these exact original assertion lines.
+    const selection = cases.graphSelection;
+    const allNodes = graphStore.readNodes();
+    const allChains = graphStore.readChains();
+    const nodes = selection.nodeLines.map((i) => allNodes[i]);
+    const chains = selection.chainLines.map((i) => allChains[i]);
+    const graph = getGraph({ readNodes: () => structuredClone(nodes), readChains: () => structuredClone(chains) });
+    assert.deepEqual(graph.nodes.map((n) => n.id), ["n_shared", "n_notes", "n_selected"]);
+    const shared = graph.nodes.find((n) => n.id === "n_shared");
+    assert.equal(shared.name, cases.graph.sharedName);
+    assert.equal(shared.statement, cases.graph.sharedStatement);
+    assert.deepEqual(shared.aliases, cases.graph.sharedAliases);
+    assert.deepEqual(graph.chains.map((c) => c.id), ["arg_selected"]);
+    assert.deepEqual(deriveView(graph).logicalEdges, cases.graph.logicalEdges.slice(0, 2));
+    const external = [...new Map([...nodes, ...chains].flatMap((a) => a.provenance)
+      .filter((p) => !selection.chats.includes(p.chatId)).map((p) => [JSON.stringify(p), p])).values()];
+    assert.deepEqual(external, selection.externalProvenance);
+    // First equivalent chain still owns its ID when a later assertion caused selection.
+    assert.equal(getGraph({ readNodes: () => structuredClone(nodes),
+      readChains: () => structuredClone(allChains.slice(0, 2)) }).chains[0].id, allChains[0].id);
   });
 
   await check("coverage fingerprints exactly native teacher prose, never learner answers", () => {
@@ -377,7 +524,67 @@ try {
     assert.deepEqual(snapshot(scratch), originalData);
     assert.deepEqual(snapshot(fixtures), originalFixtures);
   });
-  console.log(`PASS: ${checks} native reference checks at ${manifest.commit}. Android interoperability is not tested.`);
+  if (androidRecords) {
+    const expectations = {
+      teaching: { turns: 3, steps: 5, input: 515, output: 50, unknown: 0, pending: true },
+      practice: { turns: 7, steps: 8, input: 0, output: 0, unknown: 8, pending: false },
+      compaction: { turns: 4, steps: 4, input: 200120, output: 40, unknown: 0, pending: false, provider: "openai-codex" },
+      failures: { turns: 5, steps: 5, input: 90, output: 20, unknown: 3, pending: false },
+    };
+    for (const [name, expected] of Object.entries({
+      "recovery-conversation": { turns: 1, steps: 2, input: 40, output: 10, unknown: 1, pending: false, provider: "openai-codex" },
+      "recovery-compaction": { turns: 2, steps: 2, input: 200000, output: 10, unknown: 1, pending: true, provider: "openai-codex" },
+    })) if (fs.existsSync(path.join(androidRecords, `${name}.json`))) expectations[name] = expected;
+    for (const [name, expected] of Object.entries(expectations)) {
+      await check(`Android fake-provider snapshot → native reader/folds/resave: ${name}`, () => {
+        const file = path.join(androidRecords, `${name}.json`);
+        const hash = sha256(file);
+        const record = json(file);
+        assert(/^[A-Za-z0-9_-]+$/.test(record.id));
+        assert.equal(record.version, CURRENT_CHAT_VERSION);
+        assert(record.title.startsWith("[Authored offline runtime acceptance]"));
+        const destination = path.join(scratch, "chats", `${record.id}.json`);
+        assert(!fs.existsSync(destination));
+        try {
+          fs.writeFileSync(destination, JSON.stringify(record));
+          assert.deepEqual(chatStore.getChat(record.id), record);
+          const turns = record.turns;
+          const steps = turns.flatMap((turn) => turn.steps);
+          assert.equal(turns.length, expected.turns);
+          assert.equal(new Set(turns.map((turn) => turn.id)).size, turns.length);
+          assert.equal(steps.length, expected.steps);
+          assert.equal(steps.filter((step) => Object.keys(step).length === 0).length, expected.unknown);
+          for (const turn of turns) {
+            assert.equal(turn.model, `${expected.provider ?? "openai"}:fixture`);
+            assert(record.messages.some((message) => message.id === turn.messageId));
+            for (const step of turn.steps) {
+              for (const count of Object.values(step)) assert(Number.isInteger(count) && count >= 0 && count <= 1_000_000);
+              assert(!Object.hasOwn(step, "cost"));
+            }
+            chatStore.appendTurnUsage(record.id, turn); // An idempotent replay cannot duplicate a paid request.
+          }
+          assert.equal(steps.reduce((sum, step) => sum + (step.inputTokens ?? 0) +
+            (step.cacheReadTokens ?? 0) + (step.cacheWriteTokens ?? 0), 0), expected.input);
+          assert.equal(steps.reduce((sum, step) => sum + (step.outputTokens ?? 0), 0), expected.output);
+          assert.equal(native.danglingQuestionOf(record.messages) !== null, expected.pending);
+          if (name === "practice") assert(native.activeProblemOf(record.messages));
+          else assert.equal(phase.phaseAt3Lh(record.messages), "teach");
+          const view = projectView(record.messages);
+          const model = native.toLlmMessages(record.messages);
+          assert(view.length > 0 && model.length > 0);
+          chatStore.saveMessages(record.id, record.messages);
+          const saved = chatStore.getChat(record.id);
+          assert.deepEqual({ ...saved, updatedAt: record.updatedAt }, record);
+          assert.deepEqual(projectView(saved.messages), view);
+          assert.deepEqual(native.toLlmMessages(saved.messages), model);
+          assert.equal(sha256(file), hash, "Android snapshot must remain byte-preserved");
+        } finally { fs.rmSync(destination, { force: true }); }
+      });
+    }
+  }
+  console.log(`PASS: ${checks} native reference checks at ${manifest.commit}. ` +
+    (androidRecords ? "Includes authored Android-runtime reader/resave cases; not desktop execution or transfer acceptance." :
+      "Android interoperability is not tested."));
 } finally {
   fs.rmSync(scratch, { recursive: true, force: true });
 }

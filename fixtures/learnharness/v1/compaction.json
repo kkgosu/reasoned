@@ -1,0 +1,66 @@
+{
+  "description": "Authored synthetic compaction vectors, not learner evidence. overhead=7; token sizing ignores record/provider scaffolding.",
+  "cases": [
+    {
+      "name": "plain next-entry cutoff", "keep": 3, "cut": 1, "estimate": 13,
+      "messages": [
+        {"id":"u0","role":"user","content":"aaaaaaaa","timestamp":1},
+        {"id":"a0","role":"assistant","content":[{"type":"text","text":"bbbbbbbb"}],"stopReason":"stop","timestamp":2},
+        {"id":"u1","role":"user","content":"cccccccc","timestamp":3}
+      ]
+    },
+    {
+      "name": "oversized trailing result keeps preceding call", "keep": 5, "cut": 1, "estimate": 21,
+      "messages": [
+        {"id":"u0","role":"user","content":"aaaaaaaa","timestamp":1},
+        {"id":"a0","role":"assistant","content":[{"type":"toolCall","id":"call","name":"quiz","arguments":{}}],"stopReason":"toolUse","timestamp":2},
+        {"id":"r0","role":"toolResult","toolCallId":"call","toolName":"quiz","content":[{"type":"text","text":"1234567890123456789012345678901234567890"}],"isError":false,"timestamp":3}
+      ]
+    },
+    {
+      "name": "usage anchor includes disjoint cache buckets, not additive overhead", "keep": 3, "cut": 1, "estimate": 119,
+      "messages": [
+        {"id":"u0","role":"user","content":"aaaaaaaa","timestamp":1},
+        {"id":"a0","role":"assistant","content":[{"type":"text","text":"bbbbbbbb"}],"stopReason":"stop","usage":{"input":100,"output":10,"cacheRead":5,"cacheWrite":2,"totalTokens":0},"timestamp":2},
+        {"id":"u1","role":"user","content":"cccccccc","timestamp":3}
+      ]
+    },
+    {
+      "name": "chained marker invalidates old usage and advances by record id", "keep": 1, "cut": 4, "estimate": 13,
+      "messages": [
+        {"id":"u0","role":"user","content":"aaaaaaaa","timestamp":1},
+        {"id":"a0","role":"assistant","content":[{"type":"text","text":"bbbbbbbb"}],"stopReason":"stop","usage":{"totalTokens":900000},"timestamp":2},
+        {"id":"u1","role":"user","content":"cccccccc","timestamp":3},
+        {"id":"c0","role":"custom","customType":"compaction","content":"summary","details":{"firstKeptMessageId":"u1"},"timestamp":4},
+        {"id":"u2","role":"user","content":"dddddddd","timestamp":5}
+      ]
+    },
+    {
+      "name": "kept tail cannot advance", "keep": 100, "cut": 2, "estimate": 13,
+      "messages": [
+        {"id":"u0","role":"user","content":"aaaaaaaa","timestamp":1},
+        {"id":"a0","role":"assistant","content":[{"type":"text","text":"bbbbbbbb"}],"stopReason":"stop","usage":{"totalTokens":900000},"timestamp":2},
+        {"id":"u1","role":"user","content":"cccccccc","timestamp":3},
+        {"id":"c0","role":"custom","customType":"compaction","content":"summary","details":{"firstKeptMessageId":"u1"},"timestamp":4},
+        {"id":"u2","role":"user","content":"dddddddd","timestamp":5}
+      ]
+    },
+    {
+      "name": "aborted and zero usage do not anchor", "keep": 3, "cut": 2, "estimate": 15,
+      "messages": [
+        {"id":"u0","role":"user","content":"aaaaaaaa","timestamp":1},
+        {"id":"a0","role":"assistant","content":[{"type":"text","text":"bbbbbbbb"}],"stopReason":"aborted","usage":{"totalTokens":900000},"timestamp":2},
+        {"id":"a1","role":"assistant","content":[{"type":"text","text":"cccccccc"}],"stopReason":"stop","usage":{"input":0,"output":0},"timestamp":3},
+        {"id":"u1","role":"user","content":"dddddddd","timestamp":4}
+      ]
+    },
+    {
+      "name": "adjacent UI metadata follows retained assistant", "keep": 1, "cut": 1, "estimate": 11,
+      "messages": [
+        {"id":"u0","role":"user","content":"aaaaaaaa","timestamp":1},
+        {"id":"ui","role":"custom","customType":"plan-block","content":"not model visible","timestamp":2},
+        {"id":"a0","role":"assistant","content":[{"type":"text","text":"bbbbbbbb"}],"stopReason":"stop","timestamp":3}
+      ]
+    }
+  ]
+}

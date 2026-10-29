@@ -69,6 +69,6 @@
     <string name="send_note">Send</string>
     <string name="stop_stream">Stop</string>
     <string name="resume_stream">Resume</string>
-    <string name="mock_limit">Preview complete · up to eight notes</string>
+    <string name="mock_limit">Offline sample limit reached</string>
     <string name="lesson_mock_reply">This is an authored preview, not an AI response to your note. To explore the idea further, compare x = 3 with x = −3. The derivative changes sign, but subtracting a small multiple still moves toward zero. A real learning session will respond to your own explanation.</string>
 </resources>

@@ -30,17 +30,38 @@
         android:textAppearance="@style/TextAppearance.Harness.Meta"
         android:visibility="gone" />
 
-    <me.grishka.appkit.views.UsableRecyclerView
-        android:id="@+id/lesson_list"
+    <FrameLayout
+        android:id="@+id/lesson_transcript"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="2"
-        android:clipToPadding="false"
-        android:paddingStart="@dimen/space_24"
-        android:paddingTop="@dimen/space_8"
-        android:paddingEnd="@dimen/space_24"
-        android:paddingBottom="@dimen/space_8"
-        android:scrollbars="vertical" />
+        android:layout_weight="2">
+
+        <me.grishka.appkit.views.UsableRecyclerView
+            android:id="@+id/lesson_list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:foreground="@drawable/transcript_bottom_fade"
+            android:paddingStart="@dimen/space_24"
+            android:paddingTop="@dimen/space_8"
+            android:paddingEnd="@dimen/space_24"
+            android:paddingBottom="@dimen/space_32"
+            android:scrollbars="vertical" />
+
+        <ImageButton
+            android:id="@+id/scroll_to_bottom"
+            android:layout_width="@dimen/touch_target"
+            android:layout_height="@dimen/touch_target"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="@dimen/space_16"
+            android:layout_marginBottom="@dimen/space_8"
+            android:background="@drawable/button_scroll_to_bottom"
+            android:contentDescription="@string/runtime_scroll_to_bottom"
+            android:enabled="false"
+            android:padding="@dimen/space_12"
+            android:src="@drawable/ic_arrow_down"
+            android:visibility="invisible" />
+    </FrameLayout>
 
     <LinearLayout
         android:id="@+id/question_panel"
@@ -149,7 +170,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginStart="@dimen/space_16"
-        android:layout_marginTop="@dimen/space_8"
         android:layout_marginEnd="@dimen/space_16"
         android:layout_marginBottom="@dimen/space_8"
         android:background="@drawable/composer_background"

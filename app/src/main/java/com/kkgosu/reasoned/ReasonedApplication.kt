@@ -1,6 +1,8 @@
 package com.kkgosu.reasoned
 
 import android.app.Application
+import android.os.Bundle
+import com.kkgosu.reasoned.controllers.MockLesson
 import com.kkgosu.reasoned.api.ChatGptAuth
 import com.kkgosu.reasoned.api.ModelProvider
 import com.kkgosu.reasoned.api.OpenAiProvider
@@ -33,7 +35,16 @@ class ReasonedApplication : Application() {
         )
     }
     internal val runtime by runtimeDelegate
+    private var sample: MockLesson? = null
+    internal fun sampleLesson(saved: Bundle? = null): MockLesson {
+        check(BuildConfig.DEBUG)
+        return sample ?: MockLesson(this, saved).also { sample = it }
+    }
+
+    internal fun saveSample(): Bundle? = if (BuildConfig.DEBUG) sample?.save() else null
+
     internal fun pauseRuntime() {
         if (runtimeDelegate.isInitialized()) runtime.stop(); extraction.foreground = false
+        if (BuildConfig.DEBUG) sample?.runtime?.stop()
     }
 }

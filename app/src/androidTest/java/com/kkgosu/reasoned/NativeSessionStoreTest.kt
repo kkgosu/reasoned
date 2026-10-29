@@ -5,6 +5,7 @@ import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.kkgosu.reasoned.api.ModelProvider
+import com.kkgosu.reasoned.api.NativeResponses
 import com.kkgosu.reasoned.controllers.SessionRuntime
 import com.kkgosu.reasoned.model.LessonDisplayItem.TextDisplayItem
 import com.kkgosu.reasoned.model.NativeChat
@@ -36,6 +37,66 @@ class NativeSessionStoreTest {
     )
     private fun session() = RuntimeSession(goal = "Authored fixture", model = "fixture",
         items = listOf(TextDisplayItem(1, "Authored fixture")))
+
+    @Test
+    fun pendingNativeAccountingRecoversAtomicallyWithoutDoubleCountingOrInventingReports() {
+        for (boundary in listOf("inFlight", "receipt", "accepted", "compaction", "finalized")) {
+            val name = "native-recovery-${UUID.randomUUID()}.db"
+            try {
+                val base = session()
+                val response = JSONObject("""{"status":"completed","output":[{"type":"message","role":"assistant","content":[{"type":"output_text","text":"Authored recovery response"}]}],"usage":{"input_tokens":40,"input_tokens_details":{"cached_tokens":12},"output_tokens":10}}""")
+                val known = boundary !in setOf("inFlight", "compaction")
+                val steps = JSONArray().apply { if (known) put(NativeResponses.step(NativeResponses.usage(response))) }
+                var chat = native(base.id)
+                if (boundary in setOf("accepted", "finalized"))
+                    chat = NativeResponses.append(chat, NativeResponses.assistant(response, base.model, base.connection, 2), 2)
+                val owner = chat.snapshot().getJSONArray("messages").getJSONObject(if (boundary in setOf("accepted", "finalized")) 1 else 0).getString("id")
+                val entry = NativeResponses.turn("recovery_run", owner, steps, base.model, base.connection, 2)
+                    .put("reasonedPurpose", if (boundary == "compaction") "compaction" else "conversation")
+                if (boundary == "finalized") chat = NativeResponses.appendTurn(chat, entry.put("reasonedStatus", "completed"))
+                val pending = JSONObject().put("entry", NativeResponses.capture(entry, response.takeIf { boundary == "receipt" }))
+                    .put("inFlight", boundary in setOf("inFlight", "compaction")).put("responsePending", boundary == "receipt")
+                SessionStore(app, name).use { store ->
+                    store.save(base.copy(nativeRecord = chat, status = "running", inputTokens = if (known) 40 else 0,
+                        outputTokens = if (known) 10 else 0, nativeTurn = if (boundary == "finalized") "" else pending.toString()))
+                    store.run("recovery_run", base, "running")
+                }
+                SessionStore(app, name).use { store ->
+                    if (boundary == "receipt") {
+                        val before = store.load(base.id)!!
+                        store.writableDatabase.execSQL("CREATE TRIGGER reject_recovery BEFORE UPDATE ON sessions BEGIN SELECT RAISE(ABORT,'authored rollback'); END")
+                        try { store.recover(); fail("Recovery did not roll back") } catch (_: SQLiteConstraintException) { }
+                        assertEquals(before.nativeRecord, store.load(base.id)!!.nativeRecord)
+                        assertEquals(before.nativeTurn, store.load(base.id)!!.nativeTurn)
+                        store.readableDatabase.rawQuery("SELECT status FROM runs", null).use { row ->
+                            assertTrue(row.moveToFirst()); assertEquals("running", row.getString(0))
+                        }
+                        store.writableDatabase.execSQL("DROP TRIGGER reject_recovery")
+                    }
+                    store.recover()
+                    val restored = store.load(base.id)!!
+                    assertEquals("", restored.nativeTurn)
+                    assertEquals(if (known) 40L else 0L, restored.inputTokens)
+                    assertEquals(if (known) 10L else 0L, restored.outputTokens)
+                    val root = restored.nativeRecord!!.snapshot()
+                    val turn = root.getJSONArray("turns").getJSONObject(0)
+                    assertEquals(1, root.getJSONArray("turns").length())
+                    assertEquals(if (boundary == "finalized") "completed" else "interrupted", turn.getString("reasonedStatus"))
+                    assertEquals(1, turn.getJSONArray("steps").length())
+                    assertEquals(known, turn.getJSONArray("steps").getJSONObject(0).has("inputTokens"))
+                    assertEquals(if (boundary == "compaction") 1 else 2, root.getJSONArray("messages").length())
+                    if (boundary == "compaction") assertEquals(chat.snapshot().getJSONArray("messages").toString(), root.getJSONArray("messages").toString())
+                    store.readableDatabase.rawQuery("SELECT status,input_tokens,output_tokens FROM runs", null).use { row ->
+                        assertTrue(row.moveToFirst()); assertEquals(turn.getString("reasonedStatus"), row.getString(0))
+                        assertEquals(restored.inputTokens, row.getLong(1)); assertEquals(restored.outputTokens, row.getLong(2))
+                    }
+                    val saved = restored.nativeRecord.raw
+                    store.recover()
+                    assertEquals(saved, store.load(base.id)!!.nativeRecord!!.raw)
+                }
+            } finally { app.deleteDatabase(name) }
+        }
+    }
 
     @Test
     fun nativeArchiveAndMultipartIdentitiesSurviveReopenDraftSavesAndAtomicFailure() {
@@ -101,6 +162,55 @@ class NativeSessionStoreTest {
     }
 
     @Test
+    fun submittedNativeAnswerSurvivesReopenWithItsOriginalCommitmentAndDisplayIds() {
+        val name = "native-answer-${UUID.randomUUID()}.db"
+        try {
+            val original = session()
+            val record = native(original.id).snapshot()
+            val args = JSONObject().put("question", "[Authored test] Which numbers are even?")
+                .put("options", JSONArray().put(JSONObject().put("label", "Two").put("value", "two"))
+                    .put(JSONObject().put("label", "Three").put("value", "three")))
+                .put("correctAnswer", "two").put("explanation", "Teacher-only authored explanation.")
+            record.getJSONArray("messages").put(JSONObject().put("id", "pose").put("role", "assistant")
+                .put("stopReason", "toolUse").put("timestamp", 2).put("content", JSONArray()
+                    .put(JSONObject().put("type", "thinking").put("thinking", "Opaque authored scratch")
+                        .put("thinkingSignature", "OPAQUE_TEST_SIGNATURE"))
+                    .put(JSONObject().put("type", "toolCall").put("id", "authored-call")
+                        .put("name", "probe").put("arguments", args))))
+            val pending = NativeChat.parse(record.toString())
+            val answered = pending.answerPending("authored-call", JSONObject()
+                .put("values", JSONArray().put("two")).put("confidence", 90)
+                .put("thinking", "Learner-only authored reasoning."), 1_790_812_802_000)
+            var ids: Map<NativeChat.Part, Long>
+            SessionStore(app, name).use { store ->
+                store.save(original.copy(nativeRecord = pending))
+                ids = store.load(original.id)!!.nativeDisplayIds
+                store.save(store.load(original.id)!!.copy(nativeRecord = answered))
+            }
+            SessionStore(app, name).use { store ->
+                val loaded = store.load(original.id)!!
+                val native = loaded.nativeRecord!!
+                assertEquals(answered.raw, native.raw)
+                assertEquals(ids, loaded.nativeDisplayIds.filterKeys { it in ids })
+                assertNull(native.pendingQuestion())
+                assertTrue(native.state().continuation) // A read does not exercise that continuation.
+                val messages = native.snapshot().getJSONArray("messages")
+                assertEquals(pending.snapshot().getJSONArray("messages").getJSONObject(1).toString(), messages.getJSONObject(1).toString())
+                val result = messages.getJSONObject(2)
+                val details = result.getJSONObject("details")
+                assertEquals(90, details.getInt("confidence")) // Not the legacy 20-point grid.
+                assertTrue(details.getBoolean("correct"))
+                assertEquals("Teacher-only authored explanation.", details.getString("explanation"))
+                val compact = JSONObject(result.getJSONArray("content").getJSONObject(0).getString("text"))
+                assertEquals("Learner-only authored reasoning.", compact.getString("thinking"))
+                assertFalse(compact.has("explanation"))
+                assertFalse(compact.has("questionText"))
+                assertTrue(loaded.nativeDisplayIds.containsKey(NativeChat.Part(result.getString("id"))))
+            }
+        } finally { app.deleteDatabase(name) }
+    }
+
+    @Test
     fun largeUnicodeNativeRecordIsReadInCursorWindowSafeSlices() {
         val name = "native-large-${UUID.randomUUID()}.db"
         try {
@@ -151,7 +261,7 @@ class NativeSessionStoreTest {
         val name = "native-open-${UUID.randomUUID()}.db"
         try {
             SessionStore(app, name).use { store ->
-                val original = session().let { it.copy(nativeRecord = native(it.id)) }
+                val original = session().let { it.copy(nativeRecord = NativeChat.parse(native(it.id).snapshot().put("kind", "unsupported-fixture-kind").toString())) }
                 store.save(original)
                 var calls = 0
                 val runtime = SessionRuntime(app, store, ModelProvider { _, _ ->

@@ -53,11 +53,17 @@ internal data class RuntimeSession(
     // Separate SQLite columns/tables: never fold opaque native history into the local checkpoint.
     val nativeRecord: NativeChat? = null,
     val nativeDisplayIds: Map<NativeChat.Part, Long> = emptyMap(),
+    // Local write-ahead accounting only; never part of the portable native archive.
+    val nativeTurn: String = "",
+    // Local undelivered learner steers, not portable history until a response boundary accepts them.
+    val nativeSteers: String = "[]",
 ) {
     val activeProblem get() = problems.lastOrNull()?.takeIf { it.outcome.isEmpty() }
     val displayItems: List<LessonDisplayItem>
         get() = items.mapIndexedNotNull { index, item ->
-            answerCards[item.id] ?: item.takeUnless {
+            answerCards[item.id] ?: assessment?.takeIf { item.role == Role.ASSESSMENT }?.let {
+                LessonDisplayItem.AssessmentDisplayItem(item.id, it)
+            } ?: item.takeUnless {
                 it.role == Role.QUESTION && items.getOrNull(index + 1)?.id in answerCards
             }
         }
@@ -80,5 +86,7 @@ internal data class RuntimeSession(
             .put("mechanic", mechanic).put("compaction", compaction?.json())
             .put("contextEnd", contextEnd).put("contextOutputTokens", contextOutputTokens)
             .put("selectedValues", JSONArray(selectedValues))
-            .put("proseIds", proseIds?.let { JSONArray(it.toList()) }).toString()
+            .put("proseIds", proseIds?.let { JSONArray(it.toList()) })
+            .put("nativeSteers", JSONArray(nativeSteers))
+            .apply { if (nativeTurn.isNotEmpty()) put("nativeTurn", JSONObject(nativeTurn)) }.toString()
 }

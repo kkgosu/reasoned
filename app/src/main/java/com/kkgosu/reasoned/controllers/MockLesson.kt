@@ -1,218 +1,148 @@
 package com.kkgosu.reasoned.controllers
 
-import android.content.res.Resources
 import android.os.Bundle
+import com.kkgosu.reasoned.BuildConfig
 import com.kkgosu.reasoned.R
-import com.kkgosu.reasoned.model.LessonDisplayItem
-import com.kkgosu.reasoned.model.LessonDisplayItem.AnsweredDisplayItem
-import com.kkgosu.reasoned.model.LessonDisplayItem.FormulaDisplayItem
+import com.kkgosu.reasoned.ReasonedApplication
+import com.kkgosu.reasoned.api.ModelProvider
+import com.kkgosu.reasoned.api.NativeResponses
+import com.kkgosu.reasoned.api.ProviderFailure
 import com.kkgosu.reasoned.model.LessonDisplayItem.Role
 import com.kkgosu.reasoned.model.LessonDisplayItem.TextDisplayItem
-import com.kkgosu.reasoned.model.StudyPlan
+import com.kkgosu.reasoned.model.NativeChat
+import com.kkgosu.reasoned.model.NativeQuestion
+import com.kkgosu.reasoned.model.RuntimeSession
+import com.kkgosu.reasoned.storage.SessionStore
+import com.kkgosu.reasoned.utils.objects
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import org.json.JSONArray
 import org.json.JSONObject
 
-/** One bounded, authored UI fixture. Not an AI provider or educational assessment engine. */
-class MockLesson(private val resources: Resources, saved: Bundle? = null) {
-    enum class Dock { COMPOSER, QUESTION }
+/** Debug-only authored responses through the real runtime, in a separate in-memory SQLite store. */
+internal class MockLesson(private val app: ReasonedApplication, saved: Bundle? = null) {
+    val sessionId = FIXTURE
+    val store: SessionStore
+    val runtime: SessionRuntime
+    var requests = 0
+        private set
 
-    data class State(
-        val items: List<LessonDisplayItem>,
-        val dock: Dock = Dock.COMPOSER,
-        val expanded: Boolean = false,
-        val selection: Int = -1,
-        val confidence: Int = 50,
-        val thinking: String = "",
-        val draft: String = "",
-        val streamTarget: String = "",
-        val streaming: Boolean = false,
-        val afterStream: Dock = Dock.QUESTION,
-        val nextId: Long = 7,
-        val attempts: Int = 0,
-        val notes: Int = 0,
-    )
-
-    private val mutableState =
-        MutableStateFlow(
-            saved?.takeIf { it.getString("fixture") == FIXTURE }?.let(::restore)
-                ?: initial()
-        )
-    val state = mutableState.asStateFlow()
-
-    internal val plan = StudyPlan(
-        listOf(
-            StudyPlan.Node("function", "Read the function", "Recognize the quadratic curve and the starting point."),
-            StudyPlan.Node("slope", "Find the slope", "Use the derivative to choose the direction of travel."),
-            StudyPlan.Node("update", "Take a small step", "Subtract the slope times the learning rate."),
-            StudyPlan.Node("compare", "Compare the result", "Check whether the new point has a lower function value.")
-        ),
-        listOf("function" to "slope", "slope" to "update", "update" to "compare")
-    )
-
-    /** Authored position tags for the preview only; never persisted as a real session or graph evidence. */
-    internal fun planProtocol(state: State): String = JSONArray(plan.nodes.take(state.attempts + 2)
-        .mapIndexed { index, node ->
-            JSONObject().put("type", "function_call").put("name", "explain")
-                .put("call_id", "sample-$index")
-                .put("arguments", JSONObject().put("nodeId", node.id).toString())
-        }).toString()
-
-    private fun initial() = State(
-        items = listOf(
-            TextDisplayItem(1, text(R.string.lesson_heading), Role.TITLE),
-            TextDisplayItem(2, text(R.string.lesson_intro)),
-            FormulaDisplayItem(
-                3,
-                text(R.string.lesson_function),
-                text(R.string.lesson_function_spoken)
-            ),
-            TextDisplayItem(4, text(R.string.lesson_step)),
-            FormulaDisplayItem(
-                5,
-                text(R.string.lesson_update),
-                text(R.string.lesson_update_spoken)
-            ),
-        ) + RENDERING_SAMPLES.mapIndexed { index, markdown ->
-            TextDisplayItem(6L + index, markdown)
-        } + TextDisplayItem(6L + RENDERING_SAMPLES.size, ""),
-        streamTarget = text(R.string.lesson_stream),
-        streaming = true,
-        nextId = 7L + RENDERING_SAMPLES.size,
-    )
-
-    fun expand(expanded: Boolean) = mutableState.update { it.copy(expanded = expanded) }
-    fun select(selection: Int) =
-        mutableState.update { it.copy(selection = selection.coerceIn(-1, 3)) }
-
-    fun confidence(confidence: Int) =
-        mutableState.update { it.copy(confidence = confidence.coerceIn(0, 100)) }
-
-    fun thinking(text: String) = mutableState.update { it.copy(thinking = text.take(MAX_INPUT)) }
-    fun draft(text: String) = mutableState.update { it.copy(draft = text.take(MAX_INPUT)) }
-    fun stop() = mutableState.update { it.copy(streaming = false) }
-    fun resume() = mutableState.update { it.copy(streaming = it.streamTarget.isNotEmpty()) }
-
-    suspend fun stream() {
-        while (state.value.streaming) {
-            delay(60)
-            advanceStream()
-        }
+    init {
+        check(BuildConfig.DEBUG)
+        store = SessionStore(app, null)
+        val restored = saved?.takeIf { it.getString("fixture") == FIXTURE }
+        val chat = restored?.getString("native")?.let(NativeChat::parse) ?: initialChat()
+        val projected = store.saveNative(RuntimeSession(
+            id = sessionId, goal = text(R.string.sample_session_title), model = MODEL,
+            items = listOf(TextDisplayItem(1, text(R.string.sample_session_title), Role.TITLE)),
+            nativeRecord = chat,
+        ))
+        if (restored != null) store.save(projected.copy(
+            draft = restored.getString("draft").orEmpty(),
+            selectedValues = restored.getStringArrayList("selectedValues").orEmpty(),
+            confidence = restored.getInt("confidence", NativeQuestion.DEFAULT_CONFIDENCE),
+            expanded = restored.getBoolean("expanded"),
+            readingThinking = restored.getString("readingThinking").orEmpty(),
+            dontKnow = restored.getBoolean("dontKnow"),
+        ))
+        runtime = SessionRuntime(app, store, ModelProvider { payload, _ ->
+            requests++
+            delay(350) // A cancellable local pause makes Stop/reopening testable without a provider.
+            reply(payload)
+        }, researchFor = { _, _, _ -> throw ProviderFailure("sample_offline_only") })
     }
 
-    fun advanceStream() = mutableState.update { current ->
-        if (!current.streaming) return@update current
-        val last = current.items.last() as TextDisplayItem
-        val end = (last.text.length + 12).coerceAtMost(current.streamTarget.length)
-        val complete = end == current.streamTarget.length
-        current.copy(
-            items = current.items.dropLast(1) + last.copy(text = current.streamTarget.take(end)),
-            streaming = !complete,
-            streamTarget = if (complete) "" else current.streamTarget,
-            dock = if (complete) current.afterStream else current.dock,
-        )
-    }
+    fun session(): RuntimeSession = runtime.state.value ?: requireNotNull(store.load(sessionId))
 
-    fun submitAnswer() = mutableState.update { current ->
-        if (current.dock != Dock.QUESTION || current.selection !in 0..3) return@update current
-        val correct = current.selection == 0
-        val attempts = current.attempts + 1
-        val feedback = when {
-            correct -> R.string.lesson_correct
-            attempts >= MAX_ATTEMPTS -> R.string.lesson_reveal
-            current.selection == 3 -> R.string.lesson_uncertain
-            else -> R.string.lesson_repair
-        }
-        current.copy(
-            items = current.items + AnsweredDisplayItem(
-                id = current.nextId,
-                question = text(R.string.lesson_question),
-                choices = resources.getStringArray(R.array.lesson_options).take(3),
-                answer = resources.getStringArray(R.array.lesson_options)[current.selection],
-                thinking = current.thinking,
-                confidence = current.confidence.takeUnless { current.selection == 3 },
-                correctAnswer = resources.getStringArray(R.array.lesson_options)[0],
-                explanation = text(R.string.lesson_correct),
-                questionType = "predict",
-                dontKnow = current.selection == 3,
-            ) + TextDisplayItem(current.nextId + 1, ""),
-            dock = Dock.COMPOSER,
-            expanded = false,
-            streaming = true,
-            streamTarget = text(feedback),
-            afterStream = if (correct || attempts >= MAX_ATTEMPTS) Dock.COMPOSER else Dock.QUESTION,
-            nextId = current.nextId + 2,
-            attempts = attempts,
-        )
-    }
+    // Bound the activity's saved sample Bundle, including repeated Stop/new-note experiments.
+    fun atLimit(state: RuntimeSession) = requireNotNull(state.nativeRecord).snapshot().getJSONArray("messages").length() >= 40
 
-    fun send() = mutableState.update { current ->
-        if (current.dock != Dock.COMPOSER || current.streamTarget.isNotEmpty() ||
-            current.draft.isBlank() || current.notes >= MAX_NOTES
-        ) return@update current
-        current.copy(
-            items = current.items + TextDisplayItem(
-                current.nextId,
-                current.draft.trim(),
-                Role.LEARNER
-            ) +
-                    TextDisplayItem(current.nextId + 1, ""),
-            draft = "",
-            streaming = true,
-            streamTarget = text(R.string.lesson_mock_reply),
-            afterStream = Dock.COMPOSER,
-            nextId = current.nextId + 2,
-            notes = current.notes + 1,
-        )
-    }
-
-    fun save(): Bundle = with(state.value) {
+    fun save(): Bundle = with(session()) {
         Bundle().apply {
             putString("fixture", FIXTURE)
-            putParcelableArrayList("items", ArrayList(items.map { it.save() }))
-            putString("dock", dock.name)
-            putBoolean("expanded", expanded)
-            putInt("selection", selection)
-            putInt("confidence", confidence)
-            putString("thinking", thinking)
+            putString("native", requireNotNull(nativeRecord).raw)
             putString("draft", draft)
-            putString("streamTarget", streamTarget)
-            putBoolean("streaming", streaming)
-            putString("afterStream", afterStream.name)
-            putLong("nextId", nextId)
-            putInt("attempts", attempts)
-            putInt("notes", notes)
+            putStringArrayList("selectedValues", ArrayList(selectedValues))
+            putInt("confidence", confidence)
+            putBoolean("expanded", expanded)
+            putString("readingThinking", readingThinking)
+            putBoolean("dontKnow", dontKnow)
         }
     }
 
-    @Suppress("DEPRECATION") // Typed Bundle overload requires API 33; minimum is 26.
-    private fun restore(saved: Bundle): State = with(saved) {
-        State(
-            items = getParcelableArrayList<Bundle>("items").orEmpty()
-                .map(LessonDisplayItem::restore),
-            dock = Dock.valueOf(getString("dock")!!),
-            expanded = getBoolean("expanded"),
-            selection = getInt("selection", -1),
-            confidence = getInt("confidence", 50),
-            thinking = getString("thinking").orEmpty(),
-            draft = getString("draft").orEmpty(),
-            streamTarget = getString("streamTarget").orEmpty(),
-            streaming = getBoolean("streaming"),
-            afterStream = Dock.valueOf(getString("afterStream")!!),
-            nextId = getLong("nextId"),
-            attempts = getInt("attempts"),
-            notes = getInt("notes"),
-        )
+    private fun initialChat(): NativeChat {
+        val intro = listOf(
+            "Offline, authored test content — not model output or learner evidence.",
+            text(R.string.lesson_intro),
+            "${'$'}${'$'}\nf(x) = x^2 \\quad f'(x) = 2x\n${'$'}${'$'}",
+            text(R.string.lesson_step),
+        ).joinToString("\n\n")
+        val first = response(tool = "probe", call = "sample_probe", args = question())
+        // Keep each authored Markdown specimen in its own real transcript row.
+        first.put("output", JSONArray((listOf(intro) + RENDERING_SAMPLES).map(::message) + first.getJSONArray("output").objects()))
+        val now = System.currentTimeMillis()
+        return NativeChat.parse(JSONObject().put("id", sessionId).put("version", 1).put("kind", "teach")
+            .put("messages", JSONArray().put(NativeResponses.assistant(first, MODEL, "api", now))).toString())
     }
 
-    private fun text(id: Int) = resources.getString(id)
+    private fun question() = JSONObject().put("question", text(R.string.lesson_question))
+        .put("options", JSONArray(app.resources.getStringArray(R.array.lesson_options).take(3).mapIndexed { i, label ->
+            JSONObject().put("label", label).put("value", listOf("downhill", "uphill", "stay")[i])
+        })).put("correctAnswer", "downhill").put("explanation", text(R.string.lesson_correct))
+
+    private fun reply(payload: JSONObject): JSONObject {
+        check(payload.getString("model") == MODEL)
+        val input = payload.getJSONArray("input").objects()
+        val calls = input.filter { it.optString("type") == "function_call" }
+        val results = input.filter { it.optString("type") == "function_call_output" }
+        if (calls.none { it.optString("name") == "probe_done" }) return response(tool = "probe_done", call = "sample_assessment",
+            args = JSONObject().put("assessment", JSONObject().put("strands", JSONArray(listOf(
+                "Recognizing the function" to "Authored sample: recognizes the quadratic curve; transfer is not measured.",
+                "Slope and direction" to "Authored sample: connects the derivative with downhill motion; this is not a learner verdict.",
+                "Step size" to "Authored sample: a small step still needs a fresh check."
+            ).map { (strand, assessment) -> JSONObject().put("strand", strand).put("assessment", assessment) }))
+                .put("summary", "Offline sample assessment, not evidence of your knowledge. Next: inspect the plan, then send a note to begin the teaching check.")))
+        if (calls.none { it.optString("name") == "plan_init" }) return response(
+            text = "Authored sample plan. Open Learning plan to inspect it; send any note to continue.",
+            tool = "plan_init", call = "sample_plan", args = JSONObject().put("mermaid", """
+                graph TD
+                function["Read the function"] --> slope["Find the slope"]
+                slope --> update["Take a small step"]
+                update --> compare["Compare the result"]
+            """.trimIndent()))
+        val quizzes = calls.filter { it.optString("name") == "quiz" }
+        if (quizzes.isEmpty()) return response(tool = "quiz", call = "sample_quiz_1",
+            args = question().put("type", "predict").put("nodeId", "slope"))
+        val last = results.lastOrNull()
+        val quizResult = last?.takeIf { it.optString("call_id") == quizzes.last().getString("call_id") }
+            ?.getString("output")?.let(::JSONObject)
+        if (quizResult != null && quizzes.last().getString("call_id") != "sample_check") {
+            if (!quizResult.optBoolean("correct") && quizzes.size < 3) return response(
+                text = text(if (quizResult.optBoolean("dontKnow")) R.string.lesson_uncertain else R.string.lesson_repair),
+                tool = "quiz", call = "sample_quiz_${quizzes.size + 1}",
+                args = question().put("type", "predict").put("nodeId", "slope"))
+            return response(text = text(if (quizResult.optBoolean("correct")) R.string.lesson_correct else R.string.lesson_reveal),
+                tool = "quiz", call = "sample_check",
+                args = question().put("question", "Offline check: which direction does a small gradient step take?")
+                    .put("type", "check").put("nodeId", "update"))
+        }
+        return response(text = "Offline authored reply — no model request or automatic assessment.\n\n" + text(R.string.lesson_mock_reply))
+    }
+
+    private fun text(id: Int) = app.getString(id)
 
     companion object {
-        private const val FIXTURE = "gradient-direction-scroll-tables-v3"
-        private val RENDERING_SAMPLES = listOf(
+        private const val FIXTURE = "native-sample-probe-plan-teach-v4"
+        private const val MODEL = "sample-offline"
+        private fun message(text: String) = JSONObject().put("type", "message").put("role", "assistant").put("status", "completed")
+            .put("content", JSONArray().put(JSONObject().put("type", "output_text").put("text", text)))
+        private fun response(text: String = "", tool: String? = null, call: String = "", args: JSONObject = JSONObject()) = JSONObject()
+            .put("status", "completed").put("output", JSONArray().apply {
+                if (text.isNotEmpty()) put(message(text))
+                if (tool != null) put(JSONObject().put("type", "function_call").put("status", "completed")
+                    .put("name", tool).put("call_id", call).put("arguments", args.toString()))
+            })
+
+        val RENDERING_SAMPLES = listOf(
             """
                 ## Markdown / LaTeX rendering samples
                 Offline, authored test content — not model output or learner evidence.
@@ -305,8 +235,5 @@ class MockLesson(private val resources: Resources, saved: Bundle? = null) {
                 Text after the final formula should remain visible and selectable.
             """.trimIndent()
         )
-        const val MAX_INPUT = 2000
-        const val MAX_NOTES = 8
-        private const val MAX_ATTEMPTS = 3
     }
 }
