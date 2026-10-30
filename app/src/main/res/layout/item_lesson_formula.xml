@@ -3,6 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/space_16"
+    android:paddingHorizontal="@dimen/space_24"
+    android:clipToPadding="false"
     android:scrollbars="horizontal">
 
     <TextView

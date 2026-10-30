@@ -22,7 +22,8 @@ centering. Styles also
 provide padded, bounded ripple hit areas, including toolbar icons and list rows. Layout fixtures
 exercise all 25 screen/row/dialog/toolbar layouts at 320/600 dp, up to 200% font scale and RTL.
 A second pass exposes initially hidden content and checks screen gutters and text height, accounting
-for lesson-list padding and horizontally scrolling formula/control viewports. These are structural
+for component-owned gutters and horizontally scrolling formula/control viewports. Chat gutters are now owned by individual components rather than the
+RecyclerView, allowing horizontal table content to reach the viewport edges. These are structural
 checks, not screenshot-based visual acceptance; dynamic screen/source review coverage is recorded
 in `docs/RELEASE_CHECKLIST.md`. Live provider/web, minimum-API and full device acceptance remain
 separate gates.
@@ -331,8 +332,10 @@ reasoning.effort; an explicit supported level is checkpointed and sent on the ne
 context ring uses last completed request input usage divided by catalog capacity, not accumulated
 billing tokens or an invented live tokenizer; its dialog also shows saved input/output token totals
 and explains the snapshot, unknowns, automatic summary costs/date and independent archive safety
-bounds. Composer ripples use a bounded rounded-button mask with a transparent resting background, so
-the overlaid context button does not hide the ring. Account details/Manage usage moved into this
+bounds. Text composer controls use rounded-button feedback; icon-only actions use fixed-radius
+circular ripples on 48-dp targets. Toolbar navigation uses the native Material toolbar style and
+overflow keeps a 48-dp minimum target; neither ripple scales an oval mask to a tall toolbar's bounds.
+The context button's ripple has a transparent resting background, so it does not hide the ring. Account details/Manage usage moved into this
 dialog instead of an always-visible plan button.
 
 The Prober diagnoses before `finish_probe` commits the pinned structured `assessment`: one

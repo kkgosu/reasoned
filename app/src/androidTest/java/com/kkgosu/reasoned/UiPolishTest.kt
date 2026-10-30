@@ -107,9 +107,13 @@ class UiPolishTest {
                 fun checkRipple(view: View) {
                     val ripple = view.background as? RippleDrawable
                     assertTrue(
-                        "Unbounded or missing ripple: ${view.javaClass.simpleName} ${view.id}",
-                        ripple != null && ripple.numberOfLayers > 0
+                        "Missing ripple: ${view.javaClass.simpleName} ${view.id}",
+                        ripple != null
                     )
+                    if (view is CompoundButton) {
+                        assertTrue("Compound buttons must keep the native fixed-radius ripple", ripple!!.radius > 0)
+                    } else assertTrue("Buttons need bounded content/mask or a native fixed-radius ripple",
+                        ripple!!.numberOfLayers > 0 || ripple.radius > 0)
                     if (view.width > 0 && view.height > 0) {
                         // Synthetic layout only: no window capture or screenshot. View.draw sets background bounds.
                         val picture = Picture()
@@ -246,11 +250,11 @@ class UiPolishTest {
                         }
                         assertEquals(
                             contentInset,
-                            root.findViewById<TextView>(R.id.answered_question).left
+                            root.findViewById<TextView>(R.id.answered_question).let { it.left + it.paddingLeft }
                         )
                         assertEquals(
                             contentInset,
-                            root.width - root.findViewById<TextView>(R.id.answered_question).right
+                            root.findViewById<TextView>(R.id.answered_question).let { root.width - it.right + it.paddingRight }
                         )
                     }
                     if (layout == R.layout.fragment_learning_preferences || layout == R.layout.fragment_new_session) {
@@ -293,6 +297,122 @@ class UiPolishTest {
     }
 
     @Test
+    fun chatComponentsOwnInsetsAndUseNativeTouchFeedback() {
+        val app = ApplicationProvider.getApplicationContext<ReasonedApplication>()
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            for (scale in listOf(1f, 2f)) for (rtl in listOf(false, true)) {
+                val config = Configuration(app.resources.configuration).apply {
+                    fontScale = scale
+                    setLayoutDirection(if (rtl) Locale.forLanguageTag("ar") else Locale.ENGLISH)
+                }
+                val context = ContextThemeWrapper(app.createConfigurationContext(config), R.style.Theme_Reasoned)
+                val inflater = LayoutInflater.from(context)
+                val width = (320 * context.resources.displayMetrics.density).roundToInt()
+                val height = (640 * context.resources.displayMetrics.density).roundToInt()
+                val touch = context.resources.getDimensionPixelSize(R.dimen.touch_target)
+                val gutter = context.resources.getDimensionPixelSize(R.dimen.space_24)
+                fun measure(view: View) {
+                    view.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED))
+                    view.layout(0, 0, width, view.measuredHeight)
+                }
+                fun assertCircle(view: View) {
+                    val ripple = view.background as RippleDrawable
+                    assertEquals((20 * context.resources.displayMetrics.density).roundToInt(), ripple.radius)
+                    assertEquals(view.width, view.height)
+                    assertTrue(view.width >= touch)
+                }
+                val session = inflater.inflate(R.layout.fragment_runtime_session, null).apply {
+                    measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY))
+                    layout(0, 0, width, height)
+                }
+                val list = session.findViewById<View>(R.id.lesson_list)
+                assertEquals(0, list.paddingStart)
+                assertEquals(0, list.paddingEnd)
+                assertCircle(session.findViewById(R.id.session_context))
+                val search = inflater.inflate(R.layout.view_graph_search_toolbar, null)
+                measure(search)
+                assertCircle(search.findViewById(R.id.graph_search_clear))
+                val options = inflater.inflate(R.layout.fragment_new_session, null)
+                for (id in listOf(R.id.session_learn, R.id.session_practice, R.id.session_research)) {
+                    val choice = options.findViewById<CompoundButton>(id)
+                    assertTrue((choice.background as RippleDrawable).radius > 0)
+                    assertEquals(0, choice.paddingTop)
+                    assertEquals(0, choice.paddingBottom)
+                    assertTrue((choice.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin > 0)
+                }
+                val adapter = com.kkgosu.reasoned.ui.adapters.LessonAdapter(com.kkgosu.reasoned.ui.text.lessonMarkdown(context))
+                adapter.submit(listOf(com.kkgosu.reasoned.model.LessonDisplayItem.TextDisplayItem(1,
+                    "Offline learner note", com.kkgosu.reasoned.model.LessonDisplayItem.Role.LEARNER)))
+                val holder = adapter.onCreateViewHolder(android.widget.FrameLayout(context), adapter.getItemViewType(0))
+                adapter.onBindViewHolder(holder, 0)
+                val toggle = holder.itemView.findViewById<Button>(R.id.item_label)
+                toggle.performClick()
+                measure(holder.itemView)
+                val band = holder.itemView.findViewById<View>(R.id.item_band)
+                assertEquals(0, toggle.left)
+                assertEquals(band.width, toggle.right)
+                assertEquals(0, toggle.top)
+                assertEquals(band.height, toggle.bottom)
+                assertEquals(Gravity.CENTER_VERTICAL, toggle.gravity and Gravity.VERTICAL_GRAVITY_MASK)
+                assertTrue(!toggle.includeFontPadding)
+                assertEquals(gutter, toggle.paddingStart)
+                assertEquals(gutter, toggle.paddingEnd)
+                val picture = Picture()
+                toggle.draw(picture.beginRecording(toggle.width, toggle.height))
+                picture.endRecording()
+                assertEquals(Rect(0, 0, band.width, band.height), toggle.background.bounds)
+                val body = holder.itemView.findViewById<TextView>(R.id.item_text)
+                assertEquals(gutter, body.paddingStart)
+                assertEquals(gutter, body.paddingEnd)
+            }
+        }
+    }
+
+    @Test
+    fun toolbarNavigationAndOverflowKeepFixedCircularRipples() {
+        val app = ApplicationProvider.getApplicationContext<ReasonedApplication>()
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            for (scale in listOf(1f, 2f)) for (rtl in listOf(false, true)) {
+                val config = Configuration(app.resources.configuration).apply {
+                    fontScale = scale
+                    setLayoutDirection(if (rtl) Locale.forLanguageTag("ar") else Locale.ENGLISH)
+                }
+                val context = ContextThemeWrapper(app.createConfigurationContext(config), R.style.Theme_Reasoned)
+                val width = (360 * context.resources.displayMetrics.density).roundToInt()
+                val touch = context.resources.getDimensionPixelSize(R.dimen.touch_target)
+                val radius = (20 * context.resources.displayMetrics.density).roundToInt()
+                val root = LayoutInflater.from(context).inflate(R.layout.fragment_shell, null)
+                val toolbar = root.findViewById<Toolbar>(me.grishka.appkit.R.id.toolbar)
+                toolbar.setNavigationIcon(R.drawable.ic_close)
+                toolbar.title = "Providers & models"
+                toolbar.menu.add("Search").setIcon(R.drawable.ic_search).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+                toolbar.menu.add("More").setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
+                toolbar.layoutParams.height = (96 * context.resources.displayMetrics.density).roundToInt()
+                root.measure(View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                    View.MeasureSpec.makeMeasureSpec(width * 2, View.MeasureSpec.EXACTLY))
+                root.layout(0, 0, width, root.measuredHeight)
+                var navigation = 0
+                var overflow = 0
+                fun check(view: View) {
+                    if (view is ImageButton || view.javaClass.simpleName == "ActionMenuItemView") {
+                        val ripple = view.background as RippleDrawable
+                        assertEquals("${view.javaClass.simpleName}: ripple must not stretch with the toolbar", radius, ripple.radius)
+                        assertTrue(view.width >= touch && view.height >= touch)
+                        if (view.parent === toolbar) navigation++
+                        if (view.javaClass.simpleName == "OverflowMenuButton") overflow++
+                    }
+                    if (view is ViewGroup) repeat(view.childCount) { check(view.getChildAt(it)) }
+                }
+                check(toolbar)
+                assertEquals("Navigation button must actually be checked", 1, navigation)
+                assertEquals("Overflow button must actually be checked", 1, overflow)
+            }
+        }
+    }
+
+    @Test
     fun textStatesKeepScreenGuttersIncludingInitiallyHiddenContent() {
         val app = ApplicationProvider.getApplicationContext<ReasonedApplication>()
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
@@ -316,11 +436,13 @@ class UiPolishTest {
                     // AppKit's toolbar supplies its own navigation/title insets.
                     it == R.layout.fragment_shell || it == R.layout.view_graph_search_toolbar
                 }) {
-                    val inflated = LayoutInflater.from(context).inflate(layout, null)
+                    val rowParent = android.widget.ScrollView(context)
+                    val inflated = LayoutInflater.from(context).inflate(layout, rowParent, false)
                     val content = if (layout == R.layout.activity_main)
                         inflated.findViewById<View>(R.id.drawer_panel) else inflated
                     val lessonRow = layout in listOf(
                         R.layout.item_lesson_answered,
+                        R.layout.item_lesson_assessment,
                         R.layout.item_lesson_text,
                         R.layout.item_lesson_question,
                         R.layout.item_lesson_formula,
@@ -329,14 +451,10 @@ class UiPolishTest {
                     val root = android.widget.FrameLayout(context).apply {
                         layoutDirection =
                             if (rtl) View.LAYOUT_DIRECTION_RTL else View.LAYOUT_DIRECTION_LTR
-                        // Match the real lesson list's gutters and unbounded vertical row measurement.
-                        if (lessonRow) {
-                            val inset = resources.getDimensionPixelSize(R.dimen.space_24)
-                            setPadding(inset, 0, inset, 0)
-                        }
+                        // The real list is edge-to-edge; each row owns its insets and margins.
                         (content.parent as? ViewGroup)?.removeView(content)
-                        if (lessonRow) addView(android.widget.ScrollView(context).apply {
-                            addView(content, ViewGroup.LayoutParams(-1, -2))
+                        if (lessonRow) addView(rowParent.apply {
+                            addView(content)
                         }, ViewGroup.LayoutParams(-1, -1))
                         else addView(content, ViewGroup.LayoutParams(-1, -1))
                     }
@@ -365,6 +483,8 @@ class UiPolishTest {
                                 if (parent is android.widget.HorizontalScrollView) {
                                     parent.getDrawingRect(bounds)
                                     root.offsetDescendantRectToMyCoords(parent, bounds)
+                                    bounds.left += parent.paddingLeft
+                                    bounds.right -= parent.paddingRight
                                     break
                                 }
                                 parent = parent.parent

@@ -62,7 +62,7 @@ This is a role-preserving sp mapping, not a physical-pixel conversion. Android d
 
 Resources: `values/dimens.xml`, `drawable/{surface_outline,input_background,button_primary,button_secondary,dialog_background}.xml`.
 
-- Spacing ladder: **4 / 8 / 12 / 16 / 24 / 32 dp**. Current page padding 24 dp; neighboring content commonly uses 8, 12, 16 or 24 dp.
+- Spacing ladder: **4 / 8 / 12 / 16 / 24 / 32 dp**. Reading gutters are 24 dp; neighboring content commonly uses 8, 12, 16 or 24 dp. The chat list itself has no horizontal padding: its components own those gutters.
 - Radius ladder: **4 / 8 / 12 / 16 dp**. Foundation buttons use 8; inputs use 16. Native dialogs use the explicitly requested Mastodon treatment: 28 dp corners and a 16 dp window inset, not a new general surface token.
 - Separators use 1 dp `border`. Editable fields now have a 1 dp muted-foreground outline, a 2 dp foreground focus outline and a subdued disabled outline; shared input styling includes forms and the lesson composer. Graph search uses a clickable pill on Home and an unboxed editor inside its dedicated toolbar.
 - Main reading content remains directly on the page; don't put every paragraph or lesson turn inside a card.
@@ -76,6 +76,21 @@ Resources: `values/dimens.xml`, `drawable/{surface_outline,input_background,butt
   Compact controls, nested tables and documents exceeding 512 table cells keep Markwon's existing
   wrapped-span fallback to avoid an unbounded native view tree. No HTML/WebView is involved.
 - No decorative elevation. Toolbar elevation is zero. Native pressed ripples use the monochrome palette.
+- Icon-only controls use 48-dp targets and native fixed-radius circular feedback (`IconButton` /
+  `Button.Icon`): a 20-dp ripple radius does not stretch with rectangular or tall bounds. Send/Stop
+  keep their square primary circular fill; text buttons retain rounded rectangular fills.
+  Toolbar uses `Widget.Material.Toolbar`, not the legacy `Widget.Toolbar` whose navigation
+  background is rectangular. Overflow retains a minimum 48-dp target independently of its ripple.
+- Radio/checkbox styles inherit the platform Material CompoundButton backgrounds, retaining the
+  fixed-radius indicator ripple instead of replacing it with a full-row/card ripple. Spacing is in
+  layout margins (including dynamically created options), not extra control padding. Provider rows
+  use 24-dp external horizontal gutters; the custom inset indicator drawable is no longer needed.
+- `MarkdownContentView` takes reading insets from its TextView. Prose segments retain that padding;
+  each table's HorizontalScrollView owns the same end padding with `clipToPadding=false`, so moving
+  tables can reach the component edges instead of being clipped by the chat's gutter. Answer cards
+  retain their own margins, but their Markdown bodies do not add an outer scrolling constraint.
+- Thinking disclosures fill the entire unpadded band/card width. Their labels are vertically centered
+  in a minimum 48-dp row, with symmetric vertical padding and no extra band-bottom/font padding.
 - **48 dp minimum touch target** is an Android accessibility adaptation, not a LearnHarness desktop token. It takes precedence over the desktop's smaller controls.
 
 Some ladder tokens are intentionally unused in the small specimen; they are the explicitly requested extracted design vocabulary, not speculative widget APIs.
@@ -85,7 +100,7 @@ Some ladder tokens are intentionally unused in the small specimen; they are the 
 | Component | Reference anatomy | Native adaptation / phase |
 |---|---|---|
 | Home | Graph fills available space; bottom goal input and teach/practice switch; navigation secondary | Phase 3 displays an explicitly illustrative graph with a full-screen native search entry, an above-node details tooltip and toolbar-overflow zoom/Fit/sample-session actions. No fake custom-goal generation. |
-| Navigation | Narrow left session column; serif/prose names, mono filters/search/metadata | Native DrawerLayout wraps the AppKit stack, with recent sessions and pinned Settings. Settings categories combine title/subtitle into one full-width native button. Navigation rows/radios keep their ripple edge-to-edge. Navigation text and radio indicators start 24 dp inside the edge; radio indicators are vertically centered. Native LayerDrawable start/end insets position the indicator because CompoundButton ignores view padding for it. Filled actions and form fields remain inset. Settings has Back to Home; ChatGPT models appear as automatically loaded, account-scoped radio rows. |
+| Navigation | Narrow left session column; serif/prose names, mono filters/search/metadata | Native DrawerLayout wraps the AppKit stack, with recent sessions and pinned Settings. Settings categories combine title/subtitle into one full-width native button. Navigation rows keep full-row ripples and 24-dp text insets. Radio/checkbox controls instead use native indicator ripples and external margins; indicators remain vertically centered. Filled actions and form fields remain inset. Settings has Back to Home; ChatGPT models appear as automatically loaded, account-scoped radio rows. |
 | Session | Serif title; status/plan actions; document-like prose spine; integrated formulas/diagrams | Implemented `LearningSessionFragment`: typed native text/formula/answer rows, quiet status and no messenger bubbles. Plan/diagram actions wait for those features. |
 | Composer | One rounded bottom shell, growing Source Sans input, trailing send/stop; ancillary controls below | Implemented native 1–4-line EditText, Send/Stop/Resume, visible local-preview notice and AppKit IME-safe area. A stopped stream is resumed before sending the retained note. |
 | Question dock | Same shell replaces composer; label → question → options → confidence → “Your thinking” → submit | One persistent native shell. The authored teaching check offers reveal; controls scroll while header/submit remain reachable. Selection, confidence and thinking survive collapse, recreation and Home navigation. Probe/open-response/practice variants wait for their features. |
@@ -208,7 +223,7 @@ capture and never restores the password field. No key appears in review frames.
 
 Providers & models offers explicit API-key versus ChatGPT-plan radio choices in equal-width, vertically aligned native rows. Forms use 24-dp outer gutters, 16-dp section spacing and 8-dp action gaps. Disabled buttons use 40% alpha; the graph tooltip opts out because its alpha belongs to selection fades. Short connection status replaces introductory walls of text; full retention/billing/privacy guidance remains in About & privacy and the plan acknowledgement. Plan mode hides API-key entry and shows separate account selection, browser sign-in/add/sign-out, refreshed model selection and Manage usage. Native notices distinguish plan usage/possible credits from API billing; a first successful plan connection requires an acknowledgement before model selection or session creation. Saved sessions retain their connection even if setup changes. Plan sessions expose the account/usage link without putting credentials into the transcript. Secure setup screenshot blocking is unchanged; browser authentication is external, never an embedded login.
 
-Start session is one disclosed action: local checkpoint then first request, without a second preview gate. Runtime refinements use a 24-dp rounded composer, unboxed 1–4-line input, Send/Stop icons, session model/thinking selectors and a small context ring. Controls retain 48-dp touch targets; model/thinking controls scroll horizontally instead of clipping at enlarged type. No pretend attachment or voice actions are shown. The ring reports the last request's input share of catalog capacity, or ? when unknown; tapping explains limits and holds account/Manage usage details. The always-visible plan button is removed. A native progress row follows the last message rather than appearing at the top; it stays last as streaming rows arrive. Composer controls use bounded 8-dp-corner button ripples, not borderless circular ripples.
+Start session is one disclosed action: local checkpoint then first request, without a second preview gate. Runtime refinements use a 24-dp rounded composer, unboxed 1–4-line input, Send/Stop icons, session model/thinking selectors and a small context ring. Controls retain 48-dp touch targets; model/thinking controls scroll horizontally instead of clipping at enlarged type. No pretend attachment or voice actions are shown. The ring reports the last request's input share of catalog capacity, or ? when unknown; tapping explains limits and holds account/Manage usage details. The always-visible plan button is removed. A native progress row follows the last message rather than appearing at the top; it stays last as streaming rows arrive. Text composer controls use bounded 8-dp-corner ripples; icon-only controls use square targets and circular feedback.
 The runtime transcript fades into the page over its bottom 32 dp, with matching bottom padding so
 the final message stays readable. A newly committed learner note or answer smoothly scrolls to the
 tail even from history; ordinary updates retain the existing follow-only-when-at-bottom behavior.

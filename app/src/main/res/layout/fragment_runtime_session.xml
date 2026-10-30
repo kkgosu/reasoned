@@ -42,14 +42,13 @@
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:foreground="@drawable/transcript_bottom_fade"
-            android:paddingStart="@dimen/space_24"
             android:paddingTop="@dimen/space_8"
-            android:paddingEnd="@dimen/space_24"
             android:paddingBottom="@dimen/space_32"
             android:scrollbars="vertical" />
 
         <ImageButton
             android:id="@+id/scroll_to_bottom"
+            style="@style/Widget.Harness.IconButton"
             android:layout_width="@dimen/touch_target"
             android:layout_height="@dimen/touch_target"
             android:layout_gravity="bottom|end"
@@ -58,7 +57,6 @@
             android:background="@drawable/button_scroll_to_bottom"
             android:contentDescription="@string/runtime_scroll_to_bottom"
             android:enabled="false"
-            android:padding="@dimen/space_12"
             android:src="@drawable/ic_arrow_down"
             android:visibility="invisible" />
     </FrameLayout>
@@ -276,11 +274,14 @@
 
                 <Button
                     android:id="@+id/session_context"
-                    style="@style/Widget.Harness.Button.Composer"
+                    style="@style/Widget.Harness.Button.Icon"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:contentDescription="@string/runtime_context"
-                    android:padding="0dp"
+                    android:paddingStart="0dp"
+                    android:paddingEnd="0dp"
+                    android:paddingTop="0dp"
+                    android:paddingBottom="0dp"
                     android:text="?"
                     android:textSize="@dimen/text_11" />
             </FrameLayout>

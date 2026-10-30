@@ -198,7 +198,11 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
                             layoutParams = RadioGroup.LayoutParams(
                                 ViewGroup.LayoutParams.MATCH_PARENT,
                                 ViewGroup.LayoutParams.WRAP_CONTENT
-                            )
+                            ).apply {
+                                val horizontal = resources.getDimensionPixelSize(R.dimen.space_24)
+                                val vertical = resources.getDimensionPixelSize(R.dimen.space_8)
+                                setMargins(horizontal, vertical, horizontal, vertical)
+                            }
                             isSaveEnabled = false
                             text = name
                             tag = slug

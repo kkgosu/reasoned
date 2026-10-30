@@ -103,6 +103,8 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
     private inner class TextHolder(view: View) : RecyclerView.ViewHolder(view) {
         val text: TextView = view.findViewById(R.id.item_text)
         private val label: TextView = view.findViewById(R.id.item_label)
+        private val divider: View = view.findViewById(R.id.item_divider)
+        private val band: View = view.findViewById(R.id.item_band)
         fun bind(item: TextDisplayItem) {
             text.setTextAppearance(if (item.role == Role.TITLE) R.style.TextAppearance_Harness_Title else R.style.TextAppearance_Harness_Prose)
             if (Build.VERSION.SDK_INT >= 28) text.isAccessibilityHeading = item.role == Role.TITLE
@@ -110,14 +112,10 @@ class LessonAdapter(private val markdown: io.noties.markwon.Markwon? = null) :
             val thinking = item.role == Role.THINKING
             val runtime = markdown != null
             val previous = items.getOrNull(bindingAdapterPosition - 1)
-            itemView.findViewById<View>(R.id.item_divider).visibility = if (runtime && !learner &&
+            divider.visibility = if (runtime && !learner &&
                 (previous is AnsweredDisplayItem || previous is TextDisplayItem && previous.role == Role.LEARNER)
             ) View.VISIBLE else View.GONE
-            val band = itemView.findViewById<View>(R.id.item_band)
             band.setBackgroundResource(if (runtime && learner) R.drawable.learner_band else android.R.color.transparent)
-            val inset =
-                if (runtime && learner) itemView.resources.getDimensionPixelSize(R.dimen.space_16) else 0
-            band.setPaddingRelative(inset, 0, inset, if (inset > 0) inset / 2 else 0)
             text.setTextColor(itemView.context.getColor(if (learner || thinking) R.color.muted_foreground else R.color.foreground))
             if (learner) text.setTypeface(text.typeface, Typeface.ITALIC)
             label.visibility =

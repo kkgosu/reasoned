@@ -159,9 +159,18 @@ class LessonTest {
                 val toolbar = fragment.view!!.findViewById<android.widget.Toolbar>(me.grishka.appkit.R.id.toolbar)
                 assertEquals(1, toolbar.menu.size())
                 assertNotNull(toolbar.menu.findItem(R.id.session_plan))
+                val navigation = (0 until toolbar.childCount).map { toolbar.getChildAt(it) }
+                    .filterIsInstance<android.widget.ImageButton>().single()
+                assertTrue("The AppKit navigation button must keep a circular ripple",
+                    (navigation.background as android.graphics.drawable.RippleDrawable).radius > 0)
                 assertFalse(activity.findViewById<Button>(R.id.session_model).isEnabled)
                 assertFalse(activity.findViewById<Button>(R.id.session_thinking).isEnabled)
-                assertFalse(activity.findViewById<Button>(R.id.composer_action).isEnabled)
+                val action = activity.findViewById<Button>(R.id.composer_action)
+                assertFalse(action.isEnabled)
+                assertEquals(activity.resources.getDimensionPixelSize(R.dimen.touch_target), action.width)
+                assertEquals(action.width, action.height)
+                val fill = (action.background as android.graphics.drawable.RippleDrawable).getDrawable(0) as android.graphics.drawable.GradientDrawable
+                assertEquals(android.graphics.drawable.GradientDrawable.OVAL, fill.shape)
                 val options = activity.findViewById<LinearLayout>(R.id.question_options)
                 (options.getChildAt(0) as CompoundButton).performClick()
                 activity.findViewById<EditText>(R.id.question_thinking).setText("Retained sample reasoning")
@@ -371,7 +380,10 @@ class LessonTest {
             while (!ready) {
                 scenario.onActivity { activity ->
                     val options = activity.findViewById<LinearLayout>(R.id.question_options)
-                    ready = options != null && options.childCount > 0 && options.tag == lesson.session().question?.callId
+                    val action = activity.findViewById<View>(R.id.composer_action)
+                    ready = options != null && options.childCount > 0 && options.tag == lesson.session().question?.callId &&
+                        action != null && !action.isLayoutRequested && action.width == action.layoutParams.width &&
+                        action.height == action.layoutParams.height
                 }
                 if (!ready) kotlinx.coroutines.delay(20)
             }

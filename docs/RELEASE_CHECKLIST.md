@@ -39,6 +39,33 @@ HEAD),
 `app/build/reports/lint-results-{debug,release}.{html,sarif}`. Do not commit personal device logs,
 databases or credentials.
 
+### Native touch feedback and component-owned chat gutters
+
+Toolbar follow-up: the owner's captures exposed two gaps in the initial check. The transparent oval
+mask stretched with overflow bounds, and the theme still selected legacy `Widget.Toolbar`, whose
+navigation background is rectangular. The fix uses fixed 20-dp ripple radii and native
+`Widget.Material.Toolbar`, with a separate 48-dp overflow target minimum. The new toolbar test
+inspects actual navigation, action and overflow backgrounds in an enlarged toolbar at 100%/200%
+fonts and in both layout directions; it fails if either navigation or overflow was not visited.
+That test, the component test and the actual AppKit sample-screen check pass on the offline
+`emulator-5554`. The sample check also waits for the existing dock bounds animation before asserting
+its final icon dimensions; the size assertions remain unchanged. No screenshots or phone changes
+were made. This is native geometry/state validation, not a visual-fidelity claim.
+
+Debug/app-test APK assembly passed. Five targeted instrumentation checks passed on the disposable
+`emulator-5554` with networking disabled: native icon/compound-button/disclosure geometry; table
+wrapping and full-width scrolling; shared sample controls/draft/scroll restoration; authored
+Markdown/LaTeX examples; and the layout-gutter check including initially hidden content. The
+structural checks include 100%/200% font sizes and RTL; the gutter matrix also covers 320/600-dp
+widths. The new component check verifies square circular icon targets, platform fixed-radius
+radio/checkbox ripple backgrounds with external spacing, and a full-width vertically centered
+collapsed learner-thinking row.
+
+No screenshots, live-provider requests, personal-device installs or data resets were performed.
+Sample fixture v6 adds an authored edge-to-edge table example. These targeted results do not replace
+a full suite, release/lint run, TalkBack acceptance or visual/motion review. The separately recorded
+About alignment failure below was not changed or hidden by these updates.
+
 ### Shared sample/runtime chat (targeted checks)
 
 Sample now uses the real runtime fragment, native question contracts and renderer with a local mock

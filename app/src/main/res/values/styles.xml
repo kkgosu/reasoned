@@ -32,7 +32,7 @@
     </style>
 
     <style name="Widget.Harness.ActionModeClose" parent="android:Widget.Material.ActionButton.CloseMode">
-        <item name="android:background">@drawable/button_composer</item>
+        <item name="android:background">@drawable/button_icon</item>
     </style>
     <style name="Widget.Harness.TextView" parent="android:Widget.TextView">
         <item name="android:textAppearance">@style/TextAppearance.Harness</item>
@@ -62,12 +62,30 @@
         <item name="android:paddingStart">8dp</item>
         <item name="android:paddingEnd">8dp</item>
     </style>
+    <style name="Widget.Harness.OverflowButton" parent="android:Widget.Material.ActionButton.Overflow">
+        <item name="android:minWidth">@dimen/touch_target</item>
+        <item name="android:minHeight">@dimen/touch_target</item>
+    </style>
+    <style name="Widget.Harness.IconButton" parent="android:Widget.Material.ImageButton">
+        <item name="android:background">@drawable/button_icon</item>
+        <item name="android:minWidth">@dimen/touch_target</item>
+        <item name="android:minHeight">@dimen/touch_target</item>
+        <item name="android:padding">@dimen/space_12</item>
+    </style>
+    <style name="Widget.Harness.Button.Icon" parent="Widget.Harness.Button.Secondary">
+        <item name="android:background">@drawable/button_icon</item>
+        <item name="android:paddingStart">@dimen/space_12</item>
+        <item name="android:paddingEnd">@dimen/space_12</item>
+        <item name="android:paddingTop">@dimen/space_12</item>
+        <item name="android:paddingBottom">@dimen/space_12</item>
+    </style>
     <style name="Widget.Harness.Disclosure" parent="Widget.Harness.Button.Secondary">
         <item name="android:background">?android:attr/selectableItemBackground</item>
         <item name="android:textAppearance">@style/TextAppearance.Harness.Label</item>
         <item name="android:textSize">@dimen/text_11</item>
         <item name="android:textColor">@color/muted_foreground</item>
         <item name="android:gravity">center_vertical|start</item>
+        <item name="android:includeFontPadding">false</item>
     </style>
     <style name="Widget.Harness.Navigation" parent="Widget.Harness.Button.Secondary">
         <item name="android:background">?android:attr/selectableItemBackground</item>
@@ -82,12 +100,7 @@
         <item name="android:gravity">center_vertical|start</item>
         <item name="android:fontFamily">@font/ui</item>
         <item name="android:textSize">@dimen/text_14</item>
-        <item name="android:background">?android:attr/selectableItemBackground</item>
-        <item name="android:button">@drawable/radio_indicator_inset</item>
-        <item name="android:paddingStart">0dp</item>
-        <item name="android:paddingEnd">@dimen/space_24</item>
-        <item name="android:paddingTop">@dimen/space_12</item>
-        <item name="android:paddingBottom">@dimen/space_12</item>
+        <item name="android:layout_marginHorizontal">@dimen/space_24</item>
     </style>
     <style name="Widget.Harness.Input" parent="android:Widget.EditText">
         <item name="android:fontFamily">@font/prose</item>
@@ -110,37 +123,37 @@
         <item name="android:textAppearance">@style/TextAppearance.Harness</item>
         <item name="android:gravity">center_vertical|start</item>
         <item name="android:minHeight">@dimen/touch_target</item>
-        <item name="android:padding">@dimen/space_8</item>
-        <item name="android:background">?android:attr/selectableItemBackground</item>
+        <item name="android:layout_marginHorizontal">@dimen/space_8</item>
+        <item name="android:layout_marginVertical">@dimen/space_8</item>
     </style>
 
     <style name="Widget.Harness.CheckRow" parent="android:Widget.Material.CompoundButton.CheckBox">
         <item name="android:textAppearance">@style/TextAppearance.Harness</item>
         <item name="android:gravity">center_vertical|start</item>
         <item name="android:minHeight">@dimen/touch_target</item>
-        <item name="android:padding">@dimen/space_8</item>
-        <item name="android:background">?android:attr/selectableItemBackground</item>
+        <item name="android:layout_marginHorizontal">@dimen/space_8</item>
+        <item name="android:layout_marginVertical">@dimen/space_8</item>
     </style>
 
-    <style name="Widget.Harness.MultiChoice" parent="android:Widget.CompoundButton.CheckBox">
+    <style name="Widget.Harness.MultiChoice" parent="android:Widget.Material.CompoundButton.CheckBox">
         <item name="android:fontFamily">@font/prose</item>
         <item name="android:textSize">@dimen/text_16</item>
         <item name="android:textColor">@color/foreground</item>
         <item name="android:buttonTint">@color/foreground</item>
-        <item name="android:background">@drawable/button_secondary</item>
         <item name="android:minHeight">@dimen/touch_target</item>
         <item name="android:gravity">center_vertical|start</item>
-        <item name="android:padding">@dimen/space_8</item>
+        <item name="android:layout_marginHorizontal">@dimen/space_8</item>
+        <item name="android:layout_marginVertical">@dimen/space_8</item>
     </style>
 
-    <style name="Widget.Harness.Choice" parent="android:Widget.CompoundButton.RadioButton">
+    <style name="Widget.Harness.Choice" parent="android:Widget.Material.CompoundButton.RadioButton">
         <item name="android:fontFamily">@font/prose</item>
         <item name="android:textSize">@dimen/text_16</item>
         <item name="android:textColor">@color/foreground</item>
         <item name="android:buttonTint">@color/foreground</item>
-        <item name="android:background">@drawable/button_secondary</item>
         <item name="android:minHeight">@dimen/touch_target</item>
         <item name="android:gravity">center_vertical|start</item>
-        <item name="android:padding">@dimen/space_8</item>
+        <item name="android:layout_marginHorizontal">@dimen/space_8</item>
+        <item name="android:layout_marginVertical">@dimen/space_8</item>
     </style>
 </resources>

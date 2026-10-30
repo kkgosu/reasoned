@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginBottom="@dimen/space_16"
+    android:layout_marginHorizontal="@dimen/space_24"
     android:background="@drawable/surface_outline"
     android:orientation="vertical"
     android:paddingVertical="@dimen/space_16">
@@ -16,13 +17,13 @@
         android:textAppearance="@style/TextAppearance.Harness.Label" />
 
     <com.kkgosu.reasoned.ui.text.MarkdownContentView
-        android:layout_marginHorizontal="@dimen/space_16"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/space_8">
 
         <TextView
             android:id="@+id/answered_question"
+            android:paddingHorizontal="@dimen/space_16"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAppearance="@style/TextAppearance.Harness.Prose"
@@ -38,13 +39,13 @@
         android:orientation="vertical" />
 
     <com.kkgosu.reasoned.ui.text.MarkdownContentView
-        android:layout_marginHorizontal="@dimen/space_16"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/space_8">
 
         <TextView
             android:id="@+id/answered_text"
+            android:paddingHorizontal="@dimen/space_16"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAppearance="@style/TextAppearance.Harness.Prose"
@@ -78,13 +79,13 @@
         android:layout_height="wrap_content" />
 
     <com.kkgosu.reasoned.ui.text.MarkdownContentView
-        android:layout_marginHorizontal="@dimen/space_16"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:visibility="gone">
 
         <TextView
             android:id="@+id/answered_thinking"
+            android:paddingHorizontal="@dimen/space_16"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAppearance="@style/TextAppearance.Harness.Prose"
@@ -101,13 +102,13 @@
         android:visibility="gone" />
 
     <com.kkgosu.reasoned.ui.text.MarkdownContentView
-        android:layout_marginHorizontal="@dimen/space_16"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:visibility="gone">
 
         <TextView
             android:id="@+id/answered_reading"
+            android:paddingHorizontal="@dimen/space_16"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAppearance="@style/TextAppearance.Harness.Prose"
@@ -123,13 +124,13 @@
         android:layout_height="wrap_content" />
 
     <com.kkgosu.reasoned.ui.text.MarkdownContentView
-        android:layout_marginHorizontal="@dimen/space_16"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:visibility="gone">
 
         <TextView
             android:id="@+id/answered_why"
+            android:paddingHorizontal="@dimen/space_16"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAppearance="@style/TextAppearance.Harness.Prose"

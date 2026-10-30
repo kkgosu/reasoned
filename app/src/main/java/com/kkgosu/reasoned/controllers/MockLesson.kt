@@ -131,7 +131,7 @@ internal class MockLesson(private val app: ReasonedApplication, saved: Bundle? =
     private fun text(id: Int) = app.getString(id)
 
     companion object {
-        private const val FIXTURE = "native-sample-probe-plan-teach-v5"
+        private const val FIXTURE = "native-sample-probe-plan-teach-v6"
         private const val MODEL = "sample-offline"
         private fun message(text: String) = JSONObject().put("type", "message").put("role", "assistant").put("status", "completed")
             .put("content", JSONArray().put(JSONObject().put("type", "output_text").put("text", text)))
@@ -198,6 +198,8 @@ internal class MockLesson(private val app: ReasonedApplication, saved: Bundle? =
                 | escaped pipe: a\|b | **bold** | 9 |
 
                 ### Wide table: swipe horizontally
+                Test the page edges: prose keeps its reading gutters, while the moving table can use the full chat width.
+
                 | Topic | Explanation | Example | Formula | Notes |
                 | --- | --- | --- | --- | --- |
                 | Articles | A long explanation should wrap within a single capped-width column, not widen it indefinitely. | **The information** you sent me was useful. | ${'$'}x^2${'$'} | Scroll to reach this last column. |

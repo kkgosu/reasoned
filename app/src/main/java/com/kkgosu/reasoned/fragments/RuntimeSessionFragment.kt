@@ -598,7 +598,8 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                             ViewGroup.LayoutParams.MATCH_PARENT,
                             ViewGroup.LayoutParams.WRAP_CONTENT
                         ).apply {
-                            topMargin = resources.getDimensionPixelSize(R.dimen.space_8)
+                            val margin = resources.getDimensionPixelSize(R.dimen.space_8)
+                            setMargins(margin, margin, margin, margin)
                         }
                         option.markdown(
                             listOf(
@@ -677,6 +678,18 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 ) && state.draft.isNotBlank()) -> R.drawable.ic_send
 
                 else -> 0
+            }
+            composerAction.setBackgroundResource(if (icon == 0) R.drawable.button_primary else R.drawable.button_icon_primary)
+            val horizontal = resources.getDimensionPixelSize(if (icon == 0) R.dimen.space_16 else R.dimen.space_12)
+            val vertical = resources.getDimensionPixelSize(if (icon == 0) R.dimen.space_8 else R.dimen.space_12)
+            composerAction.setPaddingRelative(horizontal, vertical, horizontal, vertical)
+            val actionSize = if (icon == 0) ViewGroup.LayoutParams.WRAP_CONTENT
+                else resources.getDimensionPixelSize(R.dimen.touch_target)
+            composerAction.layoutParams.let { params ->
+                if (params.width != actionSize || params.height != actionSize) {
+                    params.width = actionSize; params.height = actionSize
+                    composerAction.layoutParams = params
+                }
             }
             composerAction.text = if (icon == 0) getString(action) else ""
             composerAction.contentDescription = getString(action)

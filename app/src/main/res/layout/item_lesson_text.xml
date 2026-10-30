@@ -10,6 +10,7 @@
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:layout_marginBottom="@dimen/space_16"
+        android:layout_marginHorizontal="@dimen/space_24"
         android:background="@color/border"
         android:visibility="gone" />
 
@@ -24,6 +25,8 @@
             style="@style/Widget.Harness.Disclosure"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:paddingStart="@dimen/space_24"
+            android:paddingEnd="@dimen/space_24"
             android:visibility="gone" />
 
         <com.kkgosu.reasoned.ui.text.MarkdownContentView
@@ -34,6 +37,7 @@
                 android:id="@+id/item_text"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:paddingHorizontal="@dimen/space_24"
                 android:lineSpacingMultiplier="1.5"
                 android:textAppearance="@style/TextAppearance.Harness.Prose"
                 android:textIsSelectable="true" />

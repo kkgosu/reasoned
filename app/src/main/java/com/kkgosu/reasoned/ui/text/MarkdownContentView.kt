@@ -101,6 +101,7 @@ class MarkdownContentView @JvmOverloads constructor(context: Context, attrs: Att
         breakStrategy = original.breakStrategy
         hyphenationFrequency = original.hyphenationFrequency
         setTextIsSelectable(original.isTextSelectable)
+        setPaddingRelative(original.paddingStart, original.paddingTop, original.paddingEnd, original.paddingBottom)
     }
 
     private fun tableView(markwon: Markwon, original: TextView, table: TableBlock): View {
@@ -144,6 +145,9 @@ class MarkdownContentView @JvmOverloads constructor(context: Context, attrs: Att
             layout.addView(nativeRow)
         }
         return HorizontalScrollView(context).apply {
+            // Keep the reading gutter at the ends, but let a moving table use the full component width.
+            setPaddingRelative(original.paddingStart, 0, original.paddingEnd, 0)
+            clipToPadding = false
             isHorizontalScrollBarEnabled = true
             addView(layout, LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT))
         }

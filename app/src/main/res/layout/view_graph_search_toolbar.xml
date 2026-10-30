@@ -22,9 +22,9 @@
 
     <ImageButton
         android:id="@+id/graph_search_clear"
+        style="@style/Widget.Harness.IconButton"
         android:layout_width="@dimen/touch_target"
-        android:layout_height="match_parent"
-        android:background="@drawable/button_composer"
+        android:layout_height="@dimen/touch_target"
         android:contentDescription="@string/graph_search_clear"
         android:src="@drawable/ic_close"
         android:visibility="invisible" />

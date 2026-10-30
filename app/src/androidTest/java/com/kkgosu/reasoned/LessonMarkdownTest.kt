@@ -118,12 +118,14 @@ class LessonMarkdownTest {
             val density = app.resources.displayMetrics.density
             val width = (320 * density).toInt()
             val limit = app.resources.getDimensionPixelSize(R.dimen.table_column_max_width)
+            val gutter = app.resources.getDimensionPixelSize(R.dimen.space_24)
             for (size in listOf(16f, 32f)) for (direction in listOf(View.LAYOUT_DIRECTION_LTR, View.LAYOUT_DIRECTION_RTL)) {
                 val content = MarkdownContentView(app).apply { layoutDirection = direction }
                 val text = TextView(app).apply {
                     setTextAppearance(R.style.TextAppearance_Harness_Prose)
                     textSize = size
                     setTextIsSelectable(true)
+                    setPaddingRelative(gutter, 0, gutter, 0)
                 }
                 content.addView(text)
                 val long = "Long cell content must wrap inside a bounded column rather than expand forever."
@@ -139,6 +141,10 @@ class LessonMarkdownTest {
                 val scroll = content.getChildAt(1) as HorizontalScrollView
                 val table = scroll.getChildAt(0) as TableLayout
                 assertEquals(width, scroll.width)
+                assertEquals(gutter, scroll.paddingStart)
+                assertEquals(gutter, scroll.paddingEnd)
+                assertFalse(scroll.clipToPadding)
+                assertEquals(gutter, (content.getChildAt(2) as TextView).paddingStart)
                 assertTrue(table.width > scroll.width)
                 val header = table.getChildAt(0) as TableRow
                 val row = table.getChildAt(1) as TableRow
