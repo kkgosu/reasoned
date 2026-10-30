@@ -22,6 +22,8 @@ import com.kkgosu.reasoned.model.StudyPlan
 import com.kkgosu.reasoned.model.answerText
 import com.kkgosu.reasoned.model.passages
 import com.kkgosu.reasoned.storage.SessionStore
+import com.kkgosu.reasoned.storage.installTransfer
+import com.kkgosu.reasoned.storage.exportTransfer
 import com.kkgosu.reasoned.storage.graphPropositions
 import com.kkgosu.reasoned.storage.graphSessions
 import com.kkgosu.reasoned.storage.knowledge
@@ -102,11 +104,11 @@ internal class SessionRuntime(
                     val loaded = withContext(Dispatchers.IO) { store.load(id) }
                         ?: throw ProviderFailure("session_missing")
                     // Restore native UI locally; never route its archive through legacy checkpoints.
-                    val ready = if (loaded.nativeRecord != null) NativeTeaching.project(loaded)
+                    val ready = if (loaded.nativeRecord != null) NativeTeaching.project(bindImported(loaded))
                     // Old route-review checkpoints migrate locally; opening still sends no request.
                     else if (loaded.status == "route" || (loaded.phase == "probe" && loaded.routeCall.isNotEmpty() && loaded.question == null)) handoff(loaded)
                     else loaded
-                    if (loaded.nativeRecord == null && ready != loaded) store.save(ready)
+                    if ((loaded.nativeRecord == null || loaded.connection == "imported") && ready != loaded) store.save(ready)
                     mutable.value = ready
                     failure.value = ""
                 } catch (cancelled: CancellationException) {
@@ -385,7 +387,7 @@ internal class SessionRuntime(
         turn()
     }
 
-    fun retry(): Job = command {
+    fun retry(continueLesson: Boolean = false): Job = command {
         val s = mutable.value ?: return@command
         if (s.status !in listOf("idle", "interrupted", "error")) return@command
         if (s.nativeRecord != null) {
@@ -393,13 +395,15 @@ internal class SessionRuntime(
             mutable.value = restored
             if (restored.question != null) return@command
             val record = restored.nativeRecord!!
-            if (NativeTeaching.awaitingPlanReply(record)) return@command
+            if (NativeTeaching.awaitingPlanReply(record) && !continueLesson) return@command
             val native = record.state()
             if (native.retryDrops.isNotEmpty()) turnNative(retry = true)
             else if (native.continuation || NativeTeaching.handoffPending(record) ||
                 record.snapshot().getJSONArray("messages").objects().lastOrNull()?.let {
                     it.optString("role") == "user" || it.optString("customType") in setOf("practice-thinking", "practice-next")
                 } == true) turnNative()
+            else if (continueLesson && restored.status == "idle" && restored.phase != "practice")
+                sendNative(restored.copy(draft = "Continue"))
             return@command
         }
         if (s.planPending && s.plan != null) {
@@ -471,10 +475,60 @@ internal class SessionRuntime(
         }
     }
 
+    /** Transfer writes share the runtime writer gate; never cancel a turn to make import succeed. */
+    suspend fun installTransfer(
+        bytes: ByteArray, preview: com.kkgosu.reasoned.storage.TransferPreview, incoming: Set<String>,
+    ): List<String> {
+        initialization.join()
+        check(storageReady && work?.isActive != true) { "Stop generation before importing" }
+        check((application as? ReasonedApplication)?.extraction?.state?.value?.running != true) {
+            "Stop graph extraction before importing"
+        }
+        flushDraft()
+        return mutex.withLock {
+            check(work?.isActive != true) { "Runtime changed; preview again" }
+            withContext(Dispatchers.IO) {
+                val installed = store.installTransfer(bytes, preview, incoming)
+                if (mutable.value?.id in installed) mutable.value = null
+                installed
+            }
+        }
+    }
+
+    /** Freeze the outgoing snapshot under the same writer gate, without starting or stopping work. */
+    suspend fun exportTransfer(ids: List<String>): ByteArray {
+        initialization.join()
+        check(storageReady && work?.isActive != true) { "Stop generation before exporting" }
+        check((application as? ReasonedApplication)?.extraction?.state?.value?.running != true) {
+            "Stop graph extraction before exporting"
+        }
+        flushDraft()
+        return mutex.withLock {
+            check(work?.isActive != true) { "Runtime changed; select lessons again" }
+            withContext(Dispatchers.IO) { store.exportTransfer(ids) }
+        }
+    }
+
     private suspend fun flushDraft() {
         draftWrite?.cancelAndJoin()
         draftWrite = null
         mutex.withLock { mutable.value?.let { withContext(Dispatchers.IO) { store.save(it) } } }
+    }
+
+    /** Imported provider settings are data, never the local model/account binding. */
+    private suspend fun bindImported(session: RuntimeSession): RuntimeSession {
+        if (session.connection != "imported") return session
+        val app = application as ReasonedApplication
+        val preferences = app.getSharedPreferences("provider", 0)
+        val usePlan = preferences.getBoolean("chatgpt", false)
+        if (usePlan) app.chatGpt.reload()
+        val connection = if (usePlan) app.chatGpt.state.value.active else "api"
+        val model = preferences.getString("model:$connection",
+            if (usePlan) "" else preferences.getString("model", "")).orEmpty()
+        val account = app.chatGpt.state.value.accounts.find { it.id == connection }
+        if (!model.matches(Regex("[A-Za-z0-9][A-Za-z0-9._:-]{0,99}")) || model.startsWith("sk-") ||
+            (usePlan && account?.let { it.connected && it.plan } != true)) return session
+        return session.copy(model = model, connection = connection, effort = "", contextTokens = 0)
     }
 
     private fun command(block: suspend () -> Unit): Job {
@@ -483,6 +537,10 @@ internal class SessionRuntime(
             try {
                 initialization.join()
                 if (!storageReady) throw ProviderFailure("storage")
+                mutable.value?.let { mutable.value = bindImported(it) }
+                if (mutable.value?.connection == "imported") {
+                    failure.value = "model_settings_invalid"; return@launch
+                }
                 flushDraft()
             } catch (cancelled: CancellationException) {
                 throw cancelled

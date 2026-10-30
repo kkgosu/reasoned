@@ -27,6 +27,15 @@
             android:text="@string/settings_learning" />
 
         <Button
+            android:id="@+id/settings_transfer"
+            style="@style/Widget.Harness.Navigation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawableEnd="@drawable/ic_chevron_right"
+            android:drawablePadding="@dimen/space_16"
+            android:text="@string/settings_transfer" />
+
+        <Button
             android:id="@+id/settings_about"
             style="@style/Widget.Harness.Navigation"
             android:layout_width="match_parent"

@@ -576,8 +576,51 @@ Android lifecycle, storage, UI and billing/permission boundaries remain authorit
 `NativeGraphSelection` now provides pure provenance-based native assertion selection, preserving first
 definitions, canonical chain identity, required endpoints and raw unknown fields without incident-
 chain expansion. Four JVM tests and a shared pinned-native fold vector pass (87 reference checks with
-six saved Android snapshots). It is not wired to export and is not external-package validation;
-source/dependency completeness, native graph installation and coverage compatibility remain gates.
+six saved Android snapshots). `NativeTransferPackage` now wraps selected original native records and
+that subgraph in a bounded ZIP with `manifest.json`, sizes and SHA-256; its stream reader checks
+member integrity/identities and recomputes a partial dependency/projection report. The manifest is
+platform-neutral (`learnharness-transfer`, native chat/graph schema v1), not a pinned-commit permission.
+Seven package JVM checks and four graph-selection checks pass, including an explicit synthetic
+real-desktop-producer → Android reader/re-export → real-desktop-reader/graph-fold cycle. Native
+payloads remain inert, source paths are not resolved, and sender claims never authorize continuation.
+The desktop fork has general Markdown/TXT/native JSON and ZIP export. Both transfer screens now
+use Import/Export buttons with short warnings, without separate preview actions or acknowledgement
+checkboxes. Import accepts a source-free ZIP or one original lesson JSON without a graph; checks
+run automatically, pausing only for errors or explicit local/incoming conflict choices. Android
+rechecks revision and installs atomically in SQLite v5. Alternate native records and displaced local
+checkpoints remain internal for conflict safety; there is no saved-version export or raw graph
+inspector in the UI. Deleting an Android lesson also erases its saved versions. Original native graph
+ledgers/format metadata remain stored independently; this is not integration with the Home graph.
+Imported lessons continue with locally configured model/connection settings, never foreign account
+or model overrides. Android binds an initially unbound `imported` connection locally; opening remains
+request-free. Continue, learner text, answers and the existing practice actions explicitly start work.
+Missing/invalid settings use the provider setup flow instead of silently choosing an account. Source/attachment members,
+unsupported projections, known missing dependencies, ambiguous shared graph definitions, deleted-ID
+restoration and replacement of existing graph evidence remain blocked. The transfer screen also exports
+1–100 selected active native records to ZIP through the Android create-document picker, without an
+extra preview dialog. Capture shares the runtime writer gate and a SQLite snapshot; unsettled,
+unexportable or deleted selections are refused. Native graph assertions are provenance-selected, including
+required endpoint definitions but excluding unrelated transcripts/assertions. Original contributing
+format metadata is preserved; differing opaque format files block a combined export rather than
+being merged or discarded. With no selected assertions, only an unambiguous global format is used.
+ZIP excludes Android checkpoints, coverage, local title overrides/drafts, account bindings and saved
+alternate versions. No new dependencies or schema change.
+An opt-in synthetic instrumentation check installs a desktop ZIP in disposable SQLite, exports via
+`SessionRuntime`, then verifies original payload bytes through the desktop readers/fold. The actual
+Android selection/preview/save-document path was also checked with the authored sample. These are
+not by themselves desktop receiver installation or full two-app acceptance. The desktop fork now
+also has source-free native ZIP/JSON validation, explicit conflicts, version retention, journaled
+installation and an explicit-input pause: imported history never auto-continues on mount/sync, and
+background jobs/extraction remain paused until accepted learner input. A later synthetic cycle exercised
+both installers and a return to Android with unchanged payloads and no provider requests. Offline
+continuation checks now pass for ZIP/JSON imports in Android and the desktop real handler/agent/store,
+using local models without adopting foreign overrides. Sixteen focused API-36 transfer/runtime checks
+passed (one separate synthetic bridge skipped); eleven package/graph JVM checks passed (one bridge
+skipped). Desktop continuation/transfer/session/export/compaction selection: 136 passed. Debug/test
+assembly, debug lint, desktop TypeScript and scoped ESLint passed. No live providers were called.
+Desktop browser/Electron, the full manual conflict workflow, broader runtime compatibility and sources
+remain gates. See
+`docs/LEARNHARNESS_SYNC.md` for evidence, format, bounds and exclusions.
 
 ### Optional ChatGPT plan connection
 

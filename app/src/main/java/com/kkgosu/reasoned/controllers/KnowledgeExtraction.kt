@@ -80,7 +80,7 @@ internal class KnowledgeExtraction(
         if (source == session && work?.isActive == true) stop() else null
 
     fun start(session: RuntimeSession, automatic: Boolean = false): Job = scope.launch {
-        if (!foreground || work?.isActive == true) return@launch
+        if (!foreground || work?.isActive == true || session.connection == "imported") return@launch
         source = session.id
         work = launch(Dispatchers.IO) {
             var nodes = 0;

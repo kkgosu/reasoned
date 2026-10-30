@@ -340,7 +340,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 else -> {
                     val state = runtime.state.value
                     if (state?.phase == "practice" && state.activeProblem == null && state.draft.isBlank() && !state.practiceReady) runtime.nextProblem()
-                    else if (state?.draft.isNullOrBlank()) runtime.retry() else runtime.send()
+                    else if (state?.draft.isNullOrBlank()) runtime.retry(continueLesson = true) else runtime.send()
                 }
             }
         }
@@ -531,7 +531,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                     R.string.runtime_ready
                 )
             }
-            val queued = org.json.JSONArray(state.nativeSteers).length()
+                val queued = org.json.JSONArray(state.nativeSteers).length()
             if (queued > 0) lessonStatus.append("\n" + getString(R.string.native_steer_pending, queued))
             val question = state.question?.takeIf { state.status == "question" }
             val expanded = question != null && state.expanded
@@ -667,7 +667,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 "plan" -> if (state.draft.isBlank()) R.string.plan_approve else R.string.plan_send_changes
                 "error", "interrupted" -> if (state.nativeRecord != null && state.draft.isNotBlank()) R.string.runtime_send else R.string.runtime_retry
                 "question" -> R.string.submit_answer
-                else -> if (state.draft.isNotBlank()) R.string.runtime_send else if (state.phase == "practice" && state.activeProblem == null && !state.practiceReady) R.string.practice_next else R.string.runtime_start
+                else -> if (state.draft.isNotBlank()) R.string.runtime_send else if (state.phase == "practice" && state.activeProblem == null && !state.practiceReady) R.string.practice_next else if (state.nativeRecord != null) R.string.transfer_continue else R.string.runtime_start
             }
             val icon = when {
                 state.status == "running" -> R.drawable.ic_stop
@@ -706,7 +706,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             views.sessionModel.apply {
                 text =
                     if (loadingModels) getString(R.string.runtime_models_loading) else app.modelCatalog[state.model]?.name
-                        ?: state.model
+                        ?: state.model.ifBlank { getString(R.string.runtime_model) }
                 contentDescription = getString(R.string.runtime_model) + ": " + text
                 isEnabled = !sample && editable && !loadingModels
             }
@@ -734,6 +734,10 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
 
     private fun chooseModel(refresh: Boolean = false) {
         if (sample) return
+        if (runtime.state.value?.connection == "imported") {
+            Nav.go(activity, ProviderSettingsFragment::class.java, null)
+            return
+        }
         val state =
             runtime.state.value?.takeIf { it.id == sessionId && it.status != "running" && it.status != "complete" }
                 ?: return

@@ -154,6 +154,11 @@ class SettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
                         R.string.settings_learning_summary
                     ),
                     Triple(
+                        R.id.settings_transfer,
+                        R.string.settings_transfer,
+                        R.string.settings_transfer_summary
+                    ),
+                    Triple(
                         R.id.settings_about,
                         R.string.settings_about,
                         R.string.settings_about_summary
@@ -176,6 +181,9 @@ class SettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
                         ProviderSettingsFragment::class.java,
                         null
                     )
+                }
+                views.findViewById<Button>(R.id.settings_transfer).setOnClickListener {
+                    Nav.go(activity, LessonTransferFragment::class.java, null)
                 }
                 views.findViewById<Button>(R.id.settings_learning)
                     .setOnClickListener { openPage("learning") }

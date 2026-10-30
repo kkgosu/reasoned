@@ -229,7 +229,8 @@ class NativeSessionStoreTest {
                 val original = session().copy(draft = "Unsubmitted fixture draft")
                 SessionStore(app, name).use { it.save(original) }
                 SQLiteDatabase.openDatabase(app.getDatabasePath(name).path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
-                    db.execSQL("DROP TABLE native_display_ids")
+                    for (table in listOf("native_transfer_graphs", "native_transfer_versions", "native_transfer_packages", "native_display_ids"))
+                        db.execSQL("DROP TABLE $table")
                     if (version == 1) for (table in listOf("knowledge_runs", "knowledge_coverage", "knowledge_sources", "knowledge_chains", "knowledge_nodes"))
                         db.execSQL("DROP TABLE $table")
                     val extra = if (version == 3) ",title TEXT NOT NULL DEFAULT '',deleted INTEGER NOT NULL DEFAULT 0" else ""
@@ -245,7 +246,7 @@ class NativeSessionStoreTest {
                     assertEquals(original, restored)
                     assertNull(restored.nativeRecord)
                     assertTrue(restored.nativeDisplayIds.isEmpty())
-                    assertEquals(4, store.readableDatabase.version)
+                    assertEquals(5, store.readableDatabase.version)
                     assertNotNull(store.list().single())
                     store.readableDatabase.rawQuery("SELECT checkpoint FROM sessions WHERE id=?", arrayOf(original.id)).use {
                         assertTrue(it.moveToFirst()); assertEquals(original.checkpoint(), it.getString(0))

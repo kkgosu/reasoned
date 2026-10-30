@@ -16,8 +16,8 @@ suite passes 87 checks including six Android snapshots; a separate native-runtim
 restoration, question/answer appends, gated probe → plan → teaching and practice UI/provider paths (details below).
 A bounded desktop web-UI smoke test also passes (5 checks, 6 faux requests). Full native runtime
 adaptation, broader cross-engine continuation and Electron/full UI acceptance remain unverified.
-Stage 3 now has a pure native-subgraph selection foundation; package validation/assembly, legacy
-conversion and stages 4–6 remain unimplemented.
+Stage 3 now has pure native-subgraph selection and bounded ZIP assembly/member verification.
+Dependency completeness and legacy conversion remain unfinished; stages 4–6 are unimplemented.
 
 LearnHarness is the source of truth for the learning-data format and learning-runtime semantics;
 Reasoned adapts to it, not the other way around. The LearnHarness library is the canonical home
@@ -827,7 +827,8 @@ native payload; do not define an alternative educational schema for the desktop 
 
 The selected file format is **ZIP with `manifest.json`**, containing original LearnHarness JSON/
 JSONL payloads rather than a new lesson schema. The manifest carries transfer bookkeeping and a
-completeness/dependency report. Assembly/validation is still pending; it must not mutate stores.
+completeness/dependency report. The bounded native-only assembly/member-checking foundation below
+is implemented; dependency completeness and store integration are not. It must not mutate stores.
 
 **Deliverable:** a validated transfer payload in either direction, with a completeness report.
 **Gate:** unchanged native round trips preserve content; authored phone progress can be read by
@@ -849,8 +850,77 @@ LearnHarness; external references, unsupported versions and legacy limitations a
   data, device test or transfer installation was involved in this increment. Android Studio reports
   no errors; the selector is not yet connected to a production export action.
 
-Next: assemble selected native records and applicable graph/source metadata into a bounded payload,
-report missing dependencies/capabilities, then implement preview and conflict-safe installation.
+**Bounded native ZIP foundation (3b), not a production transfer action:**
+
+- `NativeTransferPackage.kt` assembles selected `NativeChat` records and the selector's graph lines
+  entirely in memory. Native chat JSON bytes, optional original `graph/format.json`, IDs, opaque
+  fields and raw selected assertion lines survive. JSONL line separators are rebuilt; unrelated
+  assertions/transcripts are excluded. An absent native version/format file is not invented.
+- Version-1 `manifest.json` identifies the platform-neutral `learnharness-transfer` format,
+  native chat/graph schema versions (both 1), ordered chat IDs, and each payload's path, UTF-8 byte
+  count and SHA-256. Receiver compatibility is schema-based, not gated on an upstream commit hash. Payload members are
+  `chats/<native-id>.json`, `graph/nodes.jsonl`, `graph/chains.jsonl` and optional `graph/format.json`.
+  This slice accepts generated-style ASCII IDs (`A–Z`, `a–z`, digits, `_`, `-`, up to 200 characters)
+  without renaming other identities. Unsupported filenames fail explicitly.
+- The stream reader verifies member inventory, sizes/hashes, matching chat IDs and selected graph
+  closure using the existing native parsers/selector. It refuses duplicate/unknown/unsafe member
+  paths, unsupported package/native schema versions, malformed UTF-8 and excessive JSON structure.
+  Limits: 100 chats, 104 ZIP members, 512 KiB manifest, 16,000,000 bytes per payload member,
+  32 MiB compressed input/total expansion, JSON depth 64 and 100,000 containers per member.
+  Existing native graph bounds also apply. ZIP members are read, never extracted; this is not a
+  general ZIP repairer or complete native-file semantic validator. Hashes detect corruption,
+  not sender authenticity or permission to overwrite anything.
+- The receiver recomputes the report rather than trusting sender capability claims. Known `read`/
+  `pdf` source paths, external graph provenance and untransferred specialist-job state are reported;
+  the existing Android projection identifies blocked native histories without executing tools.
+  Inline HTML/JS, SVG and images remain inert original data. Referenced files are never opened or
+  fetched, even when an inline image/brief exists. Unknown dependency schemas are **not audited**:
+  `dependencyAudit` remains `partial`, external files/coverage/local checkpoints are explicitly
+  excluded, and `continuationAuthorized` is always false. An empty issue list does not mean complete
+  portability. Truncated reports are flagged; oversized manifests are refused.
+- Six package JVM tests plus the four graph-selection tests pass offline. They cover native/raw
+  preservation, selected subgraphs, lazy versions/Unicode/opaque format metadata, inert artifacts,
+  known missing sources/jobs, forged optimistic reports, member/path/identity/version corruption,
+  valid-hash semantic mismatches, nesting/UTF-8 and inflation limits. Android Studio reports only
+  style/info notices. No provider, device, installed lesson, database or desktop UI was used.
+
+**General LearnHarness exports and bounded producer interoperability (3c):**
+
+- The owner-approved fork at `../learnharness-desktop`, branch `feat/native-lesson-transfer`, now
+  exposes Settings → Lesson transfer: readable Markdown/TXT, one original native JSON, or a ZIP
+  with selected graph assertions and explicitly reviewed source files. This is an ordinary
+  LearnHarness feature; Android renderer compatibility does not block text exports. The shared
+  Markdown formatter now handles structured learner answer labels/current thinking and can include
+  the pending question without serializing hidden commitments. JSON/ZIP retain private native history.
+- Its read-only exporter guards selected live turns, compaction, extraction and running jobs;
+  snapshots are synchronous relative to in-process writers and rechecked at download. Source files
+  are opt-in, with bounded eligible document/image types and path/metadata checks. Missing/private/
+  unsupported sources are disclosed. Its broader ZIP may include `graph/sources.json` and `files/*`;
+  the current Android subset reader deliberately **rejects** these members instead of dropping them.
+- `scripts/check-learnharness-transfer-export.mjs` prepares an authored, source-free chat/graph ZIP
+  through that real desktop producer. An explicitly opted-in Android JVM check reads it and
+  re-exports the unchanged native payloads; verification then uses the real desktop chat reader and
+  graph fold on disposable files. This package-level cycle passes with zero provider requests.
+  It is **not** a receiver/install, runtime continuation, source-file, UI or full transfer round trip.
+- Seven package JVM checks (including the explicit cross-producer check) and four selection checks
+  passed offline. Desktop export/HTTP/DOM/shared-formatter/settings regression checks passed
+  (67 tests), as did targeted ESLint and TypeScript. No real-browser/Electron download, installed
+  library or new live-provider acceptance was established. Desktop usage and synthetic manual
+  checks are documented in its `docs/lesson-transfer.md`.
+
+Reproduce the package-only cycle with a **new** scratch-directory path (Node 24+, desktop dependencies
+installed; use `gradlew.bat` on Windows and your local Gradle wrapper when applicable):
+
+```sh
+node scripts/check-learnharness-transfer-export.mjs prepare ../learnharness-desktop /absolute/new-synthetic-directory
+REASONED_NATIVE_TRANSFER_DIR=/absolute/new-synthetic-directory ./gradlew :app:testDebugUnitTest --rerun --tests com.kkgosu.reasoned.NativeTransferPackageTest --tests com.kkgosu.reasoned.NativeGraphSelectionTest --offline
+node scripts/check-learnharness-transfer-export.mjs verify ../learnharness-desktop /absolute/new-synthetic-directory
+```
+
+Android receiver preview/installation for the supported source-free subset is now implemented below.
+The desktop fork now also has the bounded source-free receiver described in stage 5b below.
+Broader source/capability auditing, source-member support, legacy conversion, coverage compatibility
+and full two-app manual acceptance remain open.
 Do not substitute the legacy SQLite renderer graph or reuse its coverage as native graph evidence.
 
 ### 4. Implement receiver-side preview, conflicts and safe installation in both apps
@@ -865,6 +935,56 @@ custom write/recovery machinery. Keep credentials and sync bookkeeping out of na
 shared-node conflicts and interrupted multi-file writes cannot silently lose data or report a
 false completed import. Test both directions, not just an empty destination.
 
+**Android bounded receiver delivered (4a; historical checkpoint, UX/policy superseded by 5c/5d):**
+
+- Settings → Lesson transfer uses the Android document picker for a bounded native ZIP. Preview is
+  read-only and shows source/destination, new/identical/conflicting lessons, graph counts and the
+  recomputed warnings/blockers. A partial-audit/read-only acknowledgement and an explicit decision
+  for every conflict are required; approval/choices do not survive recreation without a fresh preview.
+- SQLite v5 adds transfer package identities, alternate native records/displaced checkpoints and
+  native graph ledgers with original format metadata. Installation rechecks the library revision in
+  the transaction and shares `SessionRuntime`'s writer gate. It refuses active generation/extraction
+  rather than cancelling work implicitly. New/replacement lesson projections and graph writes commit
+  together; injected graph-write failure rolls everything back. Identical reimport does not duplicate
+  lessons, messages, native versions or assertions. No common sync baseline is invented.
+- Keep local / Use incoming selects the active lesson version; both original native records remain
+  available through Export saved native version (JSON, including hidden commitments). This is not
+  automatic history merging or a full-package export. The displaced local checkpoint is retained
+  internally; native JSON intentionally excludes local unsent drafts. Deleting a lesson erases all
+  its saved native versions as well. Deleted identities cannot be silently resurrected: restore is
+  currently blocked, not an implemented restore-decision workflow.
+- Shared-node redefinitions, chain-ID/argument ambiguity, legacy-ID collisions, replacement of legacy
+  source/coverage evidence, unsupported projections, display rows above 128 Ki characters and known
+  missing sources/jobs block installation. Unknown dependency schemas remain unaudited and disclosed.
+  Desktop `files/*` and source-registry members are still refused; nothing is extracted or executed.
+- Imported archives use an unbound, read-only `imported` connection. Shared command and extraction
+  guards prevent model requests, even if called outside the disabled UI actions. Opening projects
+  local history only. No desktop model/account/billing settings are silently converted. Explicit
+  Android model binding and imported-lesson continuation are **not implemented** by this milestone.
+- The original native graph is durably installed in its own SQLite ledgers and can be read through
+  Inspect imported native graph. It is **not** converted to the legacy Home graph, knowledge coverage
+  or practice evidence. The inspector caps displayed text at 20,000 characters, not stored records.
+- On disposable offline `emulator-5554`, the owner's authored `learnharness-lessons.zip` was selected
+  through the real document picker, previewed and installed: one lesson, three native nodes and one
+  chain. Opening showed the restored lesson with disabled generation controls. A malformed authored
+  sample escape (JSON `\\f` interpreted as form feed instead of literal LaTeX `\\frac`) was already
+  present in the source ZIP. A separate corrected sample ZIP was imported through Use incoming;
+  the original archive and both lesson versions were preserved. No renderer repair heuristic was added.
+- Validation: seven focused transfer/renderer tests, six native-store tests and two legacy migration
+  cases passed together on API 36 (`OK (15 tests)`). This includes rejection/rollback when incoming
+  graph provenance needs a conflicting lesson whose incoming history was skipped. Valid fraction
+  markup survives ZIP round-trip and produces real shared-renderer LaTeX spans; malformed escapes
+  remain unchanged data. JVM unit tests,
+  debug/test APK assembly and debug lint passed; platform Fragment deprecation/style warnings remain.
+  Android CLI layout inspection returned an unrecognized-server response; native ADB accessibility
+  dumps were used for the manual document-picker/import checks. No screenshots or live providers.
+
+This checkpoint established bounded **LearnHarness → Android read-only installation**, not by
+itself both-app acceptance, full stage-5 transfer/continuation, source-file compatibility, Electron
+acceptance or Sync. The later desktop receiver evidence is recorded in stage 5b below.
+Historical “no production import” notes above describe earlier checkpoints and are superseded only
+for this documented subset.
+
 ### 5. Expose manual export/import with explicit direction
 
 Use native document selection/creation and existing Android navigation/styles. Add lesson
@@ -872,17 +992,188 @@ selection, destination/source labels, dependency/change preview and version-name
 choices. Add matching LearnHarness export/import actions using its existing UI conventions.
 Report file creation and successful destination installation as different events.
 
+**Android ZIP export delivered (5a; not the full stage-5 gate):**
+
+- Settings → Lesson transfer → Export lessons to ZIP offers all undeleted native archives, not only
+  the drawer's 30 recent sessions. Select 1–100, preview lesson/node/chain counts and known dependency
+  warnings, then explicitly Save ZIP through Android's document picker. Zero selection cannot proceed.
+- The frozen snapshot includes selected **active** native versions byte-for-byte, original selected
+  graph assertion lines, required endpoint definitions and contributing format metadata. External
+  provenance anchors remain references, not permission to include another transcript. Incompatible
+  opaque format files block combined exports; an assertion-free selection uses only unambiguous
+  global format metadata. The exporter does not invent legacy graph assertions or graph coverage.
+- Capture shares the runtime writer gate and a SQLite snapshot; generation/extraction and selected
+  running/write-ahead turns are refused, not stopped automatically. Compaction's flag is transient
+  and is guarded by the live runtime, not assumed to survive SQLite serialization. The initial test
+  incorrectly treated that flag as durable; corrected to test durable status/write-ahead boundaries.
+- The preview explicitly warns about hidden answers/service history and the partial dependency audit.
+  External files, local title overrides, drafts/checkpoints, coverage, account settings and archived
+  alternate versions are excluded. Alternate native versions still have the separate JSON action.
+  No file paths from the archive are resolved. Export does not call a provider or install anything.
+- A private cached ZIP carries the approved frozen bytes through the create-document handoff;
+  cancellation removes that pending cache. A failed destination write may leave a partial document,
+  which is reported as failure, not a successful export. Picker restoration has code support but no
+  independent rotation/process-death or cloud-document-provider acceptance was established here.
+- On disposable API-36 `emulator-5554`, selected the authored fractions sample, inspected the real
+  preview (one lesson, three nodes, one chain), and saved via the document picker. Every native
+  payload member matched the corrected desktop ZIP byte-for-byte; manifest hashes/sizes matched.
+- Ten focused instrumentation checks passed with the synthetic opt-in enabled: the existing seven
+  import/renderer checks, export selection/isolation/format checks, bounds/unsettled/legacy/deletion
+  checks, and a desktop ZIP → disposable SQLite install → real runtime export bridge. The resulting
+  ZIP passed the real LearnHarness chat reader/graph fold and original-payload/inventory comparison.
+  No paid/provider requests or installed desktop library were used. Ten focused JVM package/graph
+  checks also passed; their separate JVM-only opt-in was skipped (the SQLite/runtime opt-in above
+  was exercised instead). Debug/test APK assembly and debug lint passed; existing warnings remain.
+  This is **not** a desktop receiver/install test.
+
+To exercise the SQLite/runtime bridge instead of the earlier JVM-only re-export, first use the
+`prepare` command above with a fresh scratch directory, build/install the APKs on a disposable
+`emulator-5554`, then run from the Reasoned root (Python is used for binary-safe ADB handoff):
+
+```sh
+python -c "import pathlib,subprocess,sys; subprocess.run(['adb','-s','emulator-5554','exec-in','run-as','com.kkgosu.reasoned.debug','tee','files/native-transfer-export-input.zip'],input=(pathlib.Path(sys.argv[1])/'desktop.zip').read_bytes(),stdout=subprocess.DEVNULL,check=True,timeout=20)" /absolute/new-synthetic-directory
+adb -s emulator-5554 shell am instrument -w -r -e nativeTransferExport 1 -e class com.kkgosu.reasoned.NativeTransferImportTest#installedSyntheticDesktopPackageExportsThroughTheRealRuntimeWriterGate com.kkgosu.reasoned.debug.test/androidx.test.runner.AndroidJUnitRunner
+python -c "import pathlib,subprocess,sys; (pathlib.Path(sys.argv[1])/'android.zip').write_bytes(subprocess.run(['adb','-s','emulator-5554','exec-out','run-as','com.kkgosu.reasoned.debug','cat','files/native-transfer-export-output.zip'],stdout=subprocess.PIPE,check=True,timeout=20).stdout)" /absolute/new-synthetic-directory
+node scripts/check-learnharness-transfer-export.mjs verify ../learnharness-desktop /absolute/new-synthetic-directory
+```
+
+Read instrumentation's `OK`/`FAILURES!!!`, not only ADB's exit code. Without `nativeTransferExport=1`
+that bridge alone is assumption-skipped; ordinary transfer tests use only disposable local databases.
+The `verify` phase intentionally writes fixed synthetic files for the real readers, **not** a desktop
+receiver. The additional `install` phase below now exercises that receiver separately.
+
+**Desktop ZIP receiver delivered (5b; original read-only checkpoint, policy superseded by 5d):**
+
+- In the desktop fork, Settings → Lesson transfer → Import ZIP previews native v1 lessons and graph,
+  classifies new/identical/conflicting records, requires an explicit active-version choice for every
+  conflict and a fresh acknowledgement, and retains both originals without changing identities.
+  Saved native versions can be downloaded as original JSON; activation is not automatic.
+- The source-free reader independently checks ZIP paths/duplicates, actual inflation, inventory,
+  hashes, UTF-8/JSON and native graph/provenance bounds. Source registries, attachments and unsupported
+  versions are refused, not extracted. Shared definitions, chain identities, format differences,
+  skipped conflicting history and relabeling existing graph evidence block incompatible installs.
+  Combined ledgers also stay within the receiver's size/assertion limits.
+- The route waits for idle extraction and the selected lessons' generation/compaction/jobs, then
+  synchronously rechecks revision and installs via a rollback journal. Existing native bytes remain
+  untouched except explicitly selected lesson replacement; graph writes append unseen original
+  assertion lines. Inert ZIPs, original JSON versions and local read-only markers are retained in
+  `lesson-transfers/`. Chat-adapter startup rolls back interrupted installs before serving records;
+  corrupt recovery fails closed. This is single-process/process-death protection, not multi-process
+  locking or a power-loss guarantee. No credentials/settings stores are installed.
+- New/replaced imported lessons cannot generate, answer, steer, compact, extract or resume model
+  jobs; opening is read-only with no authorized model/billing connection. An identical existing local
+  lesson keeps its prior policy. Export remains available through the existing producer.
+- **293 selected desktop tests passed**, including import/export routes, consent/conflict DOM tests,
+  native byte preservation, idempotency, injected write rollback, real-adapter process-death recovery,
+  combined graph limits, session continuation guards, compaction/extraction and job regressions.
+  TypeScript and scoped ESLint passed. These are not full-suite or browser/Electron acceptance.
+- An authored fractions ZIP previously saved through Android's document-picker UI installed in a
+  separate temporary desktop library with three nodes, one chain, exact lesson bytes and no duplicate
+  on re-import. Its real desktop adapters confirmed read-only policy. No provider requests.
+- A fresh synthetic cycle passed **desktop producer → Android disposable SQLite install/runtime ZIP
+  export → desktop receiver install/re-import/native ZIP export → Android disposable SQLite re-import/
+  runtime export → desktop payload/inventory/readers verification**. Both focused API-36 bridge runs
+  reported `OK (1 test)`; native payloads stayed byte-identical, provider requests stayed zero, and
+  no installed desktop library was used. This is source-free store/runtime evidence, not desktop UI,
+  Electron, full manual conflict-flow or continuation acceptance.
+
+After producing `android.zip` with the bridge above, use a fresh marked scratch directory's desktop
+receiver (its `installed/` subdirectory must be empty):
+
+```sh
+node scripts/check-learnharness-transfer-export.mjs install ../learnharness-desktop /absolute/new-synthetic-directory
+```
+
+It checks real receiver installation, read-only adapters, duplicate import and graph fold, then writes
+`desktop-reexport.zip`. To exercise the return to Android, repeat the bridge's binary-safe upload with
+`desktop-reexport.zip` instead of `desktop.zip`, run the same focused instrumentation method, pull its
+output as `android.zip`, then run `verify` again. Inspect instrumentation's final result, not exit code
+alone. Only synthetic fixtures are permitted by this bridge; never point it at an installed library.
+
+The full two-app manual/browser/Electron conflict workflow remains a gate; source-file support,
+imported continuation and connected Sync remain open.
+
+**Current UI simplification (supersedes the preview/acknowledgement controls above):**
+
+- Both screens offer **Import / Export** with short English explanations. Validation still runs
+  internally, but there are no separate Preview actions or acknowledgement checkboxes. Import selects
+  a file and installs automatically unless a blocker or unresolved version conflict requires action.
+  Every conflicting active version still requires an explicit choice; no overwrite is guessed.
+- Both receivers now accept one original native JSON lesson, without inventing graph assertions,
+  using the same identity/size/UTF-8/JSON validation and read-only installation policy as ZIP. Desktop
+  JSON input is retained with a `.json` package suffix. Original lesson bytes and opaque fields survive
+  import and ZIP re-export. Unsupported records and oversized/deep/malformed inputs remain refused.
+- Android removed raw-graph inspection, saved-version export, the extra export-preview dialog and
+  compatibility-history wording from its transfer screen. Versions and graph data remain stored for
+  conflict safety and active-lesson ZIP export. Android export remains ZIP; desktop keeps MD/TXT/JSON/ZIP.
+- Desktop Import uses a hidden file input behind an English button, avoiding the browser's localized
+  file-input label (the OS file dialog language is unchanged). A source-free ZIP downloads from one
+  Export click. Eligible external files still pause export for optional, explicit selection; none are
+  included automatically, and changing the lesson/format discards those choices. Checkboxes now select
+  lessons/files only, not repetitive acknowledgement.
+- The unclear continuation wording is replaced by **Imported lessons are read-only**. This change
+  does not enable generation, connect an account or authorize spend.
+- Current checks: 26 focused desktop store/route/DOM tests passed, as did TypeScript and scoped ESLint.
+  Android package JVM checks: seven passed, one synthetic bridge opt-in skipped. Debug/test APK assembly
+  and debug lint passed. On disposable `emulator-5554`, 11 transfer instrumentation checks passed,
+  including JSON installation/runtime re-export without provider calls and the two-button layout;
+  one separate synthetic cross-repository bridge opt-in was skipped. The updated APK was installed.
+  No fresh browser/Electron or full manual document-picker acceptance is claimed.
+
+**Imported lesson continuation (5d; supported native subset):**
+
+- Removed the blanket read-only policy and label in both apps. Import/open never starts a model
+  request. Continue, learner text or answers use local model/connection settings; foreign provider
+  overrides remain inert. Missing local configuration uses the existing setup flow, not a repeated
+  model chooser when valid settings already exist.
+- Android binds the initially unbound import locally and projects the native archive through the
+  normal runtime. Continue also handles idle teaching/plan history; question, silent dismissal,
+  practice and explicit Next semantics retain their existing gates. No archive rewriting is needed
+  to open or bind a lesson.
+- Desktop keeps an explicit-input pause in local transfer metadata (reusing the former marker path
+  for existing imports). Mount/sync and opening prompts cannot auto-continue it. Background jobs,
+  extraction and settle compaction stay paused; the first accepted learner input saves the local
+  model choice and releases the pause. Rejected/missing-model input leaves it paused. Import revision
+  is rechecked around asynchronous request gates. Existing identical local lessons are unaffected.
+- Offline validation: 136 selected desktop transfer/session/export/compaction/birth-stamp tests
+  passed, including real handler/agent/store continuation through a faux engine with no outbound
+  fetches, foreign-model isolation and original-message/version preservation. TypeScript and scoped
+  ESLint passed. Android ZIP/JSON import/continuation and four native question/plan/practice
+  regressions passed on disposable API-36 `emulator-5554`: 16 executed checks, one synthetic bridge
+  opt-in skipped. Eleven package/graph JVM checks passed; a separate synthetic bridge opt-in was
+  skipped. Debug/test APK assembly and debug lint passed; the emulator APK was updated. No live
+  provider requests, installed desktop-library changes or fresh browser/Electron acceptance.
+- This enables supported imported lessons to continue; it does not establish every historical
+  tool/artifact, external dependency, full two-app manual conflict workflow or stage-2 acceptance.
+
 **Deliverable:** a usable offline LearnHarness → phone → LearnHarness workflow, without pairing.
 **Gate:** a user can choose what moves and where, inspect changes, resolve a conflict and return
 an accepted lesson to the phone without automatic generation, data deletion or hidden replacement.
 
 ### 6. Add connected Sync as transport, not another data pipeline
 
-Add QR/authenticated pairing, explicit desktop/library selection and source inventory. Reuse the
-same exporter, receiver preview, conflict decisions, installer and import receipt. Run through the
-existing application-owned coroutine lifecycle; interruption is visible and retry is idempotent.
-Keep operations one-way and user initiated. Do not add automatic merging, deletion propagation,
-a custom cloud backend or Syncthing integration for the live stores.
+**Agreed first version: manual, selected-lesson exchange over the local network in both directions.**
+This is a plan, not an implemented network feature. Replace file handoff with transport for the existing
+source-free native ZIP; reuse its validation, conflict decisions, safe installer and import receipt.
+
+- LearnHarness explicitly enables a narrow HTTPS sync endpoint and shows a pairing QR containing
+  its local address, certificate fingerprint and a short-lived single-use pairing code. Do not expose
+  the full application UI/API to the LAN. Reasoned confirms the target computer/library; paired-device
+  access can be revoked. Pairing credentials stay local and outside lesson packages.
+- The phone initiates the connection but can both upload and download. In Reasoned, select lessons
+  and choose Send to computer or Receive from computer. Sending installs directly through the desktop
+  receiver; no manual desktop file-picker step is required. LearnHarness must be running and reachable
+  on the same local network. Do not add discovery infrastructure for this first version.
+- Each exchange is one-way and user initiated; neither device automatically merges competing histories.
+  Skip identical records, require a local/incoming active-version decision for conflicts and retain both
+  originals. Pairing is not blanket permission to overwrite a lesson.
+- Return a committed-install receipt before reporting success. Coordinate Android work with the existing
+  application-owned coroutine lifecycle; cancellation/disconnect is visible, incomplete installs remain
+  atomic/recoverable and retry must not duplicate lessons. A lost acknowledgement must be reconcilable.
+- Do not transfer credentials, account/global model settings or deletion commands. Receiving/opening
+  never starts a model request. Continue uses the destination's local settings only after learner input.
+- No cloud backend, persistent background sync, deletion propagation, live-store folder replication or
+  Syncthing integration. External files/source registries stay outside this first network milestone.
 
 **Deliverable:** Send/Receive actions replace manual file handoff without changing data semantics.
 **Gate:** wrong destinations, stale approval, unauthenticated peers, cancellation and disconnect

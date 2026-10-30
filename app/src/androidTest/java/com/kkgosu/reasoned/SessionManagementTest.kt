@@ -379,7 +379,8 @@ class SessionManagementTest {
                 SQLiteDatabase.OPEN_READWRITE
             ).use { db ->
                 // Rebuild the actual v2 schema; this also works on SQLite versions without DROP COLUMN.
-                db.execSQL("DROP TABLE native_display_ids")
+                for (table in listOf("native_transfer_graphs", "native_transfer_versions", "native_transfer_packages", "native_display_ids"))
+                    db.execSQL("DROP TABLE $table")
                 db.execSQL("CREATE TABLE sessions_v2(id TEXT PRIMARY KEY, goal TEXT NOT NULL, model TEXT NOT NULL, checkpoint TEXT NOT NULL, updated INTEGER NOT NULL)")
                 db.execSQL("INSERT INTO sessions_v2 SELECT id,goal,model,checkpoint,updated FROM sessions")
                 db.execSQL("DROP TABLE sessions")
@@ -392,7 +393,7 @@ class SessionManagementTest {
                 store.rename(saved.id, "Migrated name")
                 assertEquals("Migrated name", store.list().single().second)
                 assertEquals(saved, store.load(saved.id))
-                assertEquals(4, store.readableDatabase.version)
+                assertEquals(5, store.readableDatabase.version)
                 store.readableDatabase.rawQuery("PRAGMA foreign_key_check", null)
                     .use { assertFalse(it.moveToFirst()) }
             }

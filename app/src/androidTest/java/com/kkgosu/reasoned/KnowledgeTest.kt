@@ -421,7 +421,11 @@ class KnowledgeTest {
                     "knowledge_coverage",
                     "knowledge_runs",
                     "knowledge_chains",
-                    "knowledge_nodes"
+                    "knowledge_nodes",
+                    "native_transfer_graphs",
+                    "native_transfer_versions",
+                    "native_transfer_packages",
+                    "native_display_ids"
                 )) db.execSQL("DROP TABLE $table")
                 db.execSQL("CREATE TABLE sessions_v1(id TEXT PRIMARY KEY, goal TEXT NOT NULL, model TEXT NOT NULL, checkpoint TEXT NOT NULL, updated INTEGER NOT NULL)")
                 db.execSQL("INSERT INTO sessions_v1 SELECT id,goal,model,checkpoint,updated FROM sessions")
@@ -431,7 +435,7 @@ class KnowledgeTest {
             }
             SessionStore(app, name).use { migrated ->
                 assertEquals(saved, migrated.load(saved.id))
-                assertEquals(3, migrated.readableDatabase.version)
+                assertEquals(5, migrated.readableDatabase.version)
                 assertTrue(migrated.knowledge().nodes.isEmpty())
             }
         } finally {

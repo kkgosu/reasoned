@@ -24,7 +24,7 @@ import org.json.JSONObject
 
 /** One concrete SQLite owner. Transactions couple rendered messages, tool state and learner evidence. */
 internal class SessionStore(context: Context, name: String? = "sessions.db") :
-    SQLiteOpenHelper(context, name, null, 4) {
+    SQLiteOpenHelper(context, name, null, 5) {
     override fun onConfigure(db: SQLiteDatabase) {
         db.setForeignKeyConstraintsEnabled(true)
     }
@@ -37,18 +37,22 @@ internal class SessionStore(context: Context, name: String? = "sessions.db") :
         db.execSQL("CREATE TABLE runs(id TEXT PRIMARY KEY, session TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE, phase TEXT NOT NULL, prompt_version TEXT NOT NULL, status TEXT NOT NULL, input_tokens INTEGER NOT NULL, output_tokens INTEGER NOT NULL)")
         createKnowledgeTables(db)
         createNativeTable(db)
+        createTransferTables(db)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
-        check(oldVersion in 1..3 && newVersion == 4) { "Unsupported database migration" }
+        check(oldVersion in 1..4 && newVersion == 5) { "Unsupported database migration" }
         if (oldVersion == 1) createKnowledgeTables(db)
         if (oldVersion < 3) {
             db.execSQL("ALTER TABLE sessions ADD COLUMN title TEXT NOT NULL DEFAULT ''")
             db.execSQL("ALTER TABLE sessions ADD COLUMN deleted INTEGER NOT NULL DEFAULT 0")
         }
         // No fabricated native events for legacy sessions, and no checkpoint/answer rewrites.
-        db.execSQL("ALTER TABLE sessions ADD COLUMN native_record TEXT")
-        createNativeTable(db)
+        if (oldVersion < 4) {
+            db.execSQL("ALTER TABLE sessions ADD COLUMN native_record TEXT")
+            createNativeTable(db)
+        }
+        createTransferTables(db)
     }
 
     private fun createNativeTable(db: SQLiteDatabase) {
@@ -96,6 +100,7 @@ internal class SessionStore(context: Context, name: String? = "sessions.db") :
                 "runs"
             ))
                 db.delete(table, "session=?", arrayOf(id))
+            db.delete("native_transfer_versions", "chat=?", arrayOf(id))
             db.setTransactionSuccessful()
         } finally {
             db.endTransaction()
