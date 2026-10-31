@@ -16,6 +16,22 @@ internal fun createTransferTables(db: SQLiteDatabase) {
     db.execSQL("CREATE TABLE native_transfer_graphs(package TEXT PRIMARY KEY REFERENCES native_transfer_packages(sha), nodes TEXT NOT NULL, chains TEXT NOT NULL, format TEXT)")
 }
 
+internal fun createTransferReceiptTable(db: SQLiteDatabase) {
+    db.execSQL("CREATE TABLE native_transfer_receipts(operation TEXT PRIMARY KEY, peer TEXT NOT NULL, package TEXT NOT NULL, installed TEXT NOT NULL)")
+}
+internal data class TransferReceiptKey(val operation: String, val peer: String) {
+    init { require(operation.matches(Regex("[a-f0-9-]{36}")) && peer.matches(Regex("[a-f0-9]{64}"))) }
+}
+internal fun SessionStore.transferReceipt(key: TransferReceiptKey): Pair<String, List<String>>? = synchronized(this) {
+    readableDatabase.rawQuery("SELECT peer,package,installed FROM native_transfer_receipts WHERE operation=?", arrayOf(key.operation)).use { row ->
+        if (!row.moveToFirst()) null else {
+            check(row.getString(0) == key.peer)
+            val ids = JSONArray(row.getString(2))
+            row.getString(1) to (0 until ids.length()).map { ids.getString(it) }
+        }
+    }
+}
+
 internal data class TransferLesson(val id: String, val title: String, val kind: String)
 internal data class TransferPreview(
     val packageSha: String, val revision: String, val lessons: List<TransferLesson>,
@@ -128,10 +144,21 @@ internal fun SessionStore.previewTransfer(bytes: ByteArray): TransferPreview = s
 }
 
 /** Atomically preserve both versions, install selected native archives and their graph; never infer. */
-internal fun SessionStore.installTransfer(bytes: ByteArray, approved: TransferPreview, incoming: Set<String>): List<String> = synchronized(this) {
+internal fun SessionStore.installTransfer(bytes: ByteArray, approved: TransferPreview, incoming: Set<String>, receipt: TransferReceiptKey? = null): List<String> = synchronized(this) {
     val db = writableDatabase
     db.beginTransaction()
     try {
+        val previous = receipt?.let { transferReceipt(it) }
+        if (previous != null) {
+            check(previous.first == digest(bytes)) { "Operation already used" }
+            db.setTransactionSuccessful()
+            return@synchronized previous.second
+        }
+        fun saveReceipt(installed: List<String>) {
+            if (receipt != null) db.insertOrThrow("native_transfer_receipts", null, ContentValues().apply {
+                put("operation", receipt.operation); put("peer", receipt.peer); put("package", digest(bytes)); put("installed", JSONArray(installed).toString())
+            })
+        }
         val now = previewTransfer(bytes)
         check(now == approved && now.blockers.isEmpty()) { "Library changed or transfer blocked; preview again" }
         val conflicts = now.lessons.filter { it.kind == "conflict" }.map { it.id }.toSet()
@@ -140,6 +167,7 @@ internal fun SessionStore.installTransfer(bytes: ByteArray, approved: TransferPr
         if (now.lessons.all { it.kind == "same" } && graphs().any {
                 it.sha == now.packageSha && it.nodes == joined(lines(contents.nodes).distinct()) &&
                     it.chains == joined(lines(contents.chains).distinct()) }) {
+            saveReceipt(emptyList())
             db.setTransactionSuccessful()
             return@synchronized emptyList()
         }
@@ -190,6 +218,7 @@ internal fun SessionStore.installTransfer(bytes: ByteArray, approved: TransferPr
             if (db.update("native_transfer_graphs", values, "package=?", arrayOf(now.packageSha)) == 0)
                 db.insertOrThrow("native_transfer_graphs", null, values)
         }
+        saveReceipt(installed)
         db.setTransactionSuccessful()
         installed
     } finally { db.endTransaction() }

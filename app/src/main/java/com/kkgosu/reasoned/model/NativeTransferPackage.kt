@@ -153,7 +153,7 @@ internal object NativeTransferPackage {
         return boundedJson(text)
     }
 
-    private fun boundedJson(text: String): String {
+    internal fun boundedJson(text: String): String {
         require(text.length <= NativeChat.MAX_BYTES) { "Transfer text limit" }
         // Bound nesting before org.json parses JSON/JSONL, including opaque fields.
         var depth = 0

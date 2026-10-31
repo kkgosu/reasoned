@@ -17,6 +17,8 @@ import com.kkgosu.reasoned.storage.transferExportLessons
 import com.kkgosu.reasoned.storage.previewTransfer
 import com.kkgosu.reasoned.storage.transferVersion
 import com.kkgosu.reasoned.storage.transferVersions
+import com.kkgosu.reasoned.storage.TransferReceiptKey
+import com.kkgosu.reasoned.storage.transferReceipt
 import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
@@ -39,6 +41,39 @@ class NativeTransferImportTest {
             .put("provenance", JSONArray().put(JSONObject().put("chatId", chat).put("messageId", "m_import"))).toString() + "\n"
     private fun zip(chat: NativeChat = chat(), nodes: String = node()) = NativeTransferPackage.write(listOf(chat), nodes, "", "{\"version\":1,\"opaque\":\"FORMAT\"}")
     private fun install(store: SessionStore, bytes: ByteArray) = store.installTransfer(bytes, store.previewTransfer(bytes), emptySet())
+
+    @Test fun lanReceiptsCommitAtomicallyAndReconcileWithoutOverwritingLaterHistory() {
+        SessionStore(app, null).use { store ->
+            val bytes = zip()
+            val key = TransferReceiptKey(UUID.randomUUID().toString(), "a".repeat(64))
+            val preview = store.previewTransfer(bytes)
+            store.writableDatabase.execSQL("CREATE TRIGGER reject_lan_receipt BEFORE INSERT ON native_transfer_receipts BEGIN SELECT RAISE(ABORT,'fixture rollback'); END")
+            try { store.installTransfer(bytes, preview, emptySet(), key); fail("Receipt rollback failed") } catch (_: SQLiteConstraintException) { }
+            assertNull(store.load("chat_import")); assertNull(store.transferReceipt(key))
+            store.writableDatabase.execSQL("DROP TRIGGER reject_lan_receipt")
+            assertEquals(listOf("chat_import"), store.installTransfer(bytes, preview, emptySet(), key))
+            assertEquals(listOf("chat_import"), store.transferReceipt(key)!!.second)
+            val later = store.load("chat_import")!!.copy(draft = "Later learner draft")
+            store.save(later)
+            assertEquals(listOf("chat_import"), store.installTransfer(bytes, preview, emptySet(), key))
+            assertEquals(later.checkpoint(), store.load("chat_import")!!.checkpoint())
+            try { store.installTransfer(zip(chat("Changed package")), preview, emptySet(), key); fail("Reused operation") } catch (_: IllegalStateException) { }
+        }
+    }
+
+    @Test fun versionFiveMigrationAddsReceiptsWithoutChangingExistingLesson() {
+        val name = "native-transfer-v5-${UUID.randomUUID()}.db"
+        try {
+            SessionStore(app, name).use { install(it, zip()) }
+            SQLiteDatabase.openDatabase(app.getDatabasePath(name).path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
+                db.execSQL("DROP TABLE native_transfer_receipts"); db.version = 5
+            }
+            SessionStore(app, name).use { store ->
+                assertEquals(6, store.readableDatabase.version); assertEquals(chat().raw, store.load("chat_import")!!.nativeRecord!!.raw)
+                assertNull(store.transferReceipt(TransferReceiptKey(UUID.randomUUID().toString(), "b".repeat(64))))
+            }
+        } finally { app.deleteDatabase(name) }
+    }
 
     @Test fun standaloneJsonInstallsAndExportsAsZipWithoutProviderCalls() = runBlocking {
         SessionStore(app, null).use { store ->
@@ -122,13 +157,13 @@ class NativeTransferImportTest {
         }
     }
 
-    @Test fun transferScreenHasOnlyImportExportAndNoApprovalCheckbox() {
+    @Test fun transferScreenKeepsFileImportExportAndAddsLanWithoutApprovalCheckbox() {
         androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val screen = android.view.LayoutInflater.from(app).inflate(R.layout.fragment_lesson_transfer, null)
             fun descendants(view: android.view.View): List<android.view.View> = listOf(view) +
                 if (view is android.view.ViewGroup) (0 until view.childCount).flatMap { descendants(view.getChildAt(it)) } else emptyList()
             val views = descendants(screen)
-            assertEquals(listOf("Import", "Export"), views.filterIsInstance<android.widget.Button>()
+            assertEquals(listOf("Import", "Export", "Scan QR", "Enter connection string", "Send lessons", "Receive lessons"), views.filterIsInstance<android.widget.Button>()
                 .filter { it.visibility == android.view.View.VISIBLE }.map { it.text.toString() })
             assertTrue(views.none { it is android.widget.CheckBox })
             val text = views.filterIsInstance<android.widget.TextView>().joinToString(" ") { it.text }
@@ -136,6 +171,12 @@ class NativeTransferImportTest {
             assertFalse(text.contains("read-only", ignoreCase = true))
             assertFalse(text.contains("Inspect imported"))
             assertFalse(text.contains("saved native version"))
+            assertTrue(text.contains("Connect a device"))
+            assertFalse(text.contains("LAN sync", ignoreCase = true))
+            assertFalse(text.contains("computer", ignoreCase = true))
+            assertFalse(text.contains("No model requests", ignoreCase = true))
+            val scanner = app.packageManager.getActivityInfo(android.content.ComponentName(app, "com.journeyapps.barcodescanner.CaptureActivity"), 0)
+            assertEquals(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT, scanner.screenOrientation)
         }
     }
 
@@ -304,11 +345,11 @@ class NativeTransferImportTest {
             val original = RuntimeSession(id = "chat_import", goal = "Authored migration", model = "fixture", nativeRecord = chat())
             SessionStore(app, name).use { it.save(original) }
             SQLiteDatabase.openDatabase(app.getDatabasePath(name).path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
-                for (table in listOf("native_transfer_graphs", "native_transfer_versions", "native_transfer_packages")) db.execSQL("DROP TABLE $table")
+                for (table in listOf("native_transfer_graphs", "native_transfer_versions", "native_transfer_packages", "native_transfer_receipts")) db.execSQL("DROP TABLE $table")
                 db.version = 4
             }
             SessionStore(app, name).use { store ->
-                assertEquals(5, store.readableDatabase.version)
+                assertEquals(6, store.readableDatabase.version)
                 assertEquals(original.nativeRecord!!.raw, store.load(original.id)!!.nativeRecord!!.raw)
                 assertEquals(original.checkpoint(), store.load(original.id)!!.checkpoint())
                 assertTrue(install(store, zip()).isEmpty())

@@ -587,7 +587,7 @@ The desktop fork has general Markdown/TXT/native JSON and ZIP export. Both trans
 use Import/Export buttons with short warnings, without separate preview actions or acknowledgement
 checkboxes. Import accepts a source-free ZIP or one original lesson JSON without a graph; checks
 run automatically, pausing only for errors or explicit local/incoming conflict choices. Android
-rechecks revision and installs atomically in SQLite v5. Alternate native records and displaced local
+rechecks revision and installs atomically in SQLite (currently v6). Alternate native records and displaced local
 checkpoints remain internal for conflict safety; there is no saved-version export or raw graph
 inspector in the UI. Deleting an Android lesson also erases its saved versions. Original native graph
 ledgers/format metadata remain stored independently; this is not integration with the Home graph.
@@ -604,7 +604,7 @@ required endpoint definitions but excluding unrelated transcripts/assertions. Or
 format metadata is preserved; differing opaque format files block a combined export rather than
 being merged or discarded. With no selected assertions, only an unambiguous global format is used.
 ZIP excludes Android checkpoints, coverage, local title overrides/drafts, account bindings and saved
-alternate versions. No new dependencies or schema change.
+alternate versions. File export itself needs no extra schema change.
 An opt-in synthetic instrumentation check installs a desktop ZIP in disposable SQLite, exports via
 `SessionRuntime`, then verifies original payload bytes through the desktop readers/fold. The actual
 Android selection/preview/save-document path was also checked with the authored sample. These are
@@ -621,6 +621,26 @@ assembly, debug lint, desktop TypeScript and scoped ESLint passed. No live provi
 Desktop browser/Electron, the full manual conflict workflow, broader runtime compatibility and sources
 remain gates. See
 `docs/LEARNHARNESS_SYNC.md` for evidence, format, bounds and exclusions.
+
+Experimental LAN exchange extends these same screens, without replacing file Import/Export.
+**Connect a device** enables the listener and QR in one click with automatic address selection;
+saved devices show names and green/red status dots, without IP/port/path details or manual Refresh.
+`ReasonedApplication` owns the shared `LessonLan` foreground heartbeat: any started activity keeps it
+running once per second; minimizing stops it. Three missed replies mark the peer offline; desktop
+presence expires after three seconds without an authenticated request. QR scanning is portrait.
+LearnHarness exposes a separate, explicitly enabled HTTPS transfer listener, not its generic UI/API.
+QR pairing carries a five-minute single-use key and the exact TLS certificate fingerprint; Android uses
+ZXing scanning and a dedicated pinned OkHttp client, with manual connection input as a fallback.
+Only private IPv4 addresses are supported; proxies/redirects and public-web/provider trust reuse are
+forbidden. Credentials stay in Android Keystore-backed storage and the desktop's private identity file.
+The phone initiates selected-lesson send/receive, using the existing ZIP preview/conflict/install gates.
+SQLite v6 adds atomic operation receipts; desktop receipts share its rollback journal. Pending Android
+ZIPs are app-private and operation credentials encrypted, enabling explicit Retry/Discard after loss of
+connection or process. Import/open still starts no model work; differing versions still need choices,
+not automatic baseline-based merging. Thirty focused desktop checks, fourteen Android transfer checks
+and a separate opt-in real HTTPS emulator round trip (including heartbeat/stop) passed without
+provider/public fetches. Camera,
+physical Wi-Fi/firewall and browser/Electron UI acceptance remain unverified.
 
 ### Optional ChatGPT plan connection
 

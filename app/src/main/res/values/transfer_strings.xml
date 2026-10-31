@@ -2,7 +2,8 @@
 <resources>
     <string name="settings_transfer">Lesson transfer</string>
     <string name="settings_transfer_summary">Import and export lessons</string>
-    <string name="transfer_notice">Import a LearnHarness ZIP (lessons and graph) or JSON (one lesson). Export selected lessons and graph as ZIP. Continue with your local model settings. Files are not included; some dependencies may be missing. Exports include private history and hidden answers. No model requests are started.</string>
+    <string name="transfer_files_title">Files</string>
+    <string name="transfer_notice">Import ZIP (lessons and graph) or JSON (one lesson). Export selected lessons and graph as ZIP.\n\nFiles are not included; some dependencies may be missing. Exports contain private history and hidden answers. Lessons continue with your local model settings.</string>
     <string name="transfer_export">Export</string>
     <string name="transfer_export_select">Select lessons (up to 100)</string>
     <string name="transfer_export_empty">No lessons available to export.</string>

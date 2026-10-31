@@ -10,18 +10,20 @@ contact the selected third-party services directly. Their policies and retention
 - Practice problems, hidden model-committed solutions, attempts and model verdicts.
 - Research reports, read URLs, retrieval metadata and bounded page excerpts; diagram source and
   learning preferences.
-- Provider/account settings and credentials.
+- Provider/account settings and credentials; optional paired-computer identity and pending transfer metadata.
 
 Sessions and learning data use app-private SQLite/files, **not database encryption**. API keys,
-Brave keys and OAuth credentials are AES-GCM encrypted with Android Keystore-backed keys in
+Brave keys, OAuth credentials and LAN pairing tokens are AES-GCM encrypted with Android Keystore-backed keys in
 no-backup storage. Android backup and device transfer are disabled for app data. This does not
 protect data on an unlocked, compromised or rooted device.
 
 Long-pressing a drawer chat allows renaming or deletion. Deletion removes its chat/history and
 original source links while intentionally retaining extracted graph knowledge and its grouping
 title; propositions can still contain information derived from that chat. This is not secure erasure
-of filesystem remnants. Uninstalling or clearing app storage removes local app data; export/import
-is not available.
+of filesystem remnants. Uninstalling or clearing app storage removes local app data. Experimental
+file Import/Export and paired-LAN exchange can create copies outside this app; deleting here does not
+delete those copies. Native ZIP/JSON includes private history and hidden model commitments, not a
+sanitized transcript. Pending lesson ZIPs remain app-private but are not encrypted lesson storage.
 
 ## Data sent when using network features
 
@@ -30,6 +32,13 @@ is not available.
   context for compaction. Figure creation sends a brief and locally rendered PNGs for model
   inspection. Research sends its self-contained question and retrieved excerpts to the session's
   model. These features can incur extra requests on the selected billing connection.
+- **Paired LearnHarness computer (experimental):** explicit send/receive exchanges selected native
+  lessons and their graph over certificate-pinned HTTPS. Pairing shares a device label and creates a
+  local access token, not a provider account. The computer stores token hashes and committed transfer
+  receipts; the phone stores encrypted connection/operation credentials and private pending archives
+  for retry. QR/connection strings contain a short-lived pairing secret: do not share them. Neither
+  pairing nor receiving/opening starts model requests. File export remains independent, including
+  manual storage through a chosen document provider such as Google Drive; its policies apply.
 - **GitHub update checks:** pressing **Check for updates** in About requests this repository’s
   latest stable release from the public GitHub API. GitHub receives your network address and
   ordinary request metadata, not app credentials or learning data. There are no background checks;

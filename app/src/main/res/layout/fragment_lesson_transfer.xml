@@ -1,26 +1,217 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent" android:layout_height="match_parent" android:fillViewport="true">
-    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:orientation="vertical" android:padding="@dimen/space_24">
-        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:text="@string/transfer_notice" android:textAppearance="@style/TextAppearance.Harness.Meta" />
-        <Button android:id="@+id/transfer_choose" style="@style/Widget.Harness.Button.Secondary"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_16" android:text="@string/transfer_choose" />
-        <Button android:id="@+id/transfer_export" style="@style/Widget.Harness.Button.Secondary"
-            android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_16" android:text="@string/transfer_export" />
-        <TextView android:id="@+id/transfer_status" android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_16" android:accessibilityLiveRegion="polite"
-            android:textAppearance="@style/TextAppearance.Harness.Prose" android:textIsSelectable="true" />
-        <LinearLayout android:id="@+id/transfer_conflicts" android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/space_24">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:accessibilityHeading="true"
+            android:text="@string/transfer_files_title"
+            android:textAppearance="@style/TextAppearance.Harness.Section" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_8"
+            android:text="@string/transfer_notice"
+            android:textAppearance="@style/TextAppearance.Harness.Prose"
+            android:textColor="@color/muted_foreground"
+            android:textSize="@dimen/text_14" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_16"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/transfer_choose"
+                style="@style/Widget.Harness.Button.TransferAction"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="@dimen/space_8"
+                android:layout_weight="1"
+                android:drawableTop="@drawable/ic_import"
+                android:text="@string/transfer_choose" />
+
+            <Button
+                android:id="@+id/transfer_export"
+                style="@style/Widget.Harness.Button.TransferAction"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:drawableTop="@drawable/ic_export"
+                android:text="@string/transfer_export" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_32"
+            android:accessibilityHeading="true"
+            android:text="@string/lan_title"
+            android:textAppearance="@style/TextAppearance.Harness.Section" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_16"
+            android:background="@drawable/surface_outline"
+            android:gravity="center_vertical"
+            android:minHeight="@dimen/touch_target"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/space_16"
+            android:paddingEnd="@dimen/space_8"
+            android:paddingVertical="@dimen/space_8">
+
+            <TextView
+                android:id="@+id/lan_status"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:accessibilityLiveRegion="polite"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:text="@string/lan_disconnected"
+                android:textAppearance="@style/TextAppearance.Harness.Meta" />
+
+            <ImageButton
+                android:id="@+id/lan_forget"
+                style="@style/Widget.Harness.IconButton"
+                android:layout_width="@dimen/touch_target"
+                android:layout_height="@dimen/touch_target"
+                android:layout_marginStart="@dimen/space_8"
+                android:contentDescription="@string/lan_forget"
+                android:src="@drawable/ic_link_off"
+                android:stateListAnimator="@animator/button_state"
+                android:tooltipText="@string/lan_forget"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/lan_scan"
+            style="@style/Widget.Harness.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_12"
+            android:drawableStart="@drawable/ic_qr_code"
+            android:drawablePadding="@dimen/space_8"
+            android:text="@string/lan_scan" />
+
+        <Button
+            android:id="@+id/lan_enter"
+            style="@style/Widget.Harness.Button.Composer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_4"
+            android:drawableStart="@drawable/ic_link"
+            android:drawablePadding="@dimen/space_8"
+            android:text="@string/lan_enter" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_16"
+            android:baselineAligned="false"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/lan_send"
+                style="@style/Widget.Harness.Button.TransferAction"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginEnd="@dimen/space_8"
+                android:layout_weight="1"
+                android:drawableTop="@drawable/ic_export"
+                android:enabled="false"
+                android:text="@string/lan_send" />
+
+            <Button
+                android:id="@+id/lan_receive"
+                style="@style/Widget.Harness.Button.TransferAction"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:drawableTop="@drawable/ic_import"
+                android:enabled="false"
+                android:text="@string/lan_receive" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/lan_pending_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_12"
+            android:text="@string/lan_pending"
+            android:textAppearance="@style/TextAppearance.Harness.Meta"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/lan_retry"
+            style="@style/Widget.Harness.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_8"
+            android:drawableStart="@drawable/ic_retry"
+            android:drawablePadding="@dimen/space_8"
+            android:text="@string/lan_retry"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/lan_discard"
+            style="@style/Widget.Harness.Button.Composer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_8"
+            android:drawableStart="@drawable/ic_close"
+            android:drawablePadding="@dimen/space_8"
+            android:text="@string/lan_discard"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/transfer_status"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_16"
+            android:accessibilityLiveRegion="polite"
+            android:textAppearance="@style/TextAppearance.Harness.Prose"
+            android:textIsSelectable="true" />
+
+        <LinearLayout
+            android:id="@+id/transfer_conflicts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:orientation="vertical" />
-        <Button android:id="@+id/transfer_install" style="@style/Widget.Harness.Button"
-            android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone"
-            android:text="@string/transfer_install" />
-        <Button android:id="@+id/transfer_open" style="@style/Widget.Harness.Button.Secondary"
-            android:layout_width="match_parent" android:layout_height="wrap_content" android:visibility="gone"
-            android:layout_marginTop="@dimen/space_16" android:text="@string/transfer_open" />
+
+        <Button
+            android:id="@+id/transfer_install"
+            style="@style/Widget.Harness.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:drawableStart="@drawable/ic_import"
+            android:drawablePadding="@dimen/space_8"
+            android:drawableTint="@color/primary_foreground"
+            android:text="@string/transfer_install"
+            android:visibility="gone" />
+
+        <Button
+            android:id="@+id/transfer_open"
+            style="@style/Widget.Harness.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_16"
+            android:drawableEnd="@drawable/ic_chevron_right"
+            android:drawablePadding="@dimen/space_8"
+            android:text="@string/transfer_open"
+            android:visibility="gone" />
     </LinearLayout>
 </ScrollView>

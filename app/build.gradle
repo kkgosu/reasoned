@@ -44,6 +44,7 @@ dependencies {
     implementation libs.coroutines.android
     implementation libs.okhttp
     implementation libs.jsoup
+    implementation libs.zxing
     implementation libs.nimbus
     implementation libs.markwon.core
     implementation libs.markwon.inline

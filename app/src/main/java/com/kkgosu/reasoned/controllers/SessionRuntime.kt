@@ -478,6 +478,7 @@ internal class SessionRuntime(
     /** Transfer writes share the runtime writer gate; never cancel a turn to make import succeed. */
     suspend fun installTransfer(
         bytes: ByteArray, preview: com.kkgosu.reasoned.storage.TransferPreview, incoming: Set<String>,
+        receipt: com.kkgosu.reasoned.storage.TransferReceiptKey? = null,
     ): List<String> {
         initialization.join()
         check(storageReady && work?.isActive != true) { "Stop generation before importing" }
@@ -488,7 +489,7 @@ internal class SessionRuntime(
         return mutex.withLock {
             check(work?.isActive != true) { "Runtime changed; preview again" }
             withContext(Dispatchers.IO) {
-                val installed = store.installTransfer(bytes, preview, incoming)
+                val installed = store.installTransfer(bytes, preview, incoming, receipt)
                 if (mutable.value?.id in installed) mutable.value = null
                 installed
             }

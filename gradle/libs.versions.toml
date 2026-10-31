@@ -13,6 +13,7 @@ nimbus = "10.10"
 drawer = "1.2.0"
 markwon = "4.6.2"
 jsoup = "1.21.2"
+zxing = "4.3.0"
 
 [libraries]
 appkit = { module = "me.grishka.appkit:appkit", version.ref = "appkit" }
@@ -20,6 +21,7 @@ litex-recyclerview = { module = "me.grishka.litex:recyclerview", version.ref = "
 coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 jsoup = { module = "org.jsoup:jsoup", version.ref = "jsoup" }
+zxing = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxing" }
 nimbus = { module = "com.nimbusds:nimbus-jose-jwt", version.ref = "nimbus" }
 markwon-core = { module = "io.noties.markwon:core", version.ref = "markwon" }
 markwon-inline = { module = "io.noties.markwon:inline-parser", version.ref = "markwon" }

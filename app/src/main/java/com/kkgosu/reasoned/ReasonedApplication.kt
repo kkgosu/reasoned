@@ -1,6 +1,8 @@
 package com.kkgosu.reasoned
 
 import android.app.Application
+import android.app.Activity
+import com.kkgosu.reasoned.api.LessonLan
 import android.os.Bundle
 import com.kkgosu.reasoned.controllers.MockLesson
 import com.kkgosu.reasoned.api.ChatGptAuth
@@ -14,6 +16,23 @@ import com.kkgosu.reasoned.storage.ModelCatalog
 import com.kkgosu.reasoned.storage.SessionStore
 
 class ReasonedApplication : Application() {
+    internal val lessonLan by lazy { LessonLan(this) }
+
+    override fun onCreate() {
+        super.onCreate()
+        // Include the scanner activity; fragment navigation must not interrupt device presence.
+        registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
+            private var started = 0
+            override fun onActivityStarted(activity: Activity) { if (started++ == 0) lessonLan.setForeground(true) }
+            override fun onActivityStopped(activity: Activity) { if (--started == 0) lessonLan.setForeground(false) }
+            override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+            override fun onActivityResumed(activity: Activity) {}
+            override fun onActivityPaused(activity: Activity) {}
+            override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+            override fun onActivityDestroyed(activity: Activity) {}
+        })
+    }
+
     internal val credentials by lazy { CredentialStore(this) }
     internal val searchCredentials by lazy { CredentialStore(this, "brave") }
     internal val web by lazy { ResearchWeb(searchCredentials) }

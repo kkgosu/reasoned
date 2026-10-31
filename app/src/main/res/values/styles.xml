@@ -20,6 +20,10 @@
         <item name="android:fontFamily">@font/prose</item>
         <item name="android:textSize">@dimen/text_16</item>
     </style>
+    <style name="TextAppearance.Harness.Section" parent="TextAppearance.Harness.Prose">
+        <item name="android:textSize">@dimen/text_20</item>
+        <item name="android:textStyle">bold</item>
+    </style>
     <style name="TextAppearance.Harness.Title">
         <item name="android:fontFamily">@font/title</item>
         <item name="android:textSize">@dimen/text_32</item>
@@ -55,6 +59,11 @@
     <style name="Widget.Harness.Button.Secondary">
         <item name="android:textColor">@color/foreground</item>
         <item name="android:background">@drawable/button_secondary</item>
+    </style>
+    <style name="Widget.Harness.Button.TransferAction" parent="Widget.Harness.Button.Secondary">
+        <item name="android:paddingStart">@dimen/space_12</item>
+        <item name="android:paddingEnd">@dimen/space_12</item>
+        <item name="android:drawablePadding">@dimen/space_8</item>
     </style>
     <style name="Widget.Harness.Button.Composer" parent="Widget.Harness.Button.Secondary">
         <item name="android:background">@drawable/button_composer</item>

@@ -1153,20 +1153,30 @@ an accepted lesson to the phone without automatic generation, data deletion or h
 ### 6. Add connected Sync as transport, not another data pipeline
 
 **Agreed first version: manual, selected-lesson exchange over the local network in both directions.**
-This is a plan, not an implemented network feature. Replace file handoff with transport for the existing
-source-free native ZIP; reuse its validation, conflict decisions, safe installer and import receipt.
+The bounded experimental implementation is described below; broader acceptance remains open.
+LAN is an **additional transport**, not a replacement
+for file-based Import/Export. Preserve ZIP/JSON import and every existing export format, including manual
+Google Drive storage and transfer to another computer; no Google Drive API integration is required.
+Reuse the existing source-free native ZIP, validation, conflict decisions, safe installer and import receipt.
 
-- LearnHarness explicitly enables a narrow HTTPS sync endpoint and shows a pairing QR containing
-  its local address, certificate fingerprint and a short-lived single-use pairing code. Do not expose
-  the full application UI/API to the LAN. Reasoned confirms the target computer/library; paired-device
-  access can be revoked. Pairing credentials stay local and outside lesson packages.
+- Extend the existing **Export/import** screen in LearnHarness and the existing lesson-transfer screen
+  in Reasoned with a **LAN sync** section. Do not add a separate menu item or replace the file controls.
+- LearnHarness offers explicit enable/disable controls for a narrow HTTPS sync endpoint, a pairing QR
+  and a paired-device list with revocation. The QR contains the local address, certificate fingerprint
+  and a short-lived single-use pairing key. The key is carried inside the QR: no separate numeric code,
+  manual code entry or extra pairing ceremony. It authorizes the intended device, not just encryption
+  of lesson contents. Do not expose the full application UI/API to the LAN. Pairing credentials stay
+  local and outside lesson packages.
+- Reasoned provides an in-app QR scanner and a fallback connection-string input, then confirms the
+  target computer/library. Use established libraries for QR and certificate handling, not custom
+  cryptography.
 - The phone initiates the connection but can both upload and download. In Reasoned, select lessons
   and choose Send to computer or Receive from computer. Sending installs directly through the desktop
   receiver; no manual desktop file-picker step is required. LearnHarness must be running and reachable
   on the same local network. Do not add discovery infrastructure for this first version.
 - Each exchange is one-way and user initiated; neither device automatically merges competing histories.
-  Skip identical records, require a local/incoming active-version decision for conflicts and retain both
-  originals. Pairing is not blanket permission to overwrite a lesson.
+  Skip identical records, resolve each local/incoming active-version conflict on the phone and retain
+  both originals. Pairing is not blanket permission to overwrite a lesson.
 - Return a committed-install receipt before reporting success. Coordinate Android work with the existing
   application-owned coroutine lifecycle; cancellation/disconnect is visible, incomplete installs remain
   atomic/recoverable and retry must not duplicate lessons. A lost acknowledgement must be reconcilable.
@@ -1175,14 +1185,77 @@ source-free native ZIP; reuse its validation, conflict decisions, safe installer
 - No cloud backend, persistent background sync, deletion propagation, live-store folder replication or
   Syncthing integration. External files/source registries stay outside this first network milestone.
 
-**Deliverable:** Send/Receive actions replace manual file handoff without changing data semantics.
+**Deliverable:** LAN Send/Receive actions sit alongside the unchanged file Import/Export controls,
+without a separate menu item or a second data pipeline. Validate upload/download, conflict decisions,
+idempotent retry, interrupted installs, lost acknowledgements and revoked access in synthetic isolated
+libraries and a disposable emulator, without paid provider requests.
 **Gate:** wrong destinations, stale approval, unauthenticated peers, cancellation and disconnect
 before/after commit are covered. Pairing grants neither provider usage nor blanket overwrite
 permission. Validate current Android local-network requirements when implementing the transport.
 
-Until stage 5 passes, do not describe export/import or unfinished-lesson portability as a shipped
-feature in README, privacy documentation or release notes. Connected Sync remains unimplemented
-until stage 6 independently passes.
+**Implemented experimental scope (2026-10-31):**
+
+- The existing screens now include LAN controls alongside file Import/Export. Desktop starts a separate
+  HTTPS listener only on explicit enable; local control requires the same-origin localhost window.
+  Transfer endpoints reject browser origins and unauthenticated/non-private-address clients. Private
+  IPv4 only; no discovery, IPv6 or automatic address changes. The desktop must be running, reachable
+  and allowed through the private-network firewall.
+- **Connect a device** enables the listener and shows a QR in one click, choosing the address
+  automatically. The UI hides IP/port/library details and manual Refresh; saved devices have a name,
+  green/red dot and **Disconnect**. Status updates every second without clearing a live QR. Android's
+  application-owned heartbeat runs on any screen, including its portrait scanner, and stops when the
+  app is minimized. Three missed responses mark the peer offline; desktop presence expires three
+  seconds after the last authenticated request. File Import/Export is unchanged.
+- QR pairing carries a five-minute single-use key and SHA-256 certificate pin. A device-generated token
+  permits reconciliation of a lost pairing acknowledgement; desktop stores its hash. The Android QR
+  scanner uses ZXing; certificate generation uses selfsigned and Node TLS. A dedicated OkHttp client
+  checks the exact certificate and validity, with no proxies, redirects or provider/public-web trust reuse.
+  Pairing is confirmed by the desktop's persisted library identity. Android credentials use Keystore-backed
+  storage; desktop TLS identity stays in its private data directory. No credentials enter lesson packages.
+- The phone selects local lessons for send or authenticated desktop lessons for receive, then uses the
+  existing bounded source-free ZIP exporter/preview/installer. Fresh revisions and explicit conflict
+  choices remain mandatory; receipt replay never replaces later history. Transfer/open starts no model
+  request; later explicit continuation uses local settings. The UI does not expose graph inspection,
+  saved-version export or mandatory acknowledgement checkboxes.
+- Desktop receipts commit inside the install recovery journal. SQLite v6 adds Android operation receipts
+  in the lesson/graph transaction, including a v5 migration preserving existing lessons. Pending phone
+  exchanges keep a private ZIP and encrypted operation/connection metadata for explicit Retry/Discard.
+  Cancellation stops the network call; a potentially committed install is reconciled by receipt. Receipts
+  are operation-specific, not a cross-device common baseline; different same-ID histories still prompt.
+- Thirty focused desktop transfer/LAN/control/UI tests passed. They include real TLS pin rejection,
+  pairing replay, conflicts, writer gates, mid-upload disconnect, lost response after commit, receipt
+  rollback, restart, revocation and same-origin/bounded local controls. TypeScript/scoped ESLint passed.
+- Fourteen Android transfer checks passed on disposable API-36 `emulator-5554`; the separate old
+  synthetic ZIP bridge was assumption-skipped. A new opt-in real HTTPS bridge passed separately:
+  desktop ZIP → Android runtime import/SQLite receipt → phone-created lesson/native graph export →
+  desktop install/receipt/retry → Android download. Both originals/graph and opaque metadata survive,
+  wrong pins fail, foreground heartbeats/stop are verified, and no provider/public fetch is permitted. Twelve focused JVM checks passed; one
+  separate JVM bridge opt-in was skipped. Debug/test APK assembly and lint passed.
+  This is synthetic transport/store acceptance, not camera, browser/Electron or physical LAN acceptance.
+
+Reproduce the transport bridge from Reasoned after building/installing both debug APKs. Use only an
+explicit disposable emulator; enable its Wi-Fi and wait for a route to `10.0.2.2` first:
+
+```sh
+node --import ../learnharness-desktop/node_modules/tsx/dist/loader.mjs scripts/check-learnharness-lan.mjs ../learnharness-desktop emulator-5554
+```
+
+The harness creates/removes a temporary desktop library and private pairing fixture, stops its HTTPS
+server, and refuses non-emulator serials. It never uses the installed desktop library or a real model.
+With target SDK 36, the app uses its existing INTERNET permission; ACCESS_LOCAL_NETWORK is required
+when moving to target 37 and is deliberately not requested on the current target. CAMERA is optional
+and used only by Scan QR; manual connection-string input needs no camera.
+
+The directly relevant desktop ZIP64 infinite-loop advisory (CVE-2026-45820) is fixed by pinning
+`fflate` 0.8.3; the importer regression runs in a bounded child process. The remaining npm audit has
+34 existing findings (24 moderate, 7 high, 3 critical), not introduced by new LAN dependency versions
+and not fixed in this milestone. This is not a clean dependency-security or independent-audit claim.
+Android Studio now resolves the ZXing imports; scoped analysis reports deprecations/style notices,
+not unresolved references.
+
+Do not present this bounded experimental implementation as full stage-6 or universal unfinished-lesson
+portability acceptance. Camera/browser/Electron, real Wi-Fi/firewall and the full manual conflict and
+interruption UI workflow remain gates. No live-provider acceptance was performed.
 
 ## Acceptance gates
 

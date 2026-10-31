@@ -23,6 +23,12 @@ security-audit certification yet.
   credentials are confined to its fixed endpoint. No reader proxy or PDF fetch fallback.
 - Diagrams use bundled offline Mermaid and a restricted local renderer, with no model-authored
   JavaScript, Java bridge or external resources. Active SVG is rejected, not executed.
+- Experimental LAN lesson exchange uses a separate certificate-pinned HTTPS client, private IPv4
+  endpoints and explicit single-use QR pairing. Its trust never applies to provider/public-web calls.
+  Tokens stay Keystore-backed on Android; source-free ZIP validation, writer gates, explicit conflicts
+  and transactional/journaled receipts also apply to network transfers. No generic application API,
+  provider credentials or deletion command is exposed through this transport. Physical LAN/firewall,
+  camera and browser/Electron UI acceptance remain open; see [scope and checks](docs/LEARNHARNESS_SYNC.md).
 - Generation and specialists are foreground/cancellable operations. Billing connections do not
   silently fall back.
 

@@ -107,6 +107,7 @@ Some ladder tokens are intentionally unused in the small specimen; they are the 
 | Practice | Task-specific exercise/answer/feedback in the persistent interaction area | Reuse the dock/state identity principles in phase 7, not a new modal per exercise. |
 | Plan/diagram overlay | Detailed inspection independent of the lesson spine | Phone fullscreen AppKit screen; restore position/draft on return. No tiny desktop popover. |
 | Graph | Fine edges, small light nodes, quiet labels; muted cluster regions behind topology | Implemented Kotlin Canvas with off-main layout snapshot, pan/pinch, zoom-gated/collision-suppressed labels and native searchable/readable proposition details. |
+| Lesson transfer | File actions separated from nearby-device actions | Import/Export and Send/Receive each share an equal-width row. The shared `TransferAction` button style puts icons above scalable labels; rows grow to the taller label. Disconnect is a trailing 48-dp circular icon with an accessible label and tooltip, not a nested full-size text button. |
 
 Desktop screenshots contain window traffic lights, hover controls and wide columns. These are not Android UI requirements. Preserve hierarchy, content organization and behavior, not desktop window furniture.
 
@@ -117,6 +118,8 @@ Reference evidence: `globals.css` dock variant fades/rises over **120 ms**; side
 Fragment navigation now inherits **AppKit 1.5.3 defaults, exactly as Mastodon**: 300 ms enter with fade and one-fifth-width horizontal movement, 200 ms exit, default cubic Bézier interpolation and library-owned predictive-back cleanup. The custom fade-only/150 ms overrides were deleted. Android's animator-duration setting applies through the native Animator implementation. Dock motion still uses its own short duration; no idle animation loop exists.
 
 Dialogs use a shared native AlertDialog theme rather than custom layouts or a Material Components dependency: raised dark rounded surface, 24 dp preferred content padding, native sans typography, 24 sp titles and mixed-case 14 sp pill-ripple text actions. Buttons retain a 48 dp minimum target and scalable text, including at 200% font scale. Provider account/model pickers and confirmation/welcome dialogs all inherit the same theme; recovery confirmation and secure-window behavior are preserved.
+
+The connection-string dialog reuses the padded native input layout: 24-dp outer horizontal gutters and the shared field's internal padding. URI input retains disabled suggestions, autofill and view-state saving; the pairing parser, not a name-field truncation filter, validates its length. `LessonTransferUiTest` checks paired-action geometry at 320/600 dp, 100%/200% text and LTR/RTL, plus padding and input flags in the actual dialog. These UI checks do not exercise pairing or lesson exchange.
 
 Use Android focus, touch feedback, TalkBack labels and heading semantics; do **not** copy the web CSS's blanket focus-outline removal. Text sizes are sp, content height is flexible, surfaces scroll, and buttons remain reachable with enlarged type. AppKit's inset-aware root and platform Toolbar keep content clear of system bars; `adjustResize` supports the sample editor/keyboard.
 
