@@ -1,8 +1,5 @@
 package com.kkgosu.reasoned.api
 
-import com.kkgosu.reasoned.storage.CredentialStore
-import com.kkgosu.reasoned.utils.objects
-import com.kkgosu.reasoned.utils.strictString
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -21,53 +18,23 @@ internal fun openAiHttpClient(): OkHttpClient = OkHttpClient.Builder()
     .callTimeout(120, TimeUnit.SECONDS)
     .followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false).build()
 
+/**
+ * ChatGPT plan transport. The plan speaks Responses under its own base URL and permits only
+ * namespaced tools, so its payload projection stays here rather than in the shared builder.
+ */
 class OpenAiProvider(
     private val accessToken: suspend () -> String,
     private val client: OkHttpClient = openAiHttpClient(),
 ) : ModelProvider {
-    constructor(credentials: CredentialStore, client: OkHttpClient = openAiHttpClient()) :
-            this({ credentials.read() ?: throw ProviderFailure("key_missing") }, client)
-
-    internal suspend fun models(): List<String> {
-        val token = accessToken()
-        val call = client.newCall(
-            Request.Builder().url("https://api.openai.com/v1/models")
-                .header("Authorization", "Bearer $token").build()
-        )
-        return coroutineScope {
-            val reader = async(Dispatchers.IO) {
-                call.execute().use { response ->
-                    val source = response.body.source()
-                    if (source.request(2_097_153)) throw ProviderFailure("model_catalog_limit")
-                    val body = source.readUtf8()
-                    if (!response.isSuccessful) throw ProviderFailure(
-                        openAiErrorCode(body) ?: "http_${response.code}"
-                    )
-                    JSONObject(body).getJSONArray("data").objects()
-                        .map { it.strictString("id", 100) }
-                        .filter {
-                            it.matches(Regex("[A-Za-z0-9][A-Za-z0-9._:-]{0,99}")) && !it.startsWith(
-                                "sk-"
-                            )
-                        }.distinct().take(500)
-                }
-            }
-            try {
-                reader.await()
-            } finally {
-                call.cancel()
-            }
-        }
-    }
-
     override suspend fun respond(request: JSONObject, delta: suspend (String) -> Unit): JSONObject {
         val key = accessToken()
+        val payload = chatGptPayload(request, request.getString("model"))
         val call = client.newCall(
             Request.Builder().url("https://api.openai.com/v1/responses")
                 .header("Authorization", "Bearer $key")
                 .header("Accept", "text/event-stream")
                 .post(
-                    request.toString()
+                    payload.toString()
                         .toRequestBody("application/json; charset=utf-8".toMediaType())
                 ).build()
         )
@@ -79,21 +46,8 @@ class OpenAiProvider(
                         if (!it.isSuccessful) {
                             val source = it.body.source()
                             val body = if (source.request(65_537)) "" else source.readUtf8()
-                            throw ProviderFailure(
-                                openAiErrorCode(body) ?: when (it.code) {
-                                    401, 403 -> "unauthorized"
-                                    429 -> "rate_limit"
-                                    else -> "http_${it.code}"
-                                }
-                            )
+                            throw httpFailure(it.code, body)
                         }
-                        // Temporary format-only diagnostics: never log headers, tokens or response content.
-                        android.util.Log.d(
-                            "ReasonedRuntime",
-                            "transport status=${it.code}; parsing SSE"
-                        )
-                        // Plan responses can carry SSE under a different media type. Validate the wire
-                        // framing and completed response, not the header label; never accept JSON fallback.
                         readResponseStream(it.body.source(), delta)
                     }
                 } catch (error: IOException) {

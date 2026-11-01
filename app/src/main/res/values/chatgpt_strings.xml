@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="chatgpt_use_plan">ChatGPT plan</string>
-    <string name="chatgpt_use_api">API key</string>
     <string name="chatgpt_continue">Continue with ChatGPT</string>
     <string name="chatgpt_cancel">Cancel sign-in</string>
     <string name="chatgpt_add_account">Add account</string>
@@ -15,7 +14,6 @@
     <string name="chatgpt_refresh_models">Refresh models</string>
     <string name="chatgpt_models_loading">Loading models…</string>
     <string name="chatgpt_models_failed">Could not load this account’s models. Check your connection and tap Refresh models.</string>
-    <string name="chatgpt_no_models">No models are available for this ChatGPT connection. Check plan eligibility and permissions.</string>
     <string name="chatgpt_browser_pending">Finish sign-in in your browser, then return here. If the app closes or five minutes pass, try again.</string>
     <string name="chatgpt_disconnected">Sign in to ChatGPT.</string>
     <string name="chatgpt_connected">%1$s · Connected</string>

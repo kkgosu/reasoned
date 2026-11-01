@@ -255,20 +255,16 @@ internal class KnowledgeExtraction(
             if (history.toString()
                     .toByteArray(Charsets.UTF_8).size > 120_000
             ) throw ProviderFailure("context_limit")
-            val request = JSONObject().put("model", session.model).put("instructions", instructions)
-                .put("input", history)
-                .put("tools", tools).put("parallel_tool_calls", false).put("store", false)
-                .put("stream", true)
-                .put("include", JSONArray().put("reasoning.encrypted_content"))
-            if (session.effort.isNotEmpty()) request.put(
-                "reasoning",
-                JSONObject().put("effort", session.effort)
-            )
-            val payload = if (session.connection == "api") request.put(
-                "max_output_tokens",
-                8192
-            ) else chatGptPayload(request, session.model)
-            val response = providerFor(session.connection).respond(payload) { }
+        val request = JSONObject().put("model", session.model).put("instructions", instructions)
+            .put("input", history).put("tools", tools)
+            .put("stream", true).put("max_output_tokens", 8192)
+            .put("parallel_tool_calls", false).put("store", false)
+            .put("include", JSONArray().put("reasoning.encrypted_content"))
+        if (session.effort.isNotEmpty()) request.put(
+            "reasoning",
+            JSONObject().put("effort", session.effort)
+        )
+        val response = providerFor(session.connection).respond(request) { }
             store.recordExtraction(UUID.randomUUID().toString(), session, role, response)
             val validated =
                 RuntimeTools.validate(response, session.copy(protocol = history.toString()), tools)

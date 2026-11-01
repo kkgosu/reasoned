@@ -23,8 +23,8 @@ internal object NativeResponses {
     fun user(text: String, now: Long) = JSONObject().put("id", id(now)).put("role", "user")
         .put("content", text).put("timestamp", now)
 
-    private fun provider(connection: String) = if (connection == "api") "openai" else "openai-codex"
-    private fun api(connection: String) = if (connection == "api") "openai-responses" else "openai-codex-responses"
+    private fun provider(connection: String) = Providers.providerName(connection)
+    private fun api(connection: String) = Providers.apiName(connection)
 
     fun assistant(response: JSONObject, model: String, connection: String, now: Long): JSONObject {
         val content = JSONArray()

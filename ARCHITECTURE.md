@@ -37,7 +37,13 @@ app/src/main/java/com/kkgosu/reasoned/
   MainActivity.kt             AppKit activity, drawer and root navigation
   ReasonedApplication.kt      Application-owned dependencies and foreground lifecycle
   fragments/                  Public no-argument AppKit screens
-  api/                        Responses HTTP/SSE, research HTTPS and ChatGPT OAuth
+  api/                        Provider wires, Responses HTTP/SSE, research HTTPS and ChatGPT OAuth
+    Providers.kt              Provider registry from the asset and connection ids
+    ProviderTransport.kt      One HTTP call, base URL, auth header and error mapping
+    ChatWire.kt               OpenAI Chat request translation and stream parsing
+    AnthropicWire.kt          Anthropic Messages request translation and stream parsing
+    GeminiWire.kt             Gemini request translation and stream parsing
+    WireResponse.kt           Shared Responses-shaped response accumulator
     OpenAiProvider.kt         HTTP requests, catalog retrieval and cancellation
     ResponsesProtocol.kt      Bounded SSE assembly and ChatGPT payload projection
     ChatGptAuth.kt             Registration, token lifecycle and account operations
@@ -651,6 +657,35 @@ Accounts, access/refresh/ID tokens, scopes, expiry and host ID share an atomical
 Each saved session fixes its connection to `api` or one issued registration; old checkpoints default to `api`. Switching the provider settings picker never changes a session's billing, and plan failures never fall back to an API key. Requests use the same public Responses HTTPS/SSE adapter, `store=false`, `stream=true` and complete input history. Plan requests use a Kotlin port of upstream `chatGPTPayload`: selected model, `store=false`, `stream=true`, its optional-field allowlist, system→developer history conversion, and top-level `tools` under the `learnharness` namespace. The old `additional_tools` input substitution is removed. Unsupported parameters (including `max_output_tokens`) are stripped. Native validation accepts that namespace only for plan sessions, rejects foreign namespaces, and retains legacy unnamespaced calls. Original call IDs/item IDs, namespaces and opaque reasoning persist with their tool results. Stream errors honor top-level and nested machine codes; any response error, premature `[DONE]`, EOF or missing completed terminal fails without committing tools. API-key payloads remain unchanged. No hosted tools, cookies, ChatGPT conversation access, client secret or undocumented inference endpoint is involved. Provider settings and plan sessions expose Manage usage and explicit plan/credit disclosures.
 
 Sign-in is app-owned so it can continue while the system browser covers the activity; no foreground service is added. Cancellation/timeout closes the loopback socket. If Android kills the process during authorization, pending PKCE/state are intentionally lost and the user starts a fresh attempt; an already-issued registration is retained once received. Live catalog loading and explicit refresh were verified on the owner's already-authorized Pixel 8 Pro, with seven model choices. One explicitly authorized Pixel 8 Pro diagnostic later received HTTP 200 with 76 valid JSON SSE frames under an unexpected Content-Type label; the old header gate stopped it before parsing. That gate is replaced by strict framing/completion checks, verified with fixtures; no second live request was sent, and end-to-end lesson completion is still unverified. Fresh Android browser authorization and production refresh-token rotation remain unverified; deterministic local fixtures are not an eligibility guarantee. API-key use stays independent.
+
+## Provider seam
+
+Every request starts as one canonical, Responses-shaped JSON object from `canonicalRequest` in
+`controllers/SessionRequests.kt`. It carries the model, instructions, input items, tool
+declarations, an optional reasoning effort and `max_output_tokens`. No vendor field appears in it.
+
+`api/Providers.kt` loads `assets/providers.json` and maps each provider to one of four wires,
+`RESPONSES`, `CHAT`, `ANTHROPIC` or `GEMINI`. For the API-key providers,
+`api/ProviderTransport.kt` owns the single OkHttp call, the base URL, the auth header and the HTTP
+error mapping. It hands the canonical object to `ChatWire`, `AnthropicWire` or `GeminiWire` for
+translation, or applies the small Responses adjustments in the same file. Callers above
+`ModelProvider` never see a vendor format.
+
+Each wire parses its stream into `WireResponse`, the shared accumulator that returns the same
+Responses-shaped envelope the OpenAI path produces. `NativeResponses` projects that envelope into
+the archived assistant message, so session, tool and compaction code read one shape for every
+provider. Unknown vendor fields stay in `reasonedResponses`, and missing usage is never invented.
+
+Per-model differences live in the asset as compatibility flags. The wire code branches on those
+flags, not on provider names. The examples are `thinkingFormat` and `thinkingMap` for the Chat wire,
+`adaptive` and `effort` for Anthropic, and `thinkingParam` for Gemini.
+
+`ProviderWireTest` exercises request translation and stream parsing with canned streams. Its eleven
+tests pass, covering the Chat, Anthropic and Gemini wires plus the registry and the connection ids.
+The full JVM suite is 69 tests with one pre-existing, unrelated failure in `NativeTransferPackageTest`.
+That is offline verification of the translation layer only. No live call has been made to any API-key
+provider, so account eligibility, model availability, tool-calling quality and image support remain
+unverified for each of them.
 
 ## Graph: phase 3 implemented
 

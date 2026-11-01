@@ -99,21 +99,15 @@ internal class VisualMaker(
                     .toByteArray().size > 2_097_152
             ) throw ProviderFailure("visual_context_limit")
             val request = JSONObject().put("model", session.model).put("instructions", instructions)
-                .put("input", input)
-                .put("tools", tools).put("store", false).put("stream", true)
+                .put("input", input).put("tools", tools).put("store", false).put("stream", true)
+                .put("max_output_tokens", 4096)
                 .put("parallel_tool_calls", false)
                 .put("include", JSONArray().put("reasoning.encrypted_content"))
-            if (session.connection == "api") request.put("max_output_tokens", 4096)
             if (session.effort.isNotEmpty()) request.put(
                 "reasoning",
                 JSONObject().put("effort", session.effort)
             )
-            val response = provider.respond(
-                if (session.connection == "api") request else chatGptPayload(
-                    request,
-                    session.model
-                )
-            ) { }
+            val response = provider.respond(request) { }
             val validated =
                 RuntimeTools.validate(response, session.copy(protocol = input.toString()), tools)
             response.optJSONObject("usage")

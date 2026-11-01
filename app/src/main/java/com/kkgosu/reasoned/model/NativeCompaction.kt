@@ -2,6 +2,7 @@ package com.kkgosu.reasoned.model
 
 import com.kkgosu.reasoned.api.NativeResponses
 import com.kkgosu.reasoned.api.ProviderFailure
+import com.kkgosu.reasoned.api.Providers
 import com.kkgosu.reasoned.utils.objects
 import org.json.JSONArray
 import org.json.JSONObject
@@ -156,7 +157,7 @@ internal object NativeCompaction {
         val root = chat.snapshot()
         val messages = root.getJSONArray("messages")
         val id = "msg_${UUID.randomUUID()}"
-        val qualified = "${if (connection == "api") "openai" else "openai-codex"}:$model"
+        val qualified = "${Providers.providerName(connection)}:$model"
         val at = nativeTime(now)
         val usage = NativeResponses.assistant(response, model, connection, now).optJSONObject("usage")
         val step = NativeResponses.step(usage)

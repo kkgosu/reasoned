@@ -3,9 +3,11 @@ package com.kkgosu.reasoned.controllers
 import android.app.Application
 import com.kkgosu.reasoned.R
 import com.kkgosu.reasoned.ReasonedApplication
+import com.kkgosu.reasoned.api.Connections
 import com.kkgosu.reasoned.api.ModelProvider
 import com.kkgosu.reasoned.api.NativeResponses
 import com.kkgosu.reasoned.api.ProviderFailure
+import com.kkgosu.reasoned.api.WireProvider
 import com.kkgosu.reasoned.api.toolResult
 import com.kkgosu.reasoned.api.userMessage
 import com.kkgosu.reasoned.model.ContextSummary
@@ -122,16 +124,16 @@ internal class SessionRuntime(
     }
 
     fun create(
-        goal: String, model: String, connection: String = "api", practice: Boolean = false,
+        goal: String, model: String, connection: String = Connections.key("openai"), practice: Boolean = false,
         targets: List<String> = emptyList(),
         researchAllowed: Boolean = false,
         mechanic: String = "choice"
     ): Job = command {
         require(goal.isNotBlank() && goal.length <= 2000)
         require(mechanic in setOf("choice", "recall"))
-        require(model.matches(Regex("[A-Za-z0-9][A-Za-z0-9._:-]{0,99}")))
+        require(WireProvider.MODEL_ID.matches(model))
         require(!model.startsWith("sk-"))
-        require(connection == "api" || connection.matches(Regex("oaiapp_[A-Za-z0-9_-]{1,180}")))
+        require(Connections.valid(connection))
         val input = JSONArray().put(userMessage(goal.trim()))
         val preferences = java.io.File(application.filesDir, "AGENTS.md")
         if (preferences.exists()) {
@@ -234,10 +236,10 @@ internal class SessionRuntime(
     fun configure(model: String, effort: String): Job = command {
         val s = mutable.value ?: return@command
         if (s.status == "running" || s.status == "complete") return@command
-        if (!model.matches(Regex("[A-Za-z0-9][A-Za-z0-9._:-]{0,99}")) || model.startsWith("sk-")) throw ProviderFailure(
+        if (!WireProvider.MODEL_ID.matches(model) || model.startsWith("sk-")) throw ProviderFailure(
             "model_settings_invalid"
         )
-        if (effort.isNotEmpty() && effort !in (application as ReasonedApplication).modelCatalog[model]?.efforts.orEmpty()) throw ProviderFailure(
+        if (effort.isNotEmpty() && effort !in (application as ReasonedApplication).modelCatalog.model(s.connection, model)?.efforts.orEmpty()) throw ProviderFailure(
             "reasoning_not_supported"
         )
         // Configuration never starts a request or switches this session's account/billing.
@@ -520,14 +522,12 @@ internal class SessionRuntime(
     private suspend fun bindImported(session: RuntimeSession): RuntimeSession {
         if (session.connection != "imported") return session
         val app = application as ReasonedApplication
-        val preferences = app.getSharedPreferences("provider", 0)
-        val usePlan = preferences.getBoolean("chatgpt", false)
+        val usePlan = Connections.isPlan(app.savedConnection())
         if (usePlan) app.chatGpt.reload()
-        val connection = if (usePlan) app.chatGpt.state.value.active else "api"
-        val model = preferences.getString("model:$connection",
-            if (usePlan) "" else preferences.getString("model", "")).orEmpty()
+        val connection = app.savedConnection()
+        val model = app.savedModel(connection)
         val account = app.chatGpt.state.value.accounts.find { it.id == connection }
-        if (!model.matches(Regex("[A-Za-z0-9][A-Za-z0-9._:-]{0,99}")) || model.startsWith("sk-") ||
+        if (!WireProvider.MODEL_ID.matches(model) || model.startsWith("sk-") ||
             (usePlan && account?.let { it.connected && it.plan } != true)) return session
         return session.copy(model = model, connection = connection, effort = "", contextTokens = 0)
     }
@@ -586,7 +586,7 @@ internal class SessionRuntime(
         )
         val overhead =
             (sessionInstructions(application, original).length + tools.toString().length + 3L) / 4
-        val window = (application as ReasonedApplication).modelCatalog[original.model]?.window ?: 0
+        val window = (application as ReasonedApplication).modelCatalog.model(original.connection, original.model)?.window ?: 0
         val threshold = if (window > 0) minOf(
             ContextCompaction.THRESHOLD,
             window - ContextCompaction.RESERVE
@@ -658,7 +658,7 @@ internal class SessionRuntime(
             NativeTeaching.tools(original.mechanic, original.phase, original.phase == "probe" ||
                 (original.plan != null && !NativeTeaching.awaitingPlanReply(chat)))
         val overhead = (nativeInstructions(original).length + tools.toString().length + 3L) / 4
-        val window = (application as ReasonedApplication).modelCatalog[original.model]?.window ?: 0
+        val window = (application as ReasonedApplication).modelCatalog.model(original.connection, original.model)?.window ?: 0
         val threshold = if (window > 0) minOf(ContextCompaction.THRESHOLD,
             (window - ContextCompaction.RESERVE).coerceAtLeast(1)) else ContextCompaction.THRESHOLD
         val before = NativeCompaction.estimate(chat, overhead)
@@ -822,7 +822,7 @@ internal class SessionRuntime(
                     } else NativeTeaching.tools(s.mechanic, s.phase, allowQuestions)
                     val input = NativeResponses.input(native, s.model, s.connection, retry && step == 0)
                     val instructions = nativeInstructions(s, practiceClosing)
-                    val window = (application as ReasonedApplication).modelCatalog[s.model]?.window ?: 0
+                    val window = (application as ReasonedApplication).modelCatalog.model(s.connection, s.model)?.window ?: 0
                     // Ciphertext/JSON scaffolding are not a token estimate. Honor the native usage anchor/cut.
                     if (window > 0 && NativeCompaction.estimate(native,
                             (instructions.length + tools.toString().length + 3L) / 4) >= window - 4096)
@@ -963,7 +963,7 @@ internal class SessionRuntime(
                     val instructions = sessionInstructions(application, s)
                     val modelInput = ContextCompaction.input(s)
                     val window =
-                        (application as ReasonedApplication).modelCatalog[s.model]?.window ?: 0
+                        (application as ReasonedApplication).modelCatalog.model(s.connection, s.model)?.window ?: 0
                     if (window > 0 && ContextCompaction.estimate(
                             s,
                             (instructions.length + tools.toString().length + 3L) / 4

@@ -13,7 +13,9 @@ import android.widget.TextView
 import com.kkgosu.reasoned.MainActivity
 import com.kkgosu.reasoned.R
 import com.kkgosu.reasoned.ReasonedApplication
+import com.kkgosu.reasoned.api.Connections
 import com.kkgosu.reasoned.api.ProviderFailure
+import com.kkgosu.reasoned.api.WireProvider
 import com.kkgosu.reasoned.storage.knowledge
 import com.kkgosu.reasoned.ui.text.runtimeError
 import kotlinx.coroutines.CancellationException
@@ -31,7 +33,7 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     private var scope: CoroutineScope? = null
     private val app get() = activity.application as ReasonedApplication
     private val preferences get() = app.getSharedPreferences("provider", 0)
-    private var connection = "api"
+    private var connection = Connections.key("openai")
     private var model = ""
     private val targets = linkedSetOf<String>()
     private var dialog: AlertDialog? = null
@@ -158,20 +160,17 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         scope?.launch {
             try {
-                val usePlan = preferences.getBoolean("chatgpt", false)
+                val usePlan = Connections.isPlan(app.savedConnection())
                 if (usePlan) app.chatGpt.reload()
-                connection = if (usePlan) app.chatGpt.state.value.active else "api"
-                model = preferences.getString(
-                    "model:$connection",
-                    if (usePlan) "" else preferences.getString("model", "")
-                ).orEmpty()
+                connection = app.savedConnection()
+                model = app.savedModel(connection)
                 val account = app.chatGpt.state.value.accounts.find { it.id == connection }
                 val ready =
-                    model.matches(Regex("[A-Za-z0-9][A-Za-z0-9._:-]{0,99}")) && !model.startsWith("sk-") &&
+                    WireProvider.MODEL_ID.matches(model) && !model.startsWith("sk-") &&
                             (!usePlan || account?.let { it.connected && it.plan } == true)
                 views.findViewById<TextView>(R.id.session_connection).text = if (ready) getString(
                     R.string.new_session_connection,
-                    if (usePlan) account!!.label else getString(R.string.chatgpt_use_api), model
+                    if (usePlan) account!!.label else app.providerLabel(connection), model
                 ) else getString(R.string.new_session_configure)
                 start.isEnabled = ready
             } catch (cancelled: CancellationException) {
