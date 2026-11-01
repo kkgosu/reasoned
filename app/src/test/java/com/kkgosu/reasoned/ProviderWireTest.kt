@@ -93,6 +93,20 @@ class ProviderWireTest {
         assertFalse(Connections.valid("oaiapp_"))
     }
 
+    @Test fun customEndpointAllowsHttpOnlyForTheThreeCleartextHosts() {
+        assertTrue(Connections.customUrl("https://api.example.com/v1"))
+        assertTrue(Connections.customUrl("http://localhost:11434/v1"))
+        assertTrue(Connections.customUrl("http://127.0.0.1:8080"))
+        assertTrue(Connections.customUrl("http://10.0.2.2:1234/v1"))
+        assertFalse(Connections.customUrl("http://localhost.evil.example/v1"))
+        assertFalse(Connections.customUrl("http://localhost@evil.example/v1"))
+        assertFalse(Connections.customUrl("http://192.168.1.5:11434/v1"))
+        assertFalse(Connections.customUrl("http://10.0.2.3:11434/v1"))
+        assertFalse(Connections.customUrl("https://api.example.com/v1?key=1"))
+        assertFalse(Connections.customUrl("https://api.example.com/v1#models"))
+        assertFalse(Connections.customUrl("http://localhost:11434/v 1"))
+    }
+
     @Test fun chatRequestSplitsSystemMessagesToolsAndProviderThinking() {
         val model = provider("deepseek").model("deepseek-flash")!!
         val input = JSONArray()

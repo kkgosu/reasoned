@@ -4,6 +4,7 @@ import android.content.Context
 import com.kkgosu.reasoned.utils.objects
 import com.kkgosu.reasoned.utils.strings
 import org.json.JSONObject
+import java.net.URI
 
 /**
  * Wire protocols the native client speaks. Each id matches the pi-ai api name so archived
@@ -85,10 +86,17 @@ internal object Connections {
     fun isPlan(connection: String) = connection.startsWith("oaiapp_")
     fun isImported(connection: String) = connection == IMPORTED
 
-    private val CUSTOM_URL = Regex("https://[^\\s?#]{4,300}")
+    /** The only hosts res/xml/network_security_config.xml lets cleartext through. */
+    private val CLEARTEXT_HOSTS = setOf("localhost", "127.0.0.1", "10.0.2.2")
+    private val CUSTOM_URL = Regex("https?://[^\\s?#]{4,300}")
 
-    /** The custom endpoint is https only, because the manifest disables cleartext traffic. */
-    fun customUrl(url: String) = url.matches(CUSTOM_URL)
+    /** https anywhere, http only to a host the network security config permits cleartext for. */
+    fun customUrl(url: String): Boolean {
+        if (!url.matches(CUSTOM_URL)) return false
+        if (url.startsWith("https://")) return true
+        val host = runCatching { URI(url).host }.getOrNull()
+        return host != null && host.lowercase() in CLEARTEXT_HOSTS
+    }
 
     /** Key, imported and legacy API connections speak a wire that sends tools flat; every other connection is plan-shaped. */
     fun namespacesTools(connection: String) =

@@ -12,7 +12,7 @@ Open **Providers & models** and tap the **Provider** button. The picker offers t
 - **Custom endpoint**. An OpenAI-compatible server you configure with a full base URL and its own key setting. It is a local setting, not part of the bundled registry.
 - The ChatGPT plan connection. It signs in through the browser and keeps its own tokens.
 
-The custom endpoint accepts `https://` URLs only. The app sets `usesCleartextTraffic="false"` in its manifest, so it rejects a plain `http://` URL instead of saving an endpoint it can never call. Tick **This server needs no API key** when the server does not check credentials. A keyless endpoint sends no auth header, even when a key is stored. With the box cleared, the app sends the saved key, and a request with none fails with `key_missing` before it leaves the device.
+The custom endpoint accepts any `https://` URL. Plain `http://` works only for `localhost`, `127.0.0.1` and `10.0.2.2`, so you can reach an OpenAI-compatible server running on the device itself or on the machine that runs the emulator. [`app/src/main/res/xml/network_security_config.xml`](../app/src/main/res/xml/network_security_config.xml) permits cleartext for exactly those three hosts and denies it in the base config. Every other host must use `https://`, including a LAN address such as `http://192.168.1.5:11434`. The manifest keeps `usesCleartextTraffic="false"`, which applies only below API 24, and the app's minimum is 26. Tick **This server needs no API key** when the server does not check credentials. A keyless endpoint sends no auth header, even when a key is stored. With the box cleared, the app sends the saved key, and a request with none fails with `key_missing` before it leaves the device.
 
 The plan connection predates this work, and [ARCHITECTURE.md](../ARCHITECTURE.md) covers it. This page covers the API-key providers and the custom endpoint.
 
@@ -165,9 +165,9 @@ The provider list and the exclusion list are arrays in [`scripts/update-provider
 
 ## Verification status
 
-[`ProviderWireTest.kt`](../app/src/test/java/com/kkgosu/reasoned/ProviderWireTest.kt) exercises request translation and stream parsing with canned provider streams. It has 11 tests, and all 11 pass. They cover the Chat, Anthropic and Gemini request translators and their stream parsers, the provider registry and the connection ids.
+[`ProviderWireTest.kt`](../app/src/test/java/com/kkgosu/reasoned/ProviderWireTest.kt) exercises request translation and stream parsing with canned provider streams. It has 12 tests, and all 12 pass. They cover the Chat, Anthropic and Gemini request translators and their stream parsers, the provider registry, the connection ids and the custom endpoint URL rule.
 
-The full JVM suite is 69 tests with one pre-existing, unrelated failure in `NativeTransferPackageTest`. The provider tests do not depend on it. `ProviderKeylessTest` adds five cases for the keyless transport rules: no auth header on the model list or on respond even with a saved key, a non-keyless custom endpoint that fails before either call without a key, and a registry provider that is never keyless. To run them alone, use `./gradlew :app:testDebugUnitTest --tests "com.kkgosu.reasoned.ProviderWireTest"`.
+The full JVM suite is 70 tests with one pre-existing, unrelated failure in `NativeTransferPackageTest`. The provider tests do not depend on it. `ProviderKeylessTest` adds five cases for the keyless transport rules: no auth header on the model list or on respond even with a saved key, a non-keyless custom endpoint that fails before either call without a key, and a registry provider that is never keyless. To run them alone, use `./gradlew :app:testDebugUnitTest --tests "com.kkgosu.reasoned.ProviderWireTest"`.
 
 That is offline verification of the translation layer only. No live API-key call has been made to any of the 33 providers. That leaves these unverified for each provider:
 
@@ -176,4 +176,14 @@ That is offline verification of the translation layer only. No live API-key call
 - tool-calling quality
 - image support, which the app does not send today
 
-Live API-key use overall remains untested, including OpenAI. The ChatGPT plan path was exercised on the owner's device, as recorded in [ARCHITECTURE.md](../ARCHITECTURE.md). The custom endpoint has not been called live either.
+Live API-key use overall remains untested, including OpenAI. The ChatGPT plan path was exercised on the owner's device, as recorded in [ARCHITECTURE.md](../ARCHITECTURE.md).
+
+The custom endpoint is the one path that has run end to end. On 2026-11-01, a debug build on a disposable API 36 emulator, configured through **Providers & models**, ran one teaching session against [`scripts/local-provider-stub.mjs`](../scripts/local-provider-stub.mjs) at `http://10.0.2.2:8765/v1`. The session reached `finish_lesson` in six model calls: `probe`, `finish_probe`, `plan_init`, a predict quiz, a check quiz, then `finish_lesson`. The app showed "Session ended. Not a mastery certification." No API key was used, because the endpoint was marked keyless. That run verifies the custom endpoint path against a stub. Every live vendor provider remains unverified.
+
+To repeat the run, start the stub on the machine that runs the emulator:
+
+```sh
+node scripts/local-provider-stub.mjs 8765
+```
+
+On the emulator, set the base URL to `http://10.0.2.2:8765/v1`, tick **This server needs no API key**, and select the model id `stub-teach`, which the stub reports at `/v1/models`. The stub has no dependencies, binds to `127.0.0.1`, and answers from a fixed script, so it exercises request and stream handling rather than model quality.
