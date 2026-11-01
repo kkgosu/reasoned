@@ -60,9 +60,9 @@ OpenAI-compatible endpoint, and a ChatGPT plan connection. Each API-key provider
 encrypted key on this device, and a key is sent only to the provider that owns it. The full list is
 in [docs/PROVIDERS.md](docs/PROVIDERS.md).
 
-Request translation and stream parsing are covered by JVM tests. `ProviderWireTest` runs twelve
+Request translation and stream parsing are covered by JVM tests. `ProviderWireTest` runs eighteen
 tests over the Chat, Anthropic and Gemini wires, the provider registry and the connection ids, and
-all twelve pass. `ProviderKeylessTest` adds five tests for the keyless transport rules. That is
+all eighteen pass. `ProviderKeylessTest` adds five tests for the keyless transport rules. That is
 offline verification of the translation layer only. No live API call has been made to any API-key
 provider, so account eligibility, model availability, tool-calling quality and image support are
 unverified for each of the 33. The ChatGPT plan connection was exercised on a device, and the custom

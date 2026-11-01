@@ -167,9 +167,9 @@ The provider list and the exclusion list are arrays in [`scripts/update-provider
 
 ## Verification status
 
-[`ProviderWireTest.kt`](../app/src/test/java/com/kkgosu/reasoned/ProviderWireTest.kt) exercises request translation and stream parsing with canned provider streams. It has 12 tests, and all 12 pass. They cover the Chat, Anthropic and Gemini request translators and their stream parsers, the provider registry, the connection ids and the custom endpoint URL rule.
+[`ProviderWireTest.kt`](../app/src/test/java/com/kkgosu/reasoned/ProviderWireTest.kt) exercises request translation and stream parsing with canned provider streams. It has 18 tests, and all 18 pass. They cover the Chat, Anthropic and Gemini request translators and their stream parsers, the provider registry, the connection ids and the custom endpoint URL rule.
 
-The full JVM suite is 70 tests with one pre-existing, unrelated failure in `NativeTransferPackageTest`. The provider tests do not depend on it. `ProviderKeylessTest` adds five cases for the keyless transport rules: no auth header on the model list or on respond even with a saved key, a non-keyless custom endpoint that fails before either call without a key, and a registry provider that is never keyless. To run them alone, use `./gradlew :app:testDebugUnitTest --tests "com.kkgosu.reasoned.ProviderWireTest"`.
+The full JVM suite is 76 tests with one pre-existing, unrelated failure in `NativeTransferPackageTest`. The provider tests do not depend on it. `ProviderKeylessTest` adds five cases for the keyless transport rules: no auth header on the model list or on respond even with a saved key, a non-keyless custom endpoint that fails before either call without a key, and a registry provider that is never keyless. To run them alone, use `./gradlew :app:testDebugUnitTest --tests "com.kkgosu.reasoned.ProviderWireTest"`.
 
 That is offline verification of the translation layer only. No live API-key call has been made to any of the 33 providers. That leaves these unverified for each provider:
 
