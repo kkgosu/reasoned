@@ -128,7 +128,7 @@ The model picker shows the curated list for the selected provider. **Enter model
 
 **Refresh models** calls the provider's model-list endpoint for the current wire and merges the result with the curated list. Discovery is an explicit action and is never required.
 
-A model ID must match `[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}`. IDs that start with `sk-` are rejected.
+A model ID must match `[A-Za-z0-9][A-Za-z0-9._:/@~-]{0,99}`. IDs that start with `sk-` are rejected. A rejected ID fails locally with `model_id_invalid`, before any request.
 
 The bundled metadata is a description of what each provider publishes. It is not a promise that your account can use a given model.
 
@@ -141,7 +141,7 @@ Each wire maps those levels to its own shape, and the compatibility flags in the
 | Wire | What the request carries |
 | --- | --- |
 | `RESPONSES` | The canonical `reasoning` object with `effort`. Encrypted-reasoning fields are removed on providers that do not support them. |
-| `CHAT` | A per-model `thinkingFormat`. `openai` sends `reasoning_effort`. `deepseek` sends `thinking` and `reasoning_effort`. `zai` sends a `thinking` object. `openrouter` sends nested `reasoning.effort`. `together` sends `reasoning.enabled`. `ant-ling` sends `reasoning.effort`. |
+| `CHAT` | A per-model `thinkingFormat`. `openai` sends `reasoning_effort` when a level is chosen. `deepseek` sends `thinking` and `reasoning_effort`. `zai` sends a `thinking` object. `openrouter` sends nested `reasoning.effort`. `together` sends `reasoning.enabled`. `ant-ling` sends `reasoning.effort`. |
 | `ANTHROPIC` | `thinking` with `adaptive` when the model supports it, otherwise `budget_tokens`. `output_config.effort` is added when the model supports mid-conversation effort. Budgets are 1024 for minimal, 2048 for low, 4096 for medium, 8192 for high, 12288 for xhigh and 16384 for max. |
 | `GEMINI` | `thinkingConfig` with `includeThoughts`. Models with `2.5` in the id get `thinkingBudget`. Other reasoning models get `thinkingLevel`. |
 
@@ -150,6 +150,8 @@ Each wire maps those levels to its own shape, and the compatibility flags in the
 ## Errors
 
 Only a machine code reaches the UI, never provider prose or a key. The common codes are `unauthorized`, `rate_limit`, `context_limit`, `timeout`, `provider_unavailable` and `invalid_request`. A provider that answers with an error object contributes its own code when the app recognizes it.
+
+An HTTP 400, 404, 405 or 422 becomes `invalid_request`, and when the provider's top-level `error` object names the field it rejected, the reason carries that one name as `invalid_request:<field>`, for example `invalid_request:max_tokens`. Only `param`, `code`, `type` and `status` are read, and only when the value is a short string or number of letters, digits, `_`, `.` and `-`. The message text, headers and the rest of the body never reach the app.
 
 ## Regenerating the registry
 

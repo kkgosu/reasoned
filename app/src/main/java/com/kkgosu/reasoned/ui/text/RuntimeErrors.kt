@@ -25,5 +25,7 @@ internal fun Context.runtimeError(reason: String): String = when (reason) {
     "chatgpt_sign_in_timeout" -> getString(R.string.chatgpt_error_timeout)
     "chatgpt_models_failed" -> getString(R.string.chatgpt_models_failed)
     "chatgpt_response_limit" -> getString(R.string.chatgpt_error_response_limit)
-    else -> getString(R.string.runtime_error, reason)
+    else -> if (reason.startsWith("invalid_request:")) getString(
+        R.string.runtime_error_field, reason.removePrefix("invalid_request:")
+    ) else getString(R.string.runtime_error, reason)
 }

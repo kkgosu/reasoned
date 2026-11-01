@@ -25,7 +25,6 @@ internal enum class Wire(val id: String) {
 
 /** Request-shaping flags pi-ai derives per provider/model; only what this client acts on. */
 internal data class ModelCompat(
-    val developerRole: Boolean = false,
     val reasoningEffort: Boolean = true,
     val maxTokensField: String = "max_completion_tokens",
     val reasoningContent: Boolean = false,
@@ -154,7 +153,6 @@ internal object Providers {
     }
 
     private fun compat(raw: JSONObject) = ModelCompat(
-        developerRole = raw.optBoolean("developerRole", false),
         reasoningEffort = raw.optBoolean("reasoningEffort", true),
         maxTokensField = raw.optString("maxTokensField", "max_completion_tokens"),
         reasoningContent = raw.optBoolean("reasoningContent", false),

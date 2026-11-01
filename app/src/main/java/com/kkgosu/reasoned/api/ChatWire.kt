@@ -14,9 +14,7 @@ internal object ChatWire {
         val compat = model.compat
         val messages = JSONArray()
         canonical.optString("instructions").takeIf { it.isNotBlank() }?.let {
-            messages.put(
-                JSONObject().put("role", if (compat.developerRole) "developer" else "system").put("content", it)
-            )
+            messages.put(JSONObject().put("role", "system").put("content", it))
         }
         translate(canonical.optJSONArray("input") ?: throw ProviderFailure("protocol"), compat).also { rows ->
             (0 until rows.length()).forEach { messages.put(rows.get(it)) }
@@ -123,11 +121,14 @@ internal object ChatWire {
         val compat = model.compat
         val requested = reasoning.optString("effort").takeIf { it.isNotEmpty() && it != "none" }
         val mapped = requested?.let(compat::effortValue)
-        val off = compat.thinkingMap["off"]
+        // `undefined` and `off` are pi-ai sentinels for "no usable off value", not provider values.
+        val off = compat.thinkingMap["off"]?.takeUnless { it == "undefined" || it == "off" }
         when (compat.thinkingFormat) {
             "zai" -> {
-                request.put("thinking", JSONObject().put("type", if (requested == null) "disabled" else "enabled")
-                    .apply { if (requested != null) put("clear_thinking", false) })
+                if (requested != null) request.put(
+                    "thinking", JSONObject().put("type", "enabled").put("clear_thinking", false)
+                )
+                else if (off != null) request.put("thinking", JSONObject().put("type", "disabled"))
                 if (requested != null && compat.reasoningEffort && mapped != null) request.put("reasoning_effort", mapped)
             }
 
@@ -137,10 +138,9 @@ internal object ChatWire {
                 if (requested != null && compat.reasoningEffort && mapped != null) request.put("reasoning_effort", mapped)
             }
 
-            "openrouter" -> when {
-                requested != null -> request.put("reasoning", JSONObject().put("effort", mapped ?: requested))
-                off != null -> request.put("reasoning", JSONObject().put("effort", off))
-            }
+            "openrouter" -> if (requested != null) request.put(
+                "reasoning", JSONObject().put("effort", mapped ?: requested)
+            )
 
             "together" -> {
                 request.put("reasoning", JSONObject().put("enabled", requested != null))
@@ -151,10 +151,7 @@ internal object ChatWire {
                 "reasoning", JSONObject().put("effort", mapped)
             )
 
-            else -> when {
-                requested != null && compat.reasoningEffort -> mapped?.let { request.put("reasoning_effort", it) }
-                requested == null && off != null -> request.put("reasoning_effort", off)
-            }
+            else -> if (requested != null && compat.reasoningEffort) mapped?.let { request.put("reasoning_effort", it) }
         }
         return requested != null
     }

@@ -4,10 +4,13 @@ import com.kkgosu.reasoned.api.AnthropicWire
 import com.kkgosu.reasoned.api.ChatWire
 import com.kkgosu.reasoned.api.Connections
 import com.kkgosu.reasoned.api.GeminiWire
+import com.kkgosu.reasoned.api.ModelCompat
 import com.kkgosu.reasoned.api.ProviderFailure
 import com.kkgosu.reasoned.api.ProviderModel
 import com.kkgosu.reasoned.api.Providers
 import com.kkgosu.reasoned.api.Wire
+import com.kkgosu.reasoned.api.WireProvider
+import com.kkgosu.reasoned.api.httpFailure
 import com.kkgosu.reasoned.controllers.canonicalRequest
 import com.kkgosu.reasoned.controllers.ToolSchemas
 import kotlinx.coroutines.runBlocking
@@ -264,5 +267,66 @@ class ProviderWireTest {
         val provider = provider("groq")
         assertNull(provider.model("not-a-real-model"))
         assertEquals(listOf<String>(), ProviderModel("x", "x", 1, 0, emptyList()).efforts)
+    }
+
+    @Test fun chatAutoEffortSendsNoReasoningParameter() {
+        val model = provider("groq").model("qwen/qwen3.8-27b")!!
+        assertEquals("openai", model.compat.thinkingFormat)
+        assertEquals("none", model.compat.thinkingMap["off"])
+        val input = JSONArray().put(JSONObject().put("role", "user").put("content", "Teach me"))
+        val auto = canonicalRequest(model.id, "You teach.", input, JSONArray(), reasoning = true)
+        assertFalse(ChatWire.request(auto, model, model.id).has("reasoning_effort"))
+        val off = canonicalRequest(model.id, "You teach.", input, JSONArray(), effort = "none", reasoning = true)
+        assertFalse(ChatWire.request(off, model, model.id).has("reasoning_effort"))
+        val high = canonicalRequest(model.id, "You teach.", input, JSONArray(), effort = "high", reasoning = true)
+        assertEquals("high", ChatWire.request(high, model, model.id).getString("reasoning_effort"))
+    }
+
+    @Test fun chatDeepSeekFormatKeepsItsDisableForm() {
+        val model = ProviderModel(
+            "deepseek-tuned", "DeepSeek tuned", 128_000, 8_192, listOf("none", "high"),
+            ModelCompat(thinkingFormat = "deepseek", maxTokensField = "max_tokens", thinkingMap = mapOf("off" to "none", "high" to "high"))
+        )
+        val input = JSONArray().put(JSONObject().put("role", "user").put("content", "Teach me"))
+        val auto = canonicalRequest(model.id, "You teach.", input, JSONArray(), reasoning = true)
+        val request = ChatWire.request(auto, model, model.id)
+        assertEquals("disabled", request.getJSONObject("thinking").getString("type"))
+        assertFalse(request.has("reasoning_effort"))
+
+        val sentinel = model.copy(compat = model.compat.copy(thinkingMap = mapOf("off" to "off")))
+        val silent = ChatWire.request(auto, sentinel, model.id)
+        assertFalse(silent.has("thinking"))
+        assertFalse(silent.has("reasoning_effort"))
+    }
+
+    @Test fun httpRejectionNamesTheRejectedRequestField() {
+        assertEquals("invalid_request:max_tokens", httpFailure(400, """{"error":{"param":"max_tokens"}}""").reason)
+        assertEquals("invalid_request:invalid_model", httpFailure(422, """{"error":{"code":"invalid_model"}}""").reason)
+        assertEquals("invalid_request:4", httpFailure(404, """{"error":{"status":4}}""").reason)
+    }
+
+    @Test fun httpRejectionWithoutAUsableFieldStaysGeneric() {
+        assertEquals("invalid_request", httpFailure(400, """{"error":{"message":"Bad request","code":{"nested":true}}}""").reason)
+        assertEquals("invalid_request", httpFailure(400, """{"error":{"param":"${"x".repeat(41)}"}}""").reason)
+        assertEquals("invalid_request", httpFailure(405, "").reason)
+        assertEquals("invalid_request", httpFailure(400, """{"error":{"detail":{"param":"max_tokens"}}}""").reason)
+    }
+
+    @Test fun httpRejectionNeverCarriesProviderProse() {
+        val body = """{"error":{"message":"Key sk-live-secret-value was rejected","type":"invalid_request_error","param":"temperature"}}"""
+        val reason = httpFailure(400, body).reason
+        assertEquals("invalid_request:temperature", reason)
+        assertFalse(reason.contains("sk-live"))
+        assertFalse(reason.contains("secret"))
+        assertFalse(reason.contains("rejected"))
+        assertEquals("invalid_request", httpFailure(400, """{"error":{"message":"Key sk-live-secret-value was rejected"}}""").reason)
+    }
+
+    @Test fun modelIdsWithRealPunctuationPassTheTransportCheck() {
+        assertTrue(WireProvider.MODEL_ID.matches("google/gemma-2-27b-it@together"))
+        assertTrue(WireProvider.MODEL_ID.matches("openrouter/~anthropic/claude-haiku-latest"))
+        assertFalse(WireProvider.MODEL_ID.matches("-model"))
+        assertFalse(WireProvider.MODEL_ID.matches("model with space"))
+        assertFalse(WireProvider.MODEL_ID.matches("m".repeat(101)))
     }
 }

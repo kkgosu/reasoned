@@ -25,7 +25,7 @@ internal class WireProvider(
 ) : ModelProvider {
     override suspend fun respond(request: JSONObject, delta: suspend (String) -> Unit): JSONObject {
         val modelId = request.optString("model")
-        if (!modelId.matches(MODEL_ID)) throw ProviderFailure("invalid_request")
+        if (!modelId.matches(MODEL_ID)) throw ProviderFailure("model_id_invalid")
         val model = provider.model(modelId) ?: ProviderModel(modelId, modelId, 0, 0, emptyList())
         val payload = when (provider.wire) {
             Wire.RESPONSES -> responsesPayload(request, modelId, model)
@@ -159,13 +159,13 @@ internal class WireProvider(
         }
 
     companion object {
-        val MODEL_ID = Regex("[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}")
+        val MODEL_ID = Regex("[A-Za-z0-9][A-Za-z0-9._:/@~-]{0,99}")
     }
 }
 
 /** Only machine codes reach the UI, never provider prose or credentials. */
-internal fun httpFailure(status: Int, body: String): ProviderFailure = ProviderFailure(
-    openAiErrorCode(body) ?: when (status) {
+internal fun httpFailure(status: Int, body: String): ProviderFailure {
+    val mapped = openAiErrorCode(body) ?: when (status) {
         400, 404, 405, 422 -> "invalid_request"
         401, 403 -> "unauthorized"
         408 -> "timeout"
@@ -174,4 +174,24 @@ internal fun httpFailure(status: Int, body: String): ProviderFailure = ProviderF
         in 500..599 -> "provider_unavailable"
         else -> "http_$status"
     }
-)
+    if (mapped != "invalid_request") return ProviderFailure(mapped)
+    val detail = errorDetail(body) ?: return ProviderFailure(mapped)
+    android.util.Log.d("ReasonedRuntime", "invalid_request $status field $detail")
+    return ProviderFailure("$mapped:$detail")
+}
+
+/** One field name the provider rejected, taken from its top-level error object and nothing deeper. */
+private val ERROR_DETAIL = Regex("[A-Za-z0-9_.-]{1,40}")
+
+private fun errorDetail(body: String): String? = try {
+    val error = JSONObject(body).optJSONObject("error")
+    listOf("param", "code", "type", "status").firstNotNullOfOrNull { key ->
+        when (val value = error?.opt(key)) {
+            is String -> value.takeIf { it.matches(ERROR_DETAIL) }
+            is Number -> value.toString().takeIf { it.matches(ERROR_DETAIL) }
+            else -> null
+        }
+    }
+} catch (_: Exception) {
+    null
+}
