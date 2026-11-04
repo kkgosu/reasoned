@@ -9,7 +9,7 @@ Reasoned sends model requests straight from your device. There is no relay serve
 Open **Providers & models** and tap the **Provider** button. The picker offers three kinds of entry.
 
 - 33 API-key providers. Each entry labels the key field with its own name and stores its own key.
-- **Custom endpoint**. An OpenAI-compatible server you configure with a full base URL and its own key setting. It is a local setting, not part of the bundled registry.
+- **Custom endpoint**. An OpenAI-compatible server you configure with a full base URL and its own key setting. It is a local setting, not part of the bundled registry. Each distinct URL is a separate endpoint: changing the URL creates a new connection with its own key, and sessions created against the old URL keep using it.
 - The ChatGPT plan connection. It signs in through the browser and keeps its own tokens.
 
 The custom endpoint accepts any `https://` URL. Plain `http://` works only for `localhost`, `127.0.0.1` and `10.0.2.2`, so you can reach an OpenAI-compatible server running on the device itself or on the machine that runs the emulator. [`app/src/main/res/xml/network_security_config.xml`](../app/src/main/res/xml/network_security_config.xml) permits cleartext for exactly those three hosts and denies it in the base config. Every other host must use `https://`, including a LAN address such as `http://192.168.1.5:11434`. The manifest keeps `usesCleartextTraffic="false"`, which applies only below API 24, and the app's minimum is 26. Tick **This server needs no API key** when the server does not check credentials. A keyless endpoint sends no auth header, even when a key is stored. With the box cleared, the app sends the saved key, and a request with none fails with `key_missing` before it leaves the device.
@@ -103,18 +103,19 @@ A session records its connection as a string, and the string decides the provide
 | Form | Meaning |
 | --- | --- |
 | `key:<provider>` | An API-key connection, for example `key:deepseek`. |
-| `key:custom` | The custom endpoint. |
+| `key:custom-<endpoint>` | One custom endpoint, pinned by a short hash of its normalized URL. |
+| `key:custom` | A session saved by the first custom-endpoint build. It keeps the endpoint that was current when that build ran. |
 | `oaiapp_<account>` | One ChatGPT plan account. |
 | `api` | A session saved before the provider picker existed. It reads as OpenAI and stays readable. |
 | `imported` | A lesson bound to the local settings after import. |
 
-Switching the picker never changes an existing session's connection. An archived assistant message records its provider id and its wire id, so the message keeps its origin after you move to another provider.
+Switching the picker never changes an existing session's connection. Changing the custom URL also never changes an existing session; the old endpoint mapping stays in local preferences so that session keeps reaching its original server. An archived assistant message records its provider id and its wire id, so the message keeps its origin after you move to another provider.
 
 ## Credentials
 
 Each provider has its own encrypted key file. The details:
 
-- The file is `provider-<id>.credential` in `noBackupFilesDir`. OpenAI keeps the older name `openai.credential` so existing installs keep working.
+- The file is `provider-<id>.credential` in `noBackupFilesDir`. OpenAI keeps the older name `openai.credential` so existing installs keep working. A custom endpoint uses `provider-custom-<endpoint>.credential`; the first custom-endpoint build's `provider-custom.credential` stays attached only to the endpoint it was pinned to.
 - The ciphertext is AES-256-GCM with a fresh IV per save and atomic replacement. The AES key lives in Android Keystore under the alias `reasoned.<name>.v1`.
 - The transport reads only the store that belongs to the selected provider. A key is never sent to a different provider.
 - The key field accepts 16 to 512 printable ASCII characters. Leaving the field empty is rejected on every connection except a custom endpoint marked keyless.
@@ -124,7 +125,7 @@ Each provider has its own encrypted key file. The details:
 
 The asset carries 1,110 chat models, each with a display name, a context window, a maximum output token count and the thinking levels it accepts. 918 of them list at least one thinking level.
 
-The model picker shows the curated list for the selected provider. **Enter model ID** accepts an ID by hand when the model you want is missing.
+The model picker shows the curated list for the selected provider. **Enter model ID** accepts an ID by hand when the model you want is missing, using the same validator as the transport (`@` and `~` are allowed).
 
 **Refresh models** calls the provider's model-list endpoint for the current wire and merges the result with the curated list. Discovery is an explicit action and is never required.
 
@@ -167,18 +168,24 @@ The provider list and the exclusion list are arrays in [`scripts/update-provider
 
 ## Verification status
 
-[`ProviderWireTest.kt`](../app/src/test/java/com/kkgosu/reasoned/ProviderWireTest.kt) exercises request translation and stream parsing with canned provider streams. It has 18 tests, and all 18 pass. They cover the Chat, Anthropic and Gemini request translators and their stream parsers, the provider registry, the connection ids and the custom endpoint URL rule.
+[`ProviderWireTest.kt`](../app/src/test/java/com/kkgosu/reasoned/ProviderWireTest.kt) exercises request translation and stream parsing with canned provider streams. It has 21 tests, and all 21 pass. They cover the Chat, Anthropic and Gemini request translators and their stream parsers, inline image translation, Gemini function-call thought signatures through the native archive, the provider registry, the connection ids and the custom endpoint URL rule.
 
-The full JVM suite is 76 tests with one pre-existing, unrelated failure in `NativeTransferPackageTest`. The provider tests do not depend on it. `ProviderKeylessTest` adds five cases for the keyless transport rules: no auth header on the model list or on respond even with a saved key, a non-keyless custom endpoint that fails before either call without a key, and a registry provider that is never keyless. To run them alone, use `./gradlew :app:testDebugUnitTest --tests "com.kkgosu.reasoned.ProviderWireTest"`.
+The full JVM suite is 79 tests with one pre-existing Windows-only CRLF failure in `NativeTransferPackageTest`, reproduced on the base commit; CI runs on Ubuntu. The provider tests do not depend on it. `ProviderKeylessTest` adds five cases for the keyless transport rules: no auth header on the model list or on respond even with a saved key, a non-keyless custom endpoint that fails before either call without a key, and a registry provider that is never keyless. To run them alone, use `./gradlew :app:testDebugUnitTest --tests "com.kkgosu.reasoned.ProviderWireTest"`.
 
 That is offline verification of the translation layer only. No live API-key call has been made to any of the 33 providers. That leaves these unverified for each provider:
 
 - account eligibility and sign-up requirements
 - which models your account can use
 - tool-calling quality
-- image support, which the app does not send today
+- live image support. Figures already send a locally rendered PNG through the Visual Maker loop; the translation is covered for every wire, but no vendor was called live.
 
 Live API-key use overall remains untested, including OpenAI. The ChatGPT plan path was exercised on the owner's device, as recorded in [ARCHITECTURE.md](../ARCHITECTURE.md).
+
+The provider picker, the custom endpoint entry and the dynamic notices are recorded from the debug
+build in `docs/screenshots/providers/`: `provider-picker.png`, `provider-picker-custom.png`,
+`new-session-deepseek.png`, `privacy-provider.png` and `privacy-retention.png`. The key screen sets
+`FLAG_SECURE`, so it is deliberately absent from captures; `ProviderSetupTest` verifies the key
+field clears on a provider switch and that two custom endpoints have separate encrypted stores.
 
 The custom endpoint is the one path that has run end to end. On 2026-11-01, a debug build on a disposable API 36 emulator, configured through **Providers & models**, ran one teaching session against [`scripts/local-provider-stub.mjs`](../scripts/local-provider-stub.mjs) at `http://10.0.2.2:8765/v1`. The session reached `finish_lesson` in six model calls: `probe`, `finish_probe`, `plan_init`, a predict quiz, a check quiz, then `finish_lesson`. The app showed "Session ended. Not a mastery certification." No API key was used, because the endpoint was marked keyless. That run verifies the custom endpoint path against a stub. Every live vendor provider remains unverified.
 

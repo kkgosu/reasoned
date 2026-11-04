@@ -47,7 +47,9 @@ internal object NativeResponses {
                 "function_call" -> content.put(JSONObject().put("type", "toolCall")
                     .put("id", item.getString("call_id") + (item.optString("id").takeIf { it.isNotEmpty() }?.let { "|$it" } ?: ""))
                     .put("name", item.getString("name")).put("arguments", JSONObject(item.getString("arguments")))
-                    .put("namespace", item.opt("namespace")))
+                    .put("namespace", item.opt("namespace"))
+                    // Gemini 3 rejects a replayed call whose signature was dropped.
+                    .apply { item.optString("thoughtSignature").takeIf { it.isNotEmpty() }?.let { put("thoughtSignature", it) } })
                 else -> throw ProviderFailure("invalid_output")
             }
         }
@@ -170,7 +172,11 @@ internal object NativeResponses {
                                 out.put(JSONObject().put("type", "function_call").put("call_id", ids[0])
                                     .put("name", block.getString("name")).put("arguments", block.getJSONObject("arguments").toString()).apply {
                                         if (sameModel && ids.getOrNull(1)?.matches(Regex("fc_[A-Za-z0-9_-]{1,61}")) == true) put("id", ids[1])
-                                        if (sameModel) put("namespace", block.opt("namespace"))
+                                        if (sameModel) {
+                                            put("namespace", block.opt("namespace"))
+                                            block.optString("thoughtSignature").takeIf { it.isNotEmpty() }
+                                                ?.let { put("thoughtSignature", it) }
+                                        }
                                     })
                             }
                             else -> throw ProviderFailure("native_runtime_unavailable")

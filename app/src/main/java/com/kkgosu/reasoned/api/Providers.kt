@@ -5,6 +5,7 @@ import com.kkgosu.reasoned.utils.objects
 import com.kkgosu.reasoned.utils.strings
 import org.json.JSONObject
 import java.net.URI
+import java.security.MessageDigest
 
 /**
  * Wire protocols the native client speaks. Each id matches the pi-ai api name so archived
@@ -63,6 +64,11 @@ internal data class Provider(
     val models: List<ProviderModel>,
     /** Only the custom endpoint can be keyless; a registry provider always sends a key. */
     val keyless: Boolean = false,
+    /**
+     * Credential file identity. Registry providers use their id; each custom endpoint gets its
+     * own store from its URL fingerprint, so a key is never reused for a different server.
+     */
+    val credentialId: String = id,
 ) {
     fun model(id: String): ProviderModel? = models.firstOrNull { it.id == id }
 
@@ -85,6 +91,23 @@ internal object Connections {
     fun isPlan(connection: String) = connection.startsWith("oaiapp_")
     fun isImported(connection: String) = connection == IMPORTED
 
+    /** A custom endpoint connection pins the URL fingerprint, never just the shared `custom` id. */
+    fun custom(connection: String) = connection.startsWith("$KEY_PREFIX$CUSTOM-")
+    fun customConnection(endpoint: String) = key("$CUSTOM-$endpoint")
+
+    /** The endpoint fingerprint for a pinned custom connection, or null for legacy `key:custom`. */
+    fun customId(connection: String): String? =
+        connection.removePrefix("$KEY_PREFIX$CUSTOM-").takeIf { custom(connection) }
+
+    /**
+     * Stable short fingerprint of a normalized custom URL. Two spellings of the same server share
+     * a credential, and a different server can never reuse the previous endpoint's key.
+     */
+    fun endpointId(url: String): String = MessageDigest.getInstance("SHA-256")
+        .digest(url.trim().trimEnd('/').toByteArray(Charsets.UTF_8))
+        .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+        .take(12)
+
     /** The only hosts res/xml/network_security_config.xml lets cleartext through. */
     private val CLEARTEXT_HOSTS = setOf("localhost", "127.0.0.1", "10.0.2.2")
     private val CUSTOM_URL = Regex("https?://[^\\s?#]{4,300}")
@@ -103,6 +126,7 @@ internal object Connections {
 
     fun providerId(connection: String) = when {
         connection == "api" -> "openai"
+        custom(connection) -> CUSTOM
         connection.startsWith(KEY_PREFIX) -> connection.removePrefix(KEY_PREFIX)
         isPlan(connection) -> "openai-codex"
         else -> connection
@@ -112,6 +136,7 @@ internal object Connections {
             connection == IMPORTED ||
             connection == KEY_PREFIX + CUSTOM ||
             (isPlan(connection) && connection.matches(Regex("oaiapp_[A-Za-z0-9_-]{1,180}"))) ||
+            (custom(connection) && customId(connection)!!.matches(Regex("[a-f0-9]{12}"))) ||
             (connection.startsWith(KEY_PREFIX) &&
                     connection.removePrefix(KEY_PREFIX).matches(Regex("[a-z0-9][a-z0-9.-]{0,40}")))
 }
@@ -176,7 +201,9 @@ internal object Providers {
 
     /** What an archived assistant message records for this connection. */
     fun providerName(connection: String) = Connections.providerId(connection)
-    fun apiName(connection: String): String =
-        if (Connections.isPlan(connection)) "openai-codex-responses"
-        else of(connection)?.wire?.id ?: Wire.RESPONSES.id
+    fun apiName(connection: String): String = when {
+        Connections.isPlan(connection) -> "openai-codex-responses"
+        Connections.providerId(connection) == Connections.CUSTOM -> Wire.CHAT.id
+        else -> of(connection)?.wire?.id ?: Wire.RESPONSES.id
+    }
 }

@@ -1,9 +1,9 @@
 package com.kkgosu.reasoned.controllers
 
 import android.content.Context
+import com.kkgosu.reasoned.api.Connections
 import com.kkgosu.reasoned.api.ModelProvider
 import com.kkgosu.reasoned.api.ProviderFailure
-import com.kkgosu.reasoned.api.chatGptPayload
 import com.kkgosu.reasoned.api.publicResearchUrl
 import com.kkgosu.reasoned.api.toolResult
 import com.kkgosu.reasoned.api.userMessage
@@ -68,8 +68,11 @@ internal class Researcher(
             val request = JSONObject().put("model", session.model).put("instructions", instructions)
                 .put("input", input).put("tools", tools)
                 .put("parallel_tool_calls", false).put("store", false)
-                .put("stream", true).put("max_output_tokens", 4096)
+                .put("stream", true)
                 .put("include", JSONArray().put("reasoning.encrypted_content"))
+            if (!Connections.isPlan(session.connection)) {
+                request.put("max_output_tokens", 4096)
+            }
             if (session.effort.isNotEmpty()) request.put(
                 "reasoning",
                 JSONObject().put("effort", session.effort)

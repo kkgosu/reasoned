@@ -5,6 +5,7 @@ import com.kkgosu.reasoned.api.ChatWire
 import com.kkgosu.reasoned.api.Connections
 import com.kkgosu.reasoned.api.GeminiWire
 import com.kkgosu.reasoned.api.ModelCompat
+import com.kkgosu.reasoned.api.NativeResponses
 import com.kkgosu.reasoned.api.ProviderFailure
 import com.kkgosu.reasoned.api.ProviderModel
 import com.kkgosu.reasoned.api.Providers
@@ -13,6 +14,8 @@ import com.kkgosu.reasoned.api.WireProvider
 import com.kkgosu.reasoned.api.httpFailure
 import com.kkgosu.reasoned.controllers.canonicalRequest
 import com.kkgosu.reasoned.controllers.ToolSchemas
+import com.kkgosu.reasoned.model.NativeChat
+import com.kkgosu.reasoned.utils.objects
 import kotlinx.coroutines.runBlocking
 import okio.Buffer
 import org.json.JSONArray
@@ -94,6 +97,13 @@ class ProviderWireTest {
         assertFalse(Connections.valid("key:"))
         assertFalse(Connections.valid("key:DeepSeek"))
         assertFalse(Connections.valid("oaiapp_"))
+
+        val first = Connections.endpointId("https://server-a.example/v1")
+        val second = Connections.endpointId("https://server-b.example/v1")
+        assertFalse(first == second)
+        assertEquals(first, Connections.endpointId("https://server-a.example/v1/"))
+        assertTrue(Connections.valid(Connections.customConnection(first)))
+        assertEquals("custom", Connections.providerId(Connections.customConnection(first)))
     }
 
     @Test fun customEndpointAllowsHttpOnlyForTheThreeCleartextHosts() {
@@ -125,6 +135,7 @@ class ProviderWireTest {
         val request = ChatWire.request(canonical, model, "deepseek-flash")
         assertEquals("deepseek-flash", request.getString("model"))
         assertTrue(request.getBoolean("stream"))
+        assertTrue(request.getJSONObject("stream_options").getBoolean("include_usage"))
         assertFalse(request.has("instructions"))
         assertFalse(request.has("input"))
         val messages = request.getJSONArray("messages")
@@ -250,6 +261,81 @@ class ProviderWireTest {
         assertEquals("probe", output.getJSONObject(1).getString("name"))
         assertEquals("z", JSONObject(output.getJSONObject(1).getString("arguments")).getString("q"))
         assertEquals(8, response.getJSONObject("usage").getInt("output_tokens"))
+    }
+
+    /** VisualMaker already sends a rendered PNG; every new wire must carry it as an inline image. */
+    @Test fun newWiresTranslateTheVisualMakerPngInput() {
+        val image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg=="
+        val content = JSONArray()
+            .put(JSONObject().put("type", "input_text").put("text", "Inspect this render"))
+            .put(JSONObject().put("type", "input_image").put("image_url", image))
+        val input = JSONArray().put(JSONObject().put("role", "user").put("content", content))
+
+        val chatModel = provider("deepseek").model("deepseek-flash")!!
+        val chat = ChatWire.request(canonicalRequest(chatModel.id, "Teach", input, JSONArray()), chatModel, chatModel.id)
+        val chatBlocks = chat.getJSONArray("messages").getJSONObject(1).getJSONArray("content")
+        assertEquals("text", chatBlocks.getJSONObject(0).getString("type"))
+        assertEquals("image_url", chatBlocks.getJSONObject(1).getString("type"))
+        assertEquals(image, chatBlocks.getJSONObject(1).getJSONObject("image_url").getString("url"))
+
+        val anthropicModel = provider("anthropic").model("claude-sonnet-5-5")!!
+        val anthropic = AnthropicWire.request(
+            canonicalRequest(anthropicModel.id, "Teach", input, JSONArray()), anthropicModel, anthropicModel.id
+        )
+        val anthropicBlocks = anthropic.getJSONArray("messages").getJSONObject(0).getJSONArray("content")
+        assertEquals("text", anthropicBlocks.getJSONObject(0).getString("type"))
+        assertEquals("image", anthropicBlocks.getJSONObject(1).getString("type"))
+        assertEquals("image/png", anthropicBlocks.getJSONObject(1).getJSONObject("source").getString("media_type"))
+        assertEquals("iVBORw0KGgoAAAANSUhEUg==", anthropicBlocks.getJSONObject(1).getJSONObject("source").getString("data"))
+
+        val geminiModel = provider("google").models.first { it.compat.thinkingParam != null }
+        val gemini = GeminiWire.request(
+            canonicalRequest(geminiModel.id, "Teach", input, JSONArray()), geminiModel, geminiModel.id
+        )
+        val geminiParts = gemini.getJSONArray("contents").getJSONObject(0).getJSONArray("parts")
+        assertEquals("Inspect this render", geminiParts.getJSONObject(0).getString("text"))
+        assertEquals("image/png", geminiParts.getJSONObject(1).getJSONObject("inlineData").getString("mimeType"))
+        assertEquals("iVBORw0KGgoAAAANSUhEUg==", geminiParts.getJSONObject(1).getJSONObject("inlineData").getString("data"))
+    }
+
+    @Test fun geminiReplaysTheFunctionCallThoughtSignature() = runBlocking {
+        val model = provider("google").models.first { it.compat.thinkingParam != null }
+        val stream = sse(
+            """{"candidates":[{"content":{"parts":[{"functionCall":{"name":"probe","args":{"q":"z"}},"thoughtSignature":"sig_abc"}],"role":"model"},"finishReason":"STOP","index":0}]}"""
+        )
+        val response = GeminiWire.read(stream) { }
+        val call = response.getJSONArray("output").getJSONObject(0)
+        assertEquals("sig_abc", call.getString("thoughtSignature"))
+        val history = JSONArray()
+            .put(JSONObject().put("role", "user").put("content", "Why?"))
+            .put(call)
+        val request = GeminiWire.request(
+            canonicalRequest(model.id, "Teach", history, JSONArray()), model, model.id
+        )
+        val modelParts = request.getJSONArray("contents")
+            .objects().first { it.getString("role") == "model" }.getJSONArray("parts")
+        assertEquals("sig_abc", modelParts.getJSONObject(0).getString("thoughtSignature"))
+    }
+
+    @Test fun geminiSignatureSurvivesTheNativeArchive() = runBlocking {
+        val model = provider("google").models.first { it.compat.thinkingParam != null }
+        val response = GeminiWire.read(sse(
+            """{"candidates":[{"content":{"parts":[{"functionCall":{"name":"probe","args":{"q":"z"}},"thoughtSignature":"sig_abc"}],"role":"model"},"finishReason":"STOP","index":0}]}"""
+        )) { }
+        val assistant = NativeResponses.assistant(response, model.id, Connections.key("google"), 1L)
+        val chat = NativeChat.parse(
+            JSONObject().put("id", "chat_1").put(
+                "messages", JSONArray().put(
+                    JSONObject().put("id", "m1").put("role", "assistant")
+                        .put("provider", "google").put("api", Wire.GEMINI.id)
+                        .put("model", model.id).put("content", assistant.getJSONArray("content"))
+                        .put("stopReason", "toolUse").put("timestamp", 1L)
+                )
+            ).toString()
+        )
+        val call = NativeResponses.input(chat, model.id, Connections.key("google"))
+            .objects().first { it.optString("type") == "function_call" }
+        assertEquals("sig_abc", call.getString("thoughtSignature"))
     }
 
     @Test fun oversizedVisibleTextFailsInsteadOfTruncating() = runBlocking {

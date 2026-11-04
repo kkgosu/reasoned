@@ -30,6 +30,7 @@ class ReasonedApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         Providers.load(this)
+        pinLegacyCustomEndpoint()
         // Include the scanner activity; fragment navigation must not interrupt device presence.
         registerActivityLifecycleCallbacks(object : ActivityLifecycleCallbacks {
             private var started = 0
@@ -57,11 +58,20 @@ class ReasonedApplication : Application() {
         CredentialStore(this, if (provider == "openai") "openai" else "provider-$provider")
     }
 
-    /** The saved provider list plus the single user-configured OpenAI-compatible endpoint. */
+    /**
+     * The saved provider list plus the user-configured OpenAI-compatible endpoints. A custom
+     * connection pins the URL fingerprint it was created with, so changing the saved URL never
+     * redirects an existing session or reuses that endpoint's key elsewhere.
+     */
     internal fun providerConfig(connection: String): Provider? {
         if (Connections.providerId(connection) != Connections.CUSTOM) return Providers.of(connection)
-        val preferences = getSharedPreferences("provider", 0)
-        val url = preferences.getString("custom_url", "").orEmpty().trim().trimEnd('/')
+        val preferences = providerPreferences
+        val endpoint = Connections.customId(connection)
+            ?: preferences.getString("legacy_custom_endpoint", null)
+            ?: throw ProviderFailure("custom_endpoint_missing")
+        val url = preferences.getString("custom_url:$endpoint", null)
+            ?.trim()?.trimEnd('/')
+            ?: throw ProviderFailure("custom_endpoint_missing")
         if (!Connections.customUrl(url)) throw ProviderFailure("custom_endpoint_missing")
         return Provider(
             id = Connections.CUSTOM,
@@ -70,7 +80,10 @@ class ReasonedApplication : Application() {
             baseUrl = url,
             docs = null,
             models = emptyList(),
-            keyless = preferences.getBoolean("custom_keyless", false),
+            keyless = preferences.getBoolean("custom_keyless:$endpoint", false),
+            // Pre-endpoint-pinning installs keep using the credential file they already have.
+            credentialId = if (endpoint == preferences.getString("legacy_custom_endpoint", null))
+                Connections.CUSTOM else "custom-$endpoint",
         )
     }
 
@@ -80,7 +93,7 @@ class ReasonedApplication : Application() {
             chatGpt.client
         )
         val config = providerConfig(connection) ?: throw ProviderFailure("provider_unavailable")
-        return WireProvider(config, { credentialStore(config.id).read().orEmpty() })
+        return WireProvider(config, { credentialStore(config.credentialId).read().orEmpty() })
     }
 
     /** Curated provider models always list; discovery is an explicit refresh and never required. */
@@ -90,7 +103,7 @@ class ReasonedApplication : Application() {
                 chatGpt.models(connection).map { it.slug to it.name }
             }
             val provider = providerConfig(connection) ?: throw ProviderFailure("provider_unavailable")
-            val wire = WireProvider(provider, { credentialStore(provider.id).read().orEmpty() })
+            val wire = WireProvider(provider, { credentialStore(provider.credentialId).read().orEmpty() })
             if (provider.id == Connections.CUSTOM) return@withContext wire.models()
             val curated = provider.models.map { it.id to it.name }
             if (!refresh) return@withContext curated
@@ -107,19 +120,61 @@ class ReasonedApplication : Application() {
     internal val providerPreferences: android.content.SharedPreferences
         get() = getSharedPreferences("provider", 0)
 
+    /**
+     * One-time upgrade from the first custom-endpoint build, which stored one shared URL and one
+     * shared key. Pinning lets sessions that still hold `key:custom` keep that exact server.
+     */
+    private fun pinLegacyCustomEndpoint() {
+        val preferences = providerPreferences
+        if (preferences.contains("custom_endpoint")) return
+        val url = preferences.getString("custom_url", null)?.trim()?.trimEnd('/') ?: return
+        if (!Connections.customUrl(url)) return
+        val endpoint = Connections.endpointId(url)
+        check(
+            preferences.edit()
+                .putString("custom_url:$endpoint", url)
+                .putBoolean("custom_keyless:$endpoint", preferences.getBoolean("custom_keyless", false))
+                .putString("legacy_custom_endpoint", endpoint)
+                .putString("custom_endpoint", endpoint)
+                .remove("custom_url").remove("custom_keyless").commit()
+        )
+    }
+
+    /** Saves an endpoint and returns the pinned connection new sessions should use. */
+    internal fun saveCustomEndpoint(url: String, keyless: Boolean): String {
+        require(Connections.customUrl(url)) { "Invalid custom endpoint URL" }
+        val endpoint = Connections.endpointId(url)
+        check(
+            providerPreferences.edit().putString("custom_url:$endpoint", url)
+                .putBoolean("custom_keyless:$endpoint", keyless)
+                .putString("custom_endpoint", endpoint).commit()
+        )
+        return Connections.customConnection(endpoint)
+    }
+
+    /** The currently selected custom endpoint connection, or null before one is saved. */
+    internal fun customConnection(): String? =
+        providerPreferences.getString("custom_endpoint", null)?.let(Connections::customConnection)
+
     /** The saved default connection. Legacy `api`/`chatgpt` preferences resolve to current ids. */
     internal fun savedConnection(): String {
         val preferences = providerPreferences
         val saved = preferences.getString("connection", null)
+        if (saved == Connections.key(Connections.CUSTOM)) {
+            customConnection()?.let { return it }
+        }
         if (saved != null && Connections.valid(saved)) return saved
         return if (preferences.getBoolean("chatgpt", false)) {
             chatGpt.state.value.active.ifBlank { Connections.key("openai") }
         } else Connections.key("openai")
     }
 
-    internal fun savedModel(connection: String): String {        val preferences = providerPreferences
+    internal fun savedModel(connection: String): String {
+        val preferences = providerPreferences
         preferences.getString("model:$connection", null)?.let { return it }
         if (Connections.providerId(connection) == "openai" && !Connections.isPlan(connection)) {
+            // Pre-provider builds stored the API-key model under the legacy `api` connection.
+            preferences.getString("model:api", null)?.let { return it }
             return preferences.getString("model", "").orEmpty()
         }
         return ""
@@ -134,7 +189,13 @@ class ReasonedApplication : Application() {
     /** The custom endpoint lives in preferences, not the registry, so it has no [Providers] entry. */
     internal fun providerLabel(connection: String): String = when {
         Connections.isPlan(connection) -> getString(R.string.chatgpt_use_plan)
-        Connections.providerId(connection) == Connections.CUSTOM -> getString(R.string.provider_custom)
+        Connections.providerId(connection) == Connections.CUSTOM -> {
+            val host = runCatching {
+                providerConfig(connection)?.baseUrl?.let { java.net.URI(it).host }
+            }.getOrNull()
+            if (host.isNullOrBlank()) getString(R.string.provider_custom)
+            else getString(R.string.provider_custom_label, host)
+        }
         else -> Providers.of(connection)?.label ?: connection
     }
 

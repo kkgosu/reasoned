@@ -56,6 +56,24 @@ internal suspend fun readSse(
 /** Responses-shaped input items carry no `type` for a plain message; every other type is explicit. */
 internal fun JSONObject.itemType(): String = optString("type").ifEmpty { "message" }
 
+/** A bounded inline image from a Responses-shaped `input_image` block. */
+internal data class InlineImage(val mime: String, val data: String)
+
+private val INLINE_IMAGE = Regex("^data:(image/(?:png|jpeg|webp));base64,([A-Za-z0-9+/]+={0,2})$")
+
+/** Only app-rendered PNG data URLs are accepted; never a remote URL or another scheme. */
+internal fun JSONObject.inlineImage(): InlineImage {
+    val raw = when (val value = opt("image_url")) {
+        is String -> value
+        is JSONObject -> value.optString("url")
+        else -> ""
+    }
+    val match = INLINE_IMAGE.matchEntire(raw) ?: throw ProviderFailure("protocol")
+    val data = match.groupValues[2]
+    if (data.length > 1_048_576) throw ProviderFailure("output_limit")
+    return InlineImage(match.groupValues[1], data)
+}
+
 /** Android's org.json renders a JSON null as the literal string "null" instead of "". */
 internal fun String.terminalReason(): String? = takeIf { it.isNotEmpty() && it != "null" }
 
@@ -64,7 +82,12 @@ internal fun String.terminalReason(): String? = takeIf { it.isNotEmpty() && it !
  * runtime already archives, so request translation is the only per-provider code.
  */
 internal class WireResponse {
-    private data class Call(val id: String, val name: String, val arguments: StringBuilder)
+    private data class Call(
+        val id: String,
+        val name: String,
+        val arguments: StringBuilder,
+        val signature: String = "",
+    )
 
     private val reasoning = StringBuilder()
     private var signature = ""
@@ -92,7 +115,13 @@ internal class WireResponse {
     }
 
     /** Arguments arrive in fragments; a call is keyed by stream index when the id is not yet known. */
-    fun call(key: String, id: String?, name: String?, arguments: String?) {
+    fun call(
+        key: String,
+        id: String?,
+        name: String?,
+        arguments: String?,
+        signature: String? = null,
+    ) {
         val existing = calls[key]
         if (existing == null) {
             if (calls.size >= 16) throw ProviderFailure("invalid_output_item_index")
@@ -100,10 +129,19 @@ internal class WireResponse {
                 id = id?.takeIf { it.isNotBlank() } ?: "call_${UUID.randomUUID().toString().take(12)}",
                 name = name.orEmpty(),
                 arguments = StringBuilder().append(arguments.orEmpty()),
+                signature = signature.orEmpty(),
             )
         } else {
             if (id != null && id.isNotBlank() && existing.id != id) throw ProviderFailure("invalid_output_item_index")
-            if (existing.name.isEmpty() && !name.isNullOrBlank()) calls[key] = existing.copy(name = name)
+            if (!signature.isNullOrEmpty() && existing.signature.length + signature.length > 65_536) {
+                throw ProviderFailure("output_limit")
+            }
+            val signed = if (signature.isNullOrEmpty()) existing.signature
+            else existing.signature + signature
+            calls[key] = existing.copy(
+                name = if (existing.name.isEmpty() && !name.isNullOrBlank()) name else existing.name,
+                signature = signed,
+            )
             existing.arguments.append(arguments.orEmpty())
         }
         if (calls[key]!!.arguments.length > 65_536) throw ProviderFailure("output_limit")
@@ -158,6 +196,7 @@ internal class WireResponse {
                 JSONObject().put("type", "function_call").put("id", "fc_${token()}")
                     .put("call_id", call.id).put("name", call.name)
                     .put("arguments", call.arguments.toString().ifBlank { "{}" })
+                    .apply { if (call.signature.isNotEmpty()) put("thoughtSignature", call.signature) }
             )
         }
         return JSONObject().put("id", id ?: "resp_${token()}").put("status", "completed").put("output", output)

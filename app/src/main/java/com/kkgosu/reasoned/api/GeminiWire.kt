@@ -104,7 +104,11 @@ internal object GeminiWire {
                             "functionCall",
                             JSONObject().put("name", item.getString("name"))
                                 .put("args", JSONObject(item.optString("arguments", "{}")))
-                        )
+                        ).apply {
+                            // Gemini 3 requires the signature returned with the call to be replayed.
+                            item.optString("thoughtSignature").takeIf { it.isNotEmpty() }
+                                ?.let { put("thoughtSignature", it) }
+                        }
                     )
                 }
 
@@ -118,11 +122,8 @@ internal object GeminiWire {
                 )
 
                 "message" -> {
-                    val text = text(item)
-                    if (text.isNotBlank()) append(
-                        if (item.optString("role") == "assistant") "model" else "user",
-                        JSONObject().put("text", text)
-                    )
+                    val role = if (item.optString("role") == "assistant") "model" else "user"
+                    parts(item).forEach { append(role, it) }
                 }
 
                 else -> throw ProviderFailure("native_runtime_unavailable")
@@ -133,21 +134,39 @@ internal object GeminiWire {
         return contents
     }
 
-    private fun text(item: JSONObject): String = when (val content = item.opt("content")) {
-        is String -> content
-        is JSONArray -> content.objects().joinToString("") { block ->
-            when (block.optString("type")) {
-                "input_text", "output_text", "text" -> block.optString("text")
-                else -> throw ProviderFailure("native_runtime_unavailable")
+    /** Gemini takes inline images as `inlineData` parts in the same content turn as the text. */
+    private fun parts(item: JSONObject): List<JSONObject> = when (val content = item.opt("content")) {
+        is String -> listOf(JSONObject().put("text", content))
+            .filter { it.optString("text").isNotBlank() }
+
+        is JSONArray -> buildList {
+            content.objects().forEach { block ->
+                when (block.optString("type")) {
+                    "input_text", "output_text", "text" -> block.optString("text")
+                        .takeIf { it.isNotEmpty() }?.let { add(JSONObject().put("text", it)) }
+
+                    "input_image" -> {
+                        val inline = block.inlineImage()
+                        add(
+                            JSONObject().put(
+                                "inlineData",
+                                JSONObject().put("mimeType", inline.mime).put("data", inline.data)
+                            )
+                        )
+                    }
+
+                    else -> throw ProviderFailure("native_runtime_unavailable")
+                }
             }
         }
 
-        else -> ""
+        else -> emptyList()
     }
 
     suspend fun read(source: BufferedSource, delta: suspend (String) -> Unit): JSONObject {
         val response = WireResponse()
         var terminal = false
+        var calls = 0
         readSse(source) { _, data ->
             val event = try {
                 JSONObject(data)
@@ -168,14 +187,16 @@ internal object GeminiWire {
                 )
             }
             val candidate = event.optJSONArray("candidates")?.objects()?.firstOrNull() ?: return@readSse false
-            candidate.optJSONObject("content")?.optJSONArray("parts")?.objects()?.forEachIndexed { index, part ->
+            candidate.optJSONObject("content")?.optJSONArray("parts")?.objects()?.forEach { part ->
                 when {
                     part.has("functionCall") -> part.getJSONObject("functionCall").let { call ->
                         response.call(
-                            key = "call-$index",
+                            // Part indexes restart in every chunk; a response-wide counter does not collide.
+                            key = "call-${calls++}",
                             id = null,
                             name = call.optString("name").takeIf { it.isNotEmpty() },
                             arguments = call.optJSONObject("args")?.toString() ?: "{}",
+                            signature = part.optString("thoughtSignature").takeIf { it.isNotEmpty() },
                         )
                     }
 

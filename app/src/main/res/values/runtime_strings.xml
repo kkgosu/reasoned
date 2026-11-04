@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="runtime_key">OpenAI API key</string>
+    <string name="runtime_key">API key</string>
     <string name="runtime_key_hint">Enter a key here, never in a lesson</string>
     <string name="runtime_key_saved">Saved securely on this device.</string>
     <string name="runtime_key_absent">No API key saved.</string>

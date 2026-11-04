@@ -664,6 +664,19 @@ Every request starts as one canonical, Responses-shaped JSON object from `canoni
 `controllers/SessionRequests.kt`. It carries the model, instructions, input items, tool
 declarations, an optional reasoning effort and `max_output_tokens`. No vendor field appears in it.
 
+A custom endpoint is a `key:custom-<endpoint>` connection whose endpoint is a short SHA-256
+fingerprint of the normalized URL. The URL, keyless flag and encrypted credential are scoped to
+that fingerprint, so editing the saved URL creates a separate endpoint instead of redirecting an
+existing session or reusing its key. The first custom-endpoint build stored one shared URL and key;
+startup pins that legacy endpoint once, and sessions that still hold `key:custom` keep using it.
+`max_output_tokens` stays out of ChatGPT-plan requests; the plan payload allowlist strips it even
+when a shared caller supplies it.
+
+The Chat, Anthropic and Gemini wires translate a `input_image` data URL into their native inline
+image shape. Gemini function calls keep their `thoughtSignature` in the archived tool call and
+replay it only for the same provider, API and model. The Responses path already accepted the same
+image item.
+
 `api/Providers.kt` loads `assets/providers.json` and maps each provider to one of four wires,
 `RESPONSES`, `CHAT`, `ANTHROPIC` or `GEMINI`. For the API-key providers,
 `api/ProviderTransport.kt` owns the single OkHttp call, the base URL, the auth header and the HTTP
@@ -680,12 +693,13 @@ Per-model differences live in the asset as compatibility flags. The wire code br
 flags, not on provider names. The examples are `thinkingFormat` and `thinkingMap` for the Chat wire,
 `adaptive` and `effort` for Anthropic, and `thinkingParam` for Gemini.
 
-`ProviderWireTest` exercises request translation and stream parsing with canned streams. Its eleven
-tests pass, covering the Chat, Anthropic and Gemini wires plus the registry and the connection ids.
-The full JVM suite is 69 tests with one pre-existing, unrelated failure in `NativeTransferPackageTest`.
-That is offline verification of the translation layer only. No live call has been made to any API-key
-provider, so account eligibility, model availability, tool-calling quality and image support remain
-unverified for each of them.
+`ProviderWireTest` exercises request translation and stream parsing with canned streams. Its 21
+tests pass, covering the Chat, Anthropic and Gemini wires, inline images, Gemini function-call
+thought signatures through the native archive, the registry and the connection ids. The full JVM
+suite is 79 tests with one pre-existing Windows-only CRLF failure in `NativeTransferPackageTest`,
+reproduced on the base commit; CI runs on Ubuntu. That is offline verification of the translation layer only. No live
+call has been made to any API-key provider, so account eligibility, model availability,
+tool-calling quality and live image acceptance remain unverified for each of them.
 
 ## Graph: phase 3 implemented
 

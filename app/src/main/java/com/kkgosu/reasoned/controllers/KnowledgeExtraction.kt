@@ -3,9 +3,9 @@ package com.kkgosu.reasoned.controllers
 import android.app.Application
 import android.content.Context
 import com.kkgosu.reasoned.R
+import com.kkgosu.reasoned.api.Connections
 import com.kkgosu.reasoned.api.ModelProvider
 import com.kkgosu.reasoned.api.ProviderFailure
-import com.kkgosu.reasoned.api.chatGptPayload
 import com.kkgosu.reasoned.api.toolResult
 import com.kkgosu.reasoned.api.userMessage
 import com.kkgosu.reasoned.model.Findings
@@ -257,9 +257,13 @@ internal class KnowledgeExtraction(
             ) throw ProviderFailure("context_limit")
         val request = JSONObject().put("model", session.model).put("instructions", instructions)
             .put("input", history).put("tools", tools)
-            .put("stream", true).put("max_output_tokens", 8192)
+            .put("stream", true)
             .put("parallel_tool_calls", false).put("store", false)
             .put("include", JSONArray().put("reasoning.encrypted_content"))
+        // The ChatGPT plan drops API payload fields; never mix the two billing shapes.
+        if (!Connections.isPlan(session.connection)) {
+            request.put("max_output_tokens", 8192)
+        }
         if (session.effort.isNotEmpty()) request.put(
             "reasoning",
             JSONObject().put("effort", session.effort)

@@ -92,13 +92,13 @@ internal object AnthropicWire {
                         .put("content", item.optString("output"))
                 )
 
-                "message" -> {
+                "message" -> if (item.optString("role") == "assistant") {
                     val text = text(item)
                     if (text.isNotBlank()) append(
-                        if (item.optString("role") == "assistant") "assistant" else "user",
+                        "assistant",
                         JSONObject().put("type", "text").put("text", text)
                     )
-                }
+                } else blocks(item).forEach { append("user", it) }
 
                 else -> throw ProviderFailure("native_runtime_unavailable")
             }
@@ -113,11 +113,44 @@ internal object AnthropicWire {
         is JSONArray -> content.objects().joinToString("") { block ->
             when (block.optString("type")) {
                 "input_text", "output_text", "text" -> block.optString("text")
+                "input_image" -> ""
                 else -> throw ProviderFailure("native_runtime_unavailable")
             }
         }
 
         else -> ""
+    }
+
+    /** Anthropic takes inline images as base64 source blocks beside the text block. */
+    private fun blocks(item: JSONObject): List<JSONObject> = when (val content = item.opt("content")) {
+        is String -> listOf(JSONObject().put("type", "text").put("text", content))
+            .filter { it.optString("text").isNotBlank() }
+
+        is JSONArray -> buildList {
+            content.objects().forEach { block ->
+                when (block.optString("type")) {
+                    "input_text", "output_text", "text" -> block.optString("text")
+                        .takeIf { it.isNotEmpty() }?.let {
+                            add(JSONObject().put("type", "text").put("text", it))
+                        }
+
+                    "input_image" -> {
+                        val inline = block.inlineImage()
+                        add(
+                            JSONObject().put("type", "image").put(
+                                "source",
+                                JSONObject().put("type", "base64").put("media_type", inline.mime)
+                                    .put("data", inline.data)
+                            )
+                        )
+                    }
+
+                    else -> throw ProviderFailure("native_runtime_unavailable")
+                }
+            }
+        }
+
+        else -> emptyList()
     }
 
     suspend fun read(source: BufferedSource, delta: suspend (String) -> Unit): JSONObject {

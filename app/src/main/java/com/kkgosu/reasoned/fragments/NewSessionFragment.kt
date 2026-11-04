@@ -53,6 +53,11 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         val goal = views.findViewById<EditText>(R.id.runtime_goal)
         val start = views.findViewById<Button>(R.id.runtime_start)
         val status = views.findViewById<TextView>(R.id.session_create_status)
+        val destination = app.providerLabel(app.savedConnection())
+        views.findViewById<TextView>(R.id.session_local_notice)
+            .text = getString(R.string.new_session_local, destination)
+        views.findViewById<TextView>(R.id.session_research_notice)
+            .text = getString(R.string.new_session_research_notice, destination)
         targets.clear()
         targets.addAll(
             savedInstanceState?.getStringArrayList("targets") ?: arguments?.getString("target")
@@ -172,6 +177,13 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                     R.string.new_session_connection,
                     if (usePlan) account!!.label else app.providerLabel(connection), model
                 ) else getString(R.string.new_session_configure)
+                val destination =
+                    if (usePlan) account?.label ?: getString(R.string.chatgpt_use_plan)
+                    else app.providerLabel(connection)
+                views.findViewById<TextView>(R.id.session_local_notice)
+                    .text = getString(R.string.new_session_local, destination)
+                views.findViewById<TextView>(R.id.session_research_notice)
+                    .text = getString(R.string.new_session_research_notice, destination)
                 start.isEnabled = ready
             } catch (cancelled: CancellationException) {
                 throw cancelled

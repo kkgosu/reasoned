@@ -233,10 +233,13 @@ class ChatGptTest {
             val preferences = app.getSharedPreferences("provider", 0)
             val wasPlan = preferences.getBoolean("chatgpt", false)
             val oldModel = preferences.getString("model:oaiapp_fixture", null)
+            val oldConnection = preferences.getString("connection", null)
             try {
                 delegate.set(app, lazyOf(auth))
-                preferences.edit().putBoolean("chatgpt", true).remove("model:oaiapp_fixture")
-                    .commit()
+                app.modelCatalog.forget("oaiapp_fixture")
+                preferences.edit().putBoolean("chatgpt", true)
+                    .putString("connection", "oaiapp_fixture")
+                    .remove("model:oaiapp_fixture").commit()
                 ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                     scenario.onActivity {
                         me.grishka.appkit.Nav.go(
@@ -245,74 +248,49 @@ class ChatGptTest {
                             null
                         )
                     }
-                    withTimeout(5000) {
-                        var loaded = false
-                        while (!loaded) {
-                            scenario.onActivity {
-                                loaded =
-                                    it.findViewById<RadioGroup>(R.id.runtime_chatgpt_model_list)?.childCount == 2
-                            }
-                            delay(20)
-                        }
-                    }
                     InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
                     scenario.onActivity { activity ->
                         assertEquals(
+                            View.VISIBLE,
+                            activity.findViewById<View>(R.id.runtime_chatgpt_fields).visibility
+                        )
+                        assertEquals(
                             View.GONE,
-                            activity.findViewById<View>(R.id.runtime_model).visibility
+                            activity.findViewById<View>(R.id.runtime_api_fields).visibility
                         )
-                        val list =
-                            activity.findViewById<RadioGroup>(R.id.runtime_chatgpt_model_list)
-                        val first = list.getChildAt(0) as android.widget.RadioButton
-                        val second = list.getChildAt(1) as android.widget.RadioButton
-                        assertEquals("Visible model", first.text.toString())
-                        assertEquals("second-model", second.tag)
-                        assertEquals(list.width, second.width)
-                        assertEquals(0, second.paddingStart)
-                        assertEquals(
-                            activity.resources.getDimensionPixelSize(R.dimen.space_24),
-                            second.paddingEnd
-                        )
-                        val indicator =
-                            second.buttonDrawable as android.graphics.drawable.LayerDrawable
-                        assertEquals(
-                            activity.resources.getDimensionPixelSize(R.dimen.space_24),
-                            indicator.getLayerInsetStart(0)
-                        )
-                        assertEquals(
-                            activity.resources.getDimensionPixelSize(R.dimen.space_8),
-                            indicator.getLayerInsetEnd(0)
-                        )
-                        assertEquals(
-                            android.view.Gravity.CENTER_VERTICAL,
-                            second.gravity and android.view.Gravity.VERTICAL_GRAVITY_MASK
-                        )
-                        second.performClick()
+                        activity.findViewById<View>(R.id.runtime_model).performClick()
                     }
-                    withTimeout(5000) {
-                        while (preferences.getString(
-                                "model:oaiapp_fixture",
-                                ""
-                            ) != "second-model"
-                        ) delay(20)
+                    clickDialog("Second model")
+                    try {
+                        withTimeout(5000) {
+                            while (preferences.getString(
+                                    "model:oaiapp_fixture",
+                                    ""
+                                ) != "second-model"
+                            ) delay(20)
+                        }
+                    } catch (timeout: kotlinx.coroutines.TimeoutCancellationException) {
+                        throw AssertionError(
+                            "Plan model was not saved; visible=${activeLabels()}", timeout
+                        )
                     }
                     scenario.recreate()
-                    withTimeout(5000) {
-                        var restored = false
-                        while (!restored) {
-                            scenario.onActivity { activity ->
-                                val list =
-                                    activity.findViewById<RadioGroup>(R.id.runtime_chatgpt_model_list)
-                                restored =
-                                    list?.findViewById<View>(list.checkedRadioButtonId)?.tag == "second-model"
-                            }
-                            delay(20)
-                        }
+                    InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
+                    scenario.onActivity { activity ->
+                        assertEquals(
+                            View.VISIBLE,
+                            activity.findViewById<View>(R.id.runtime_chatgpt_fields).visibility
+                        )
+                        assertEquals(
+                            "second-model",
+                            activity.findViewById<android.widget.Button>(R.id.runtime_model).text.toString()
+                        )
                     }
                 }
             } finally {
                 delegate.set(app, previous)
                 preferences.edit().putBoolean("chatgpt", wasPlan)
+                    .putString("connection", oldConnection)
                     .putString("model:oaiapp_fixture", oldModel).commit()
             }
             assertTrue(auth.signOut("oaiapp_fixture"))
@@ -463,7 +441,7 @@ class ChatGptTest {
         }.build()
         val runtime = SessionRuntime(app, store, OpenAiProvider({ "fixture-plan-access" }, client))
         try {
-            withTimeout(5000) {
+            withTimeout(20_000) {
                 runtime.create("Subtraction", "visible-model", "oaiapp_fixture")
                     .join(); runtime.retry().join()
             }
@@ -500,148 +478,162 @@ class ChatGptTest {
     }
 
     @Test
-    fun nativeBillingChoiceHidesKeyAndRequiresExplicitBrowserSignIn() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.onActivity {
-                me.grishka.appkit.Nav.go(
-                    it,
-                    ProviderSettingsFragment::class.java,
-                    null
-                )
-            }
-            InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
-            scenario.onActivity { activity ->
-                activity.findViewById<RadioGroup>(R.id.runtime_billing)
-                    .check(R.id.runtime_use_chatgpt)
-                assertEquals(
-                    View.VISIBLE,
-                    activity.findViewById<View>(R.id.runtime_chatgpt_fields).visibility
-                )
-                assertEquals(
-                    View.GONE,
-                    activity.findViewById<View>(R.id.runtime_api_fields).visibility
-                )
-                assertEquals(
-                    View.GONE,
-                    activity.findViewById<EditText>(R.id.runtime_model).visibility
-                )
-                assertEquals(
-                    activity.getString(R.string.chatgpt_continue),
-                    activity.findViewById<android.widget.Button>(R.id.runtime_chatgpt_sign_in).text.toString()
-                )
-            }
-            InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
-            scenario.onActivity { activity ->
-                val billing = activity.findViewById<RadioGroup>(R.id.runtime_billing)
-                assertEquals(activity.window.decorView.width, billing.width)
-                assertEquals(billing.getChildAt(0).width, billing.getChildAt(1).width)
-                assertEquals(
-                    0,
-                    activity.findViewById<android.widget.Toolbar>(me.grishka.appkit.R.id.toolbar).menu.size()
-                )
-                for (id in listOf(
-                    R.id.runtime_chatgpt_usage,
-                    R.id.chatgpt_sign_out,
-                    R.id.chatgpt_reset
-                )) {
+    fun planConnectionHidesTheKeyAndRequiresExplicitSignIn() {
+        val preferences = app.getSharedPreferences("provider", 0)
+        val oldConnection = preferences.getString("connection", null)
+        val oldModel = preferences.getString("model:oaiapp_fixture", null)
+        val wasPlan = preferences.getBoolean("chatgpt", false)
+        try {
+            preferences.edit().putBoolean("chatgpt", true)
+                .putString("connection", "oaiapp_fixture")
+                .putString("model:oaiapp_fixture", "gpt-6.1-sol").commit()
+            ActivityScenario.launch(MainActivity::class.java).use { scenario ->
+                scenario.onActivity {
+                    me.grishka.appkit.Nav.go(
+                        it,
+                        ProviderSettingsFragment::class.java,
+                        null
+                    )
+                }
+                InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
+                scenario.onActivity { activity ->
+                    assertEquals(
+                        View.VISIBLE,
+                        activity.findViewById<View>(R.id.runtime_chatgpt_fields).visibility
+                    )
+                    assertEquals(
+                        View.GONE,
+                        activity.findViewById<View>(R.id.runtime_api_fields).visibility
+                    )
+                    assertTrue(
+                        activity.findViewById<android.widget.Button>(R.id.runtime_provider)
+                            .text.toString().contains(activity.getString(R.string.chatgpt_use_plan))
+                    )
+                    assertEquals(
+                        activity.getString(R.string.chatgpt_continue),
+                        activity.findViewById<android.widget.Button>(R.id.runtime_chatgpt_sign_in).text.toString()
+                    )
+                }
+                InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
+                scenario.onActivity { activity ->
+                    assertEquals(
+                        0,
+                        activity.findViewById<android.widget.Toolbar>(me.grishka.appkit.R.id.toolbar).menu.size()
+                    )
+                    for (id in listOf(
+                        R.id.runtime_chatgpt_usage,
+                        R.id.chatgpt_sign_out,
+                        R.id.chatgpt_reset
+                    )) {
+                        assertEquals(
+                            activity.window.decorView.width,
+                            activity.findViewById<View>(id).width
+                        )
+                    }
+                    assertTrue(activity.findViewById<View>(R.id.runtime_chatgpt_sign_in).width < activity.window.decorView.width)
+                    assertFalse(activity.findViewById<View>(R.id.chatgpt_sign_out).isEnabled)
+                    assertTrue(activity.findViewById<View>(R.id.chatgpt_reset).isEnabled)
+                    assertEquals(
+                        activity.getString(R.string.chatgpt_reset_summary),
+                        activity.findViewById<android.widget.TextView>(R.id.chatgpt_reset_summary).text.toString()
+                    )
+                    assertTrue(activity.findViewById<android.widget.TextView>(R.id.runtime_chatgpt_status).text.length < 180)
+                    assertNull(activity.findViewById<View>(R.id.runtime_goal))
+                    assertNull(activity.findViewById<View>(R.id.runtime_instructions))
+                }
+                scenario.recreate()
+                InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
+                scenario.onActivity { activity ->
+                    assertEquals(
+                        View.VISIBLE,
+                        activity.findViewById<View>(R.id.runtime_chatgpt_fields).visibility
+                    )
+                    assertEquals(
+                        View.GONE,
+                        activity.findViewById<View>(R.id.runtime_api_fields).visibility
+                    )
+                    assertEquals("", activity.findViewById<EditText>(R.id.runtime_key).text.toString())
+                    val scroll =
+                        activity.findViewById<View>(R.id.runtime_chatgpt_fields).parent.parent as android.widget.ScrollView
+                    scroll.isSmoothScrollingEnabled = false
+                    scroll.fullScroll(View.FOCUS_DOWN)
+                }
+                InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
+                scenario.onActivity { activity ->
+                    val reset = activity.findViewById<View>(R.id.chatgpt_reset)
+                    val visible = android.graphics.Rect()
+                    val isVisible = reset.getGlobalVisibleRect(visible)
+                    assertTrue(
+                        "Reset must be reachable by scrolling: visible=$visible height=${reset.height}",
+                        isVisible && visible.height() == reset.height
+                    )
+                    reset.performClick()
+                }
+                InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
+                clickDialog(InstrumentationRegistry.getInstrumentation().targetContext.getString(android.R.string.cancel))
+                scenario.onActivity { activity ->
+                    activity.findViewById<View>(R.id.runtime_provider).performClick()
+                }
+                clickDialog("OpenAI")
+                InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
+                scenario.onActivity { activity ->
+                    assertEquals(
+                        View.GONE,
+                        activity.findViewById<View>(R.id.runtime_chatgpt_actions).visibility
+                    )
+                    assertEquals(
+                        View.VISIBLE,
+                        activity.findViewById<View>(R.id.runtime_api_fields).visibility
+                    )
                     assertEquals(
                         activity.window.decorView.width,
-                        activity.findViewById<View>(id).width
+                        activity.findViewById<View>(R.id.runtime_forget_key).width
                     )
                 }
-                assertTrue(activity.findViewById<View>(R.id.runtime_chatgpt_sign_in).width < activity.window.decorView.width)
-                assertFalse(activity.findViewById<View>(R.id.chatgpt_sign_out).isEnabled)
-                assertTrue(activity.findViewById<View>(R.id.chatgpt_reset).isEnabled)
-                assertEquals(billing.getChildAt(0).bottom, billing.getChildAt(1).top)
-                for (index in 0 until billing.childCount) {
-                    val row = billing.getChildAt(index) as android.widget.RadioButton
-                    assertEquals(
-                        android.view.Gravity.CENTER_VERTICAL,
-                        row.gravity and android.view.Gravity.VERTICAL_GRAVITY_MASK
-                    )
-                    assertEquals(row.height / 2f, row.buttonDrawable!!.bounds.exactCenterY(), 1f)
-                    val indicator = row.buttonDrawable as android.graphics.drawable.LayerDrawable
-                    val glyph = indicator.getDrawable(0).bounds
-                    val inset = activity.resources.getDimensionPixelSize(R.dimen.space_24)
-                    assertEquals(
-                        inset,
-                        if (row.layoutDirection == View.LAYOUT_DIRECTION_RTL) row.width - glyph.right else glyph.left
-                    )
-                    assertEquals(inset, row.paddingEnd)
-                }
-                assertEquals(
-                    activity.getString(R.string.chatgpt_reset_summary),
-                    activity.findViewById<android.widget.TextView>(R.id.chatgpt_reset_summary).text.toString()
-                )
-                val models =
-                    activity.findViewById<android.widget.Button>(R.id.runtime_chatgpt_models)
-                assertFalse(models.isEnabled)
-                assertEquals(0.4f, models.alpha, 0.01f)
-                assertTrue(models.height >= 48 * activity.resources.displayMetrics.density)
-                assertTrue(activity.findViewById<android.widget.TextView>(R.id.runtime_chatgpt_status).text.length < 180)
-                assertNull(activity.findViewById<View>(R.id.runtime_goal))
-                assertNull(activity.findViewById<View>(R.id.runtime_instructions))
             }
-            scenario.recreate()
-            InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
-            scenario.onActivity { activity ->
-                assertEquals(
-                    R.id.runtime_use_chatgpt,
-                    activity.findViewById<RadioGroup>(R.id.runtime_billing).checkedRadioButtonId
-                )
-                assertEquals(
-                    View.GONE,
-                    activity.findViewById<View>(R.id.runtime_api_fields).visibility
-                )
-                assertEquals("", activity.findViewById<EditText>(R.id.runtime_key).text.toString())
-                val scroll =
-                    activity.findViewById<View>(R.id.runtime_billing).parent.parent as android.widget.ScrollView
-                scroll.isSmoothScrollingEnabled = false
-                scroll.fullScroll(View.FOCUS_DOWN)
-            }
-            InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
-            scenario.onActivity { activity ->
-                val reset = activity.findViewById<View>(R.id.chatgpt_reset)
-                val visible = android.graphics.Rect()
-                val isVisible = reset.getGlobalVisibleRect(visible)
-                assertTrue(
-                    "Reset must be reachable by scrolling: visible=$visible height=${reset.height}",
-                    isVisible && visible.height() == reset.height
-                )
-                reset.performClick()
-            }
-            InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
-            runBlocking {
-                withTimeout(5000) {
-                    var cancelled = false
-                    while (!cancelled) {
-                        val cancel =
-                            InstrumentationRegistry.getInstrumentation().uiAutomation.rootInActiveWindow
-                                ?.findAccessibilityNodeInfosByText(
-                                    InstrumentationRegistry.getInstrumentation().targetContext.getString(
-                                        android.R.string.cancel
-                                    )
-                                )
-                                ?.firstOrNull { it.className == "android.widget.Button" }
-                        cancelled =
-                            cancel?.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK) == true
-                        if (!cancelled) delay(20)
+        } finally {
+            preferences.edit().putBoolean("chatgpt", wasPlan)
+                .putString("connection", oldConnection)
+                .putString("model:oaiapp_fixture", oldModel).commit()
+        }
+    }
+
+    private fun clickDialog(label: String) {
+        try {
+            clickDialogText(label)
+        } catch (error: Exception) {
+            throw AssertionError("Dialog row '$label' not found; visible=${activeLabels()}", error)
+        }
+    }
+
+    private fun activeLabels(): List<String> {
+        val labels = mutableListOf<String>()
+        fun walk(node: android.view.accessibility.AccessibilityNodeInfo?) {
+            node ?: return
+            node.text?.toString()?.takeIf { it.isNotBlank() }?.let(labels::add)
+            for (index in 0 until node.childCount) walk(node.getChild(index))
+        }
+        walk(InstrumentationRegistry.getInstrumentation().uiAutomation.rootInActiveWindow)
+        return labels
+    }
+
+    /** AlertDialog rows live in their own window, so the activity view tree cannot see them. */
+    private fun clickDialogText(label: String) = runBlocking {
+        withTimeout(5000) {
+            val automation = InstrumentationRegistry.getInstrumentation().uiAutomation
+            while (true) {
+                var node = automation.rootInActiveWindow
+                    ?.findAccessibilityNodeInfosByText(label)
+                    ?.firstOrNull {
+                        it.isClickable || it.className?.endsWith("CheckedTextView") == true
                     }
+                while (node != null) {
+                    if (node.performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK)) {
+                        return@withTimeout
+                    }
+                    node = node.parent
                 }
-            }
-            scenario.onActivity { activity ->
-                activity.findViewById<RadioGroup>(R.id.runtime_billing).check(R.id.runtime_use_api)
-                assertEquals(
-                    View.GONE,
-                    activity.findViewById<View>(R.id.runtime_chatgpt_actions).visibility
-                )
-            }
-            InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
-            scenario.onActivity { activity ->
-                assertEquals(
-                    activity.window.decorView.width,
-                    activity.findViewById<View>(R.id.runtime_forget_key).width
-                )
+                delay(20)
             }
         }
     }

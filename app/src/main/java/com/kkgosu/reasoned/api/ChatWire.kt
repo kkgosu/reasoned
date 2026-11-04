@@ -21,6 +21,7 @@ internal object ChatWire {
         }
 
         val request = JSONObject().put("model", modelId).put("messages", messages).put("stream", true)
+            .put("stream_options", JSONObject().put("include_usage", true))
         canonical.optJSONArray("tools")?.takeIf { it.length() > 0 }?.let { tools ->
             request.put("tools", JSONArray(tools.objects().map { tool ->
                 if (tool.optString("type") != "function") throw ProviderFailure("tool_denied")
@@ -89,9 +90,12 @@ internal object ChatWire {
                     if (item.optString("role") == "assistant") content.append(text)
                     else {
                         flush()
-                        if (text.isNotBlank()) messages.put(
-                            JSONObject().put("role", item.optString("role", "user")).put("content", text)
-                        )
+                        userContent(item)?.let { value ->
+                            messages.put(
+                                JSONObject().put("role", item.optString("role", "user"))
+                                    .put("content", value)
+                            )
+                        }
                     }
                 }
 
@@ -108,11 +112,52 @@ internal object ChatWire {
         is JSONArray -> content.objects().joinToString("") { block ->
             when (block.optString("type")) {
                 "input_text", "output_text", "text" -> block.optString("text")
+                "input_image" -> ""
                 else -> throw ProviderFailure("native_runtime_unavailable")
             }
         }
 
         else -> ""
+    }
+
+    /**
+     * Chat Completions accepts a string for text-only turns and a typed part array when an image
+     * is present. The text-only spelling stays a string for the widest compatibility.
+     */
+    private fun userContent(item: JSONObject): Any? = when (val content = item.opt("content")) {
+        is String -> content.takeIf { it.isNotBlank() }
+        is JSONArray -> {
+            val parts = JSONArray()
+            var image = false
+            content.objects().forEach { block ->
+                when (block.optString("type")) {
+                    "input_text", "output_text", "text" -> block.optString("text")
+                        .takeIf { it.isNotEmpty() }?.let {
+                            parts.put(JSONObject().put("type", "text").put("text", it))
+                        }
+
+                    "input_image" -> {
+                        val inline = block.inlineImage()
+                        image = true
+                        parts.put(
+                            JSONObject().put("type", "image_url").put(
+                                "image_url",
+                                JSONObject().put("url", "data:${inline.mime};base64,${inline.data}")
+                            )
+                        )
+                    }
+
+                    else -> throw ProviderFailure("native_runtime_unavailable")
+                }
+            }
+            when {
+                parts.length() == 0 -> null
+                image -> parts
+                else -> parts.objects().joinToString("") { it.optString("text") }
+            }
+        }
+
+        else -> null
     }
 
     /** pi-ai's per-format thinking parameters; returns whether thinking was actually enabled. */

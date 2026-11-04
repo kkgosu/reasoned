@@ -20,6 +20,7 @@ import com.kkgosu.reasoned.api.ChatGptAuth
 import com.kkgosu.reasoned.api.Connections
 import com.kkgosu.reasoned.api.ProviderFailure
 import com.kkgosu.reasoned.api.Providers
+import com.kkgosu.reasoned.api.WireProvider
 import com.kkgosu.reasoned.model.ChatGptStatus
 import com.kkgosu.reasoned.ui.text.runtimeError
 import kotlinx.coroutines.CancellationException
@@ -117,7 +118,7 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
             action {
                 app.extraction.stop()?.join()
                 withContext(Dispatchers.IO) {
-                    val store = app.credentialStore(provider.id)
+                    val store = app.credentialStore(provider.credentialId)
                     if (value.isEmpty()) store.forget() else store.save(value)
                     app.modelCatalog.forget(connection)
                 }
@@ -132,7 +133,7 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
             action {
                 app.runtime.stop().join(); app.extraction.stop()?.join()
                 withContext(Dispatchers.IO) {
-                    app.credentialStore(provider.id).forget()
+                    app.credentialStore(provider.credentialId).forget()
                     app.modelCatalog.forget(connection)
                 }
                 key.text.clear()
@@ -145,16 +146,17 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
             if (!Connections.customUrl(url)) {
                 customUrl.error = getString(R.string.provider_custom_invalid); return@setOnClickListener
             }
+            val previous = runCatching { app.providerConfig(connection)?.baseUrl }.getOrNull()
             action {
-                withContext(Dispatchers.IO) {
-                    check(
-                        preferences.edit().putString("custom_url", url)
-                            .putBoolean("custom_keyless", keyless.isChecked).commit()
-                    )
-                    app.modelCatalog.forget(connection)
+                val next = withContext(Dispatchers.IO) { app.saveCustomEndpoint(url, keyless.isChecked) }
+                if (previous != null && Connections.endpointId(previous) != Connections.endpointId(url)) {
+                    // The field belongs to the previous endpoint; never save it for the new one.
+                    key.text.clear()
                 }
                 customUrl.clearFocus()
-                status(R.string.settings_saved)
+                // A key typed here belongs to this newly saved endpoint, so keep it.
+                chooseConnection(next, clearKey = false)
+                status(R.string.provider_custom_saved)
                 render(views)
             }
         }
@@ -186,11 +188,34 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
     }
 
     /** ChatGPT plan needs a real account id, so an empty account list starts sign-in first. */
-    private fun chooseConnection(next: String) {
+    private fun chooseConnection(next: String, clearKey: Boolean = true) {
         if (Connections.isPlan(next) && next.isBlank()) return
         connection = next
-        app.saveConnection(next)
-        pageView?.let(::render)
+        // A key typed for the previous provider must never be submitted for the next one. Saving
+        // an endpoint that keeps the same server is not a provider switch, so its typed key stays.
+        if (clearKey) pageView?.findViewById<EditText>(R.id.runtime_key)?.text?.clear()
+        pageView?.findViewById<EditText>(R.id.runtime_custom_url)?.apply {
+            text.clear(); clearFocus()
+        }
+        if (Connections.isPlan(next)) {
+            scope?.launch {
+                try {
+                    // Choosing an account must change the account that will be charged.
+                    app.chatGpt.select(next)
+                    // Do not overwrite a provider chosen while the account switch was in flight.
+                    if (connection == next) app.saveConnection(next)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    status(R.string.runtime_storage_error)
+                    return@launch
+                }
+                if (connection == next) pageView?.let(::render)
+            }
+        } else {
+            app.saveConnection(next)
+            pageView?.let(::render)
+        }
     }
 
     private fun chooseProvider() {
@@ -199,7 +224,8 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
         entries += (accounts.firstOrNull { it.id == app.chatGpt.state.value.active }?.id
             ?: accounts.firstOrNull()?.id).orEmpty() to getString(R.string.chatgpt_use_plan)
         Providers.all().forEach { entries += Connections.key(it.id) to it.label }
-        entries += Connections.key(Connections.CUSTOM) to getString(R.string.provider_custom)
+        entries += (app.customConnection() ?: Connections.key(Connections.CUSTOM)) to
+                getString(R.string.provider_custom)
         dialog = AlertDialog.Builder(activity).setTitle(R.string.provider_choose)
             .setSingleChoiceItems(entries.map { it.second }.toTypedArray(),
                 entries.indexOfFirst { it.first.isNotEmpty() && it.first == connection }) { picker, index ->
@@ -261,7 +287,7 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
             .setView(input)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 val value = input.text.toString().trim()
-                if (!value.matches(Regex("[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}")) || value.startsWith("sk-"))
+                if (!WireProvider.MODEL_ID.matches(value) || value.startsWith("sk-"))
                     status(R.string.runtime_model_invalid)
                 else saveModel(connection, value)
             }
@@ -334,13 +360,12 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
         views.findViewById<TextView>(R.id.runtime_key_label).text =
             getString(R.string.provider_key_label, app.providerLabel(connection))
         views.findViewById<TextView>(R.id.runtime_key_note).setText(
-            if (custom && preferences.getBoolean("custom_keyless", false)) R.string.provider_key_optional
+            if (custom && provider?.keyless == true) R.string.provider_key_optional
             else R.string.provider_key_note
         )
         val url = views.findViewById<EditText>(R.id.runtime_custom_url)
-        if (url.text.isEmpty()) url.setText(preferences.getString("custom_url", "").orEmpty())
-        views.findViewById<CheckBox>(R.id.runtime_custom_keyless).isChecked =
-            preferences.getBoolean("custom_keyless", false)
+        if (!url.hasFocus()) url.setText(provider?.baseUrl.orEmpty())
+        views.findViewById<CheckBox>(R.id.runtime_custom_keyless).isChecked = provider?.keyless == true
         val model = app.savedModel(connection)
         views.findViewById<Button>(R.id.runtime_model).text = when {
             model.isEmpty() -> getString(R.string.provider_model_none)
@@ -351,8 +376,11 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
 
     private fun renderPlan(views: View, state: ChatGptStatus) {
         val active = state.accounts.find { it.id == state.active } ?: state.accounts.firstOrNull()
-        if (active != null && connection != active.id && (connection.isBlank() || Connections.isPlan(connection))) {
+        // Only an unset or removed account follows the account file. A chosen plan account stays
+        // chosen until select() publishes it, so the screen never reverts to the old active one.
+        if (active != null && (connection.isBlank() || state.accounts.none { it.id == connection })) {
             connection = active.id
+            app.saveConnection(active.id)
         }
         views.findViewById<TextView>(R.id.runtime_chatgpt_status).text = when {
             state.busy -> getString(R.string.chatgpt_browser_pending)
@@ -411,7 +439,7 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
             status(
                 if (withContext(Dispatchers.IO) {
                         runCatching { app.providerConfig(connection) }.getOrNull()
-                            ?.let { app.credentialStore(it.id).hasSavedKey() } == true
+                            ?.let { app.credentialStore(it.credentialId).hasSavedKey() } == true
                     }) R.string.runtime_key_saved else R.string.runtime_key_absent
             )
             views.findViewById<TextView>(R.id.research_key_status)

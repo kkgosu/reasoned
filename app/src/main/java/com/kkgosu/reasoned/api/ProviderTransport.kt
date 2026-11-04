@@ -152,6 +152,7 @@ internal class WireProvider(
             put("model", modelId)
             put("stream", true)
             put("max_output_tokens", canonical.optInt("max_output_tokens", 4096))
+            if (optJSONArray("tools")?.length() == 0) remove("tools")
             if (!model.compat.encryptedReasoning) {
                 remove("include")
                 optJSONObject("reasoning")?.remove("summary")
