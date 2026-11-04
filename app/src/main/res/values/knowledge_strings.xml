@@ -1,11 +1,11 @@
 <resources>
     <string name="learning_plan">Learning plan</string>
-    <string name="plan_ready">Review the plan. Request changes below, or approve to start teaching.</string>
+    <string name="plan_ready">Review or revise the plan before starting.</string>
     <string name="plan_change_hint">What would you like to change in the plan?</string>
     <string name="plan_send_changes">Send plan changes</string>
     <string name="plan_approve">Approve plan</string>
-    <string name="plan_missing">No dependency plan yet. The Teacher presents it after the probe.</string>
-    <string name="plan_notice">Session scaffolding, not persistent knowledge. Current/visited indicate question position, never mastery. Prerequisites point to the steps that depend on them.</string>
+    <string name="plan_missing">The plan appears after the initial questions.</string>
+    <string name="plan_notice">Current/visited mark question position, not mastery. Arrows run from prerequisites to dependent steps.</string>
     <string name="plan_current">Current</string>
     <string name="plan_visited">Visited</string>
     <string name="plan_upcoming">Upcoming</string>
@@ -13,14 +13,14 @@
     <string name="plan_foundation">No prerequisites in this plan</string>
     <string name="knowledge_update">Update knowledge graph</string>
     <string name="knowledge_stop">Stop graph update</string>
-    <string name="knowledge_no_pending">No new completed teaching passages to extract. Questions, your answers and the session plan are not graph nodes. Previously processed passages are already covered.</string>
+    <string name="knowledge_no_pending">No new teaching passages. Questions, answers and plans are not added to the graph.</string>
     <string name="knowledge_extracting">Extracting propositions…</string>
     <string name="knowledge_auditing">Checking proposition identities…</string>
     <string name="knowledge_merging">Saving graph evidence…</string>
     <string name="knowledge_complete">Graph updated: %1$d new propositions, %2$d new arguments</string>
     <string name="knowledge_interrupted">Graph update stopped. Saved batches remain; pending messages can be processed later.</string>
     <string name="knowledge_error">Graph update stopped (%1$s). Teaching is unaffected; unprocessed messages remain pending.</string>
-    <string name="knowledge_empty">No propositions extracted yet. A session does not appear here until its teaching text is processed. Extraction starts automatically after about 4096 new tokens; use Update knowledge graph in the session menu to process a shorter passage. Questions, answers and plans are not added as graph nodes.</string>
+    <string name="knowledge_empty">No propositions yet. Teaching passages are processed automatically after about 4,096 new tokens, or via Update knowledge graph in the session menu. Questions, answers and plans are excluded.</string>
     <string name="knowledge_sample">Sample graph</string>
     <string name="knowledge_real">My knowledge graph</string>
     <string name="knowledge_tokens">Graph usage (separate): %1$d input · %2$d output tokens</string>

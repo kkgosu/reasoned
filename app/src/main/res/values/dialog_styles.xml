@@ -23,7 +23,8 @@
         <item name="android:gravity">bottom</item>
     </style>
     <style name="Widget.Harness.DialogButtonBar" parent="android:Widget.Material.ButtonBar">
-        <item name="android:padding">@dimen/space_16</item>
+        <!-- AlertDialog's minimum-height calculation excludes outer vertical padding. -->
+        <item name="android:paddingHorizontal">@dimen/space_16</item>
     </style>
     <style name="Widget.Harness.DialogButton" parent="android:Widget.Material.Button.Borderless">
         <item name="android:fontFamily">sans-serif-medium</item>

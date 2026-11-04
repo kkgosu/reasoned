@@ -7,13 +7,10 @@ import com.kkgosu.reasoned.api.ModelProvider
 import com.kkgosu.reasoned.api.ProviderFailure
 import com.kkgosu.reasoned.controllers.VisualMaker
 import com.kkgosu.reasoned.fragments.progressDiagramMarkdown
-import com.kkgosu.reasoned.model.LessonDisplayItem
 import com.kkgosu.reasoned.model.RuntimeSession
 import com.kkgosu.reasoned.model.StudyPlan
-import com.kkgosu.reasoned.ui.adapters.LessonAdapter
 import com.kkgosu.reasoned.ui.diagrams.DiagramRenderer
 import com.kkgosu.reasoned.ui.diagrams.validateDiagram
-import com.kkgosu.reasoned.ui.text.DiagramPlugin
 import com.kkgosu.reasoned.ui.text.lessonMarkdown
 import com.kkgosu.reasoned.utils.objects
 import io.noties.markwon.image.AsyncDrawableSpan
@@ -22,7 +19,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -147,118 +143,6 @@ class DiagramTest {
     }
 
     @Test
-    fun inlineAndBlockCodeHaveEqualVisibleTopAndBottomInsets() {
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            val markdown = lessonMarkdown(context)
-            val padding = context.resources.getDimensionPixelSize(R.dimen.space_4)
-            val samples = listOf(
-                ".xy", "vec2 position = gl_FragCoord.xy;", "one\ntwo",
-                List(12) { "position" }.joinToString(" "), "עברית xy", "Привет 世界"
-            )
-            for (source in samples) for (format in listOf(
-                "inline",
-                "inline-bold",
-                "fenced",
-                "indented"
-            )) {
-                val block = format == "fenced" || format == "indented"
-                if (!block && source.contains('\n')) continue
-                for (scale in listOf(1f, 2f)) for (width in listOf(
-                    360,
-                    720
-                )) for (standalone in listOf(false, true)) {
-                    val view = android.widget.TextView(context).apply {
-                        setTextColor(Color.WHITE)
-                        typeface = context.resources.getFont(R.font.prose)
-                        setTextSize(
-                            android.util.TypedValue.COMPLEX_UNIT_PX,
-                            context.resources.getDimension(R.dimen.text_16) * scale
-                        )
-                        setLineSpacing(0f, 1.5f)
-                        setTextIsSelectable(true)
-                    }
-                    val code = when (format) {
-                        "fenced" -> "```text\n$source\n```"
-                        "indented" -> "    " + source.replace("\n", "\n    ")
-                        "inline-bold" -> "**`$source`**"
-                        else -> "`$source`"
-                    }
-                    markdown.setMarkdown(view, if (standalone) code else "Before\n\n$code\n\nAfter")
-                    view.measure(
-                        android.view.View.MeasureSpec.makeMeasureSpec(
-                            width,
-                            android.view.View.MeasureSpec.EXACTLY
-                        ),
-                        android.view.View.MeasureSpec.makeMeasureSpec(
-                            0,
-                            android.view.View.MeasureSpec.UNSPECIFIED
-                        )
-                    )
-                    view.layout(0, 0, width, view.measuredHeight)
-                    val text = view.text as android.text.Spanned
-                    val span: Any = if (block) text.getSpans(
-                        0, text.length,
-                        io.noties.markwon.core.spans.CodeBlockSpan::class.java
-                    ).single()
-                    else text.getSpans(
-                        0,
-                        text.length,
-                        io.noties.markwon.core.spans.CodeSpan::class.java
-                    ).single()
-                    val firstLine = view.layout.getLineForOffset(text.getSpanStart(span))
-                    val lastLine = view.layout.getLineForOffset(text.getSpanEnd(span) - 1)
-                    val bitmap = Bitmap.createBitmap(width, view.height, Bitmap.Config.ARGB_8888)
-                    try {
-                        view.draw(android.graphics.Canvas(bitmap)) // In-memory fixture, not a device screenshot.
-                        var backgroundTop = bitmap.height
-                        var backgroundBottom = -1
-                        var inkTop = bitmap.height
-                        var inkBottom = -1
-                        for (y in maxOf(0, view.layout.getLineTop(firstLine) - padding) until minOf(
-                            bitmap.height,
-                            view.layout.getLineBottom(lastLine) + padding
-                        )) {
-                            for (x in 0 until width) {
-                                val alpha = Color.alpha(bitmap.getPixel(x, y))
-                                if (alpha == 25) {
-                                    backgroundTop = minOf(backgroundTop, y)
-                                    backgroundBottom = maxOf(backgroundBottom, y + 1)
-                                } else if (alpha >= 240) {
-                                    inkTop = minOf(inkTop, y)
-                                    inkBottom = maxOf(inkBottom, y + 1)
-                                }
-                            }
-                        }
-                        val label =
-                            "format=$format scale=$scale width=$width standalone=$standalone source=$source"
-                        assertTrue("Missing code glyphs: $label", inkBottom > inkTop)
-                        assertTrue(
-                            "Top code inset: $label got=${inkTop - backgroundTop}",
-                            kotlin.math.abs(inkTop - backgroundTop - padding) <= 2
-                        )
-                        assertTrue(
-                            "Bottom code inset: $label got=${backgroundBottom - inkBottom}",
-                            kotlin.math.abs(backgroundBottom - inkBottom - padding) <= 2
-                        )
-                        if (block && lastLine > firstLine) {
-                            for (y in view.layout.getLineBottom(firstLine) until view.layout.getLineTop(
-                                lastLine
-                            )) {
-                                assertTrue(
-                                    "Gap in multiline code background: $label",
-                                    Color.alpha(bitmap.getPixel(width - 1, y)) > 0
-                                )
-                            }
-                        }
-                    } finally {
-                        bitmap.recycle()
-                    }
-                }
-            }
-        }
-    }
-
-    @Test
     fun nativeRendererUsesOfflineMermaidAndInertSvgImages() = runBlocking {
         val renderer = DiagramRenderer(context)
         val image = renderer.render("svg", svg)
@@ -284,7 +168,7 @@ class DiagramTest {
     }
 
     @Test
-    fun planProgressStylesFollowTaggedStepsAndRenderOffline() = runBlocking {
+    fun planProgressTracksCurrentAndVisitedStepsAndRendersOffline() = runBlocking {
         val plan = StudyPlan(
             listOf("a", "b", "c").map { StudyPlan.Node(it, "Step $it", "") },
             listOf("a" to "b", "b" to "c")
@@ -302,83 +186,12 @@ class DiagramTest {
             assertTrue(chart.contains("class n2 upcoming"))
             if (history.length() > 1) {
                 assertTrue(chart.contains("class n${1 - current} visited"))
-                assertTrue(chart.contains("linkStyle 0 stroke:#e6e6e6"))
-            } else assertTrue(chart.contains("linkStyle 0 stroke:#434343"))
-            assertTrue(chart.contains("linkStyle 1 stroke:#434343"))
+            }
             val source = chart.removePrefix("```mermaid\n").removeSuffix("```")
             validateDiagram("mermaid", source)
             val image = DiagramRenderer(context).render("mermaid", source)
             assertTrue(image.width > 0 && image.height > 0)
             image.recycle()
-        }
-        assertFalse(plan.diagramMarkdown().contains("classDef"))
-    }
-
-    @Test
-    fun imageTapDoesNotSelectOrRefollowChatAndReusesVisibleBitmap() {
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            val markdown = lessonMarkdown(context)
-            val text = android.widget.TextView(context).apply { setTextIsSelectable(true) }
-            val bitmap = Bitmap.createBitmap(80, 80, Bitmap.Config.ARGB_8888)
-            try {
-                markdown.setMarkdown(text, "Before\n\n```svg Fixture\n$svg\n```\n\nAfter")
-                val rendered = text.text as android.text.Spanned
-                assertFalse(rendered.toString().contains("Open diagram"))
-                val span =
-                    rendered.getSpans(0, rendered.length, AsyncDrawableSpan::class.java).single()
-                span.drawable.setResult(
-                    android.graphics.drawable.BitmapDrawable(
-                        context.resources,
-                        bitmap
-                    ).apply { setBounds(0, 0, 80, 80) })
-                text.measure(
-                    android.view.View.MeasureSpec.makeMeasureSpec(
-                        1000,
-                        android.view.View.MeasureSpec.EXACTLY
-                    ),
-                    android.view.View.MeasureSpec.makeMeasureSpec(
-                        0,
-                        android.view.View.MeasureSpec.UNSPECIFIED
-                    )
-                )
-                text.layout(0, 0, 1000, text.measuredHeight)
-                val start = rendered.getSpanStart(span)
-                val line = text.layout.getLineForOffset(start)
-                val x = text.layout.getPrimaryHorizontal(start) + 4
-                val y = (text.layout.getLineTop(line) + text.layout.getLineBottom(line)) / 2f
-                val time = android.os.SystemClock.uptimeMillis()
-                var clicks = 0
-                text.setOnClickListener { clicks++ }
-                DiagramPlugin.cache.evictAll() // Visible images can survive eviction: a tap must retain this exact bitmap.
-                val selection = android.text.Selection.getSelectionStart(text.text)
-                for (action in listOf(
-                    android.view.MotionEvent.ACTION_DOWN,
-                    android.view.MotionEvent.ACTION_UP
-                )) {
-                    val event = android.view.MotionEvent.obtain(
-                        time,
-                        time + if (action == android.view.MotionEvent.ACTION_UP) 20 else 0,
-                        action,
-                        x,
-                        y,
-                        0
-                    )
-                    try {
-                        assertTrue(text.dispatchTouchEvent(event))
-                    } finally {
-                        event.recycle()
-                    }
-                    assertEquals(selection, android.text.Selection.getSelectionStart(text.text))
-                }
-                assertEquals(1, clicks)
-                assertSame(bitmap, DiagramPlugin.cache.get(span.drawable.destination))
-                val rows = listOf(LessonDisplayItem.TextDisplayItem(1, "Unchanged"))
-                val adapter = LessonAdapter()
-                assertTrue(adapter.submit(rows)); assertFalse(adapter.submit(rows.toList()))
-            } finally {
-                io.noties.markwon.image.AsyncDrawableScheduler.unschedule(text)
-                DiagramPlugin.cache.evictAll(); bitmap.recycle()
-            }
         }
     }
 

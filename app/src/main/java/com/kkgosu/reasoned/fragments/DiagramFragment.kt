@@ -46,10 +46,10 @@ class DiagramFragment : ToolbarFragment(R.layout.fragment_shell) {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        setTitle(arguments?.getString("label") ?: getString(R.string.diagram_svg))
+        setTitle(arguments?.getString("label") ?: inflater.context.getString(R.string.diagram_svg))
         val views = inflater.inflate(R.layout.fragment_diagram, container, false)
         val image = DiagramView(inflater.context).apply {
-            contentDescription = arguments?.getString("label") ?: getString(R.string.diagram_svg)
+            contentDescription = arguments?.getString("label") ?: context.getString(R.string.diagram_svg)
         }
         figure = image
         views.findViewById<ViewGroup>(R.id.diagram_image).addView(image)

@@ -38,7 +38,7 @@ class ResearchSourcesFragment : ToolbarFragment(R.layout.fragment_shell) {
             scope?.launch {
                 val reports = try {
                     withContext(Dispatchers.IO) {
-                        (activity.application as ReasonedApplication).sessions.load(
+                        (root.context.applicationContext as ReasonedApplication).sessions.load(
                             arguments?.getString(
                                 "session"
                             ).orEmpty()
@@ -47,17 +47,17 @@ class ResearchSourcesFragment : ToolbarFragment(R.layout.fragment_shell) {
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {
-                    list.addView(TextView(activity).apply { setText(R.string.runtime_storage_error) }); return@launch
+                    list.addView(TextView(root.context).apply { setText(R.string.runtime_storage_error) }); return@launch
                 }
 
                 fun text(value: String, style: Int) {
-                    list.addView(TextView(activity).apply {
+                    list.addView(TextView(root.context).apply {
                         setTextAppearance(style); text = value; setTextIsSelectable(true)
                         setPadding(0, resources.getDimensionPixelSize(R.dimen.space_16), 0, 0)
                     }, LinearLayout.LayoutParams(-1, -2))
                 }
                 if (reports.isEmpty()) text(
-                    getString(R.string.research_no_reports),
+                    root.context.getString(R.string.research_no_reports),
                     R.style.TextAppearance_Harness_Prose
                 )
                 reports.forEach { report ->
@@ -66,7 +66,7 @@ class ResearchSourcesFragment : ToolbarFragment(R.layout.fragment_shell) {
                     report.sources.forEach { source ->
                         text(source.title, R.style.TextAppearance_Harness_Title)
                         text(
-                            getString(
+                            root.context.getString(
                                 R.string.research_source_meta,
                                 source.url,
                                 DateFormat.getDateTimeInstance().format(Date(source.retrieved)),

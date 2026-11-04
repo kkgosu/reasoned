@@ -3,15 +3,11 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <ListView
+    <me.grishka.appkit.views.UsableRecyclerView
         android:id="@+id/graph_search_results"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:divider="@color/border"
-        android:dividerHeight="1dp"
-        android:drawSelectorOnTop="true"
-        android:listSelector="?android:attr/selectableItemBackground" />
+        android:clipToPadding="false" />
 
     <TextView
         android:id="@+id/graph_search_empty"

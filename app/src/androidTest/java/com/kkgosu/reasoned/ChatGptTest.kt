@@ -4,7 +4,6 @@ import android.content.ContextWrapper
 import android.content.Intent
 import android.view.View
 import android.widget.EditText
-import android.widget.RadioGroup
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -261,6 +260,15 @@ class ChatGptTest {
                         activity.findViewById<View>(R.id.runtime_model).performClick()
                     }
                     clickDialog("Second model")
+                    scenario.onActivity { activity ->
+                        assertEquals(
+                            "", activity.findViewById<android.widget.TextView>(
+                                R.id.runtime_setup_status
+                            ).text.toString()
+                        )
+                    }
+                    assertEquals("", preferences.getString("model:oaiapp_fixture", ""))
+                    clickDialog(app.getString(android.R.string.ok))
                     try {
                         withTimeout(5000) {
                             while (preferences.getString(
@@ -326,6 +334,7 @@ class ChatGptTest {
                         withTimeout(5000) { authorization.await() }
                         scenario.onActivity { it.findViewById<View>(R.id.runtime_provider).performClick() }
                         clickDialog("OpenAI")
+                        clickDialog(app.getString(android.R.string.ok))
                         auth.select("oaiapp_second")
                         auth.cancelSignIn()
                         withTimeout(5000) { auth.state.first { !it.busy } }
@@ -627,6 +636,7 @@ class ChatGptTest {
                     activity.findViewById<View>(R.id.runtime_provider).performClick()
                 }
                 clickDialog("OpenAI")
+                clickDialog(app.getString(android.R.string.ok))
                 InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
                 scenario.onActivity { activity ->
                     assertEquals(

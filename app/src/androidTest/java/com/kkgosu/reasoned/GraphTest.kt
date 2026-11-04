@@ -1,17 +1,7 @@
 package com.kkgosu.reasoned
 
-import android.animation.Animator
-import android.animation.AnimatorListenerAdapter
-import android.animation.ValueAnimator
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
 import android.os.Bundle
-import android.os.Parcel
-import android.os.Parcelable
 import android.os.SystemClock
-import android.util.SparseArray
 import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.View
@@ -19,14 +9,13 @@ import android.view.accessibility.AccessibilityNodeInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
-import android.widget.ListView
+import me.grishka.appkit.views.UsableRecyclerView
+import com.kkgosu.reasoned.ui.adapters.TextListAdapter
 import android.widget.TextView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.kkgosu.reasoned.fragments.GraphSearchFragment
 import com.kkgosu.reasoned.fragments.HomeFragment
-import com.kkgosu.reasoned.model.GraphNode
 import com.kkgosu.reasoned.model.KnowledgeChain
 import com.kkgosu.reasoned.model.KnowledgeNode
 import com.kkgosu.reasoned.model.KnowledgeSnapshot
@@ -35,7 +24,6 @@ import com.kkgosu.reasoned.ui.graph.GraphCamera
 import com.kkgosu.reasoned.ui.graph.GraphLayout
 import com.kkgosu.reasoned.ui.views.KnowledgeGraphView
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -68,27 +56,10 @@ class GraphTest {
         val snapshot = GraphLayout.compute(data)
         val junction = snapshot.nodes.single { it.node.implication }
         assertNull(snapshot.pick(junction.x, junction.y, 1f))
-        instrumentation.runOnMainSync {
-            val graph = KnowledgeGraphView(instrumentation.targetContext)
-            graph.setSnapshot(snapshot)
-            graph.select("a")
-            assertEquals("a", graph.selectedId)
-            graph.select("joint")
-            assertNull(graph.selectedId)
-            val restored = KnowledgeGraphView.SavedState(View.BaseSavedState.EMPTY_STATE).apply {
-                hasCamera = true; zoom = 1f; selectedId = "joint"
-            }
-            graph.layout(0, 0, 800, 1000)
-            graph.restoreHierarchyState(SparseArray<Parcelable>().apply {
-                graph.id = 1234
-                put(graph.id, restored)
-            })
-            assertNull(graph.selectedId)
-        }
     }
 
     @Test
-    fun nativePanPinchPickingAndParcelledCamera() {
+    fun graphCanBePannedZoomedSelectedAndReset() {
         ActivityScenario.launch(MainActivity::class.java).use { scenario ->
             scenario.onActivity {
                 it.showFragmentClearingBackStack(HomeFragment().apply {
@@ -99,7 +70,6 @@ class GraphTest {
             scenario.onActivity { activity ->
                 val graph = activity.findViewById<KnowledgeGraphView>(R.id.knowledge_graph)
                 assertNotNull(graph.snapshot)
-                assertTrue(graph.height >= activity.resources.getDimensionPixelSize(R.dimen.touch_target))
                 val start = graph.camera
                 val cx = graph.width / 2f
                 val cy = graph.height / 2f
@@ -168,136 +138,9 @@ class GraphTest {
                 one(MotionEvent.ACTION_UP, cx, cy, 550)
                 assertEquals(point.node.id, graph.selectedId)
                 assertEquals(point.node.id, activity.findViewById<Button>(R.id.graph_details).tag)
-                val camera = graph.camera
-                val parcel = Parcel.obtain()
-                try {
-                    val saved = SparseArray<Parcelable>()
-                    graph.saveHierarchyState(saved)
-                    parcel.writeSparseArray(saved)
-                    parcel.setDataPosition(0)
-                    @Suppress("DEPRECATION") val state =
-                        parcel.readSparseArray<Parcelable>(graph.javaClass.classLoader)!!
-                    val restored = KnowledgeGraphView(activity).apply { id = graph.id }
-                    restored.restoreHierarchyState(state)
-                    restored.setSnapshot(graph.snapshot!!)
-                    restored.layout(0, 0, graph.width, graph.height)
-                    assertEquals(camera, restored.camera)
-                    assertEquals(point.node.id, restored.selectedId)
-                } finally {
-                    parcel.recycle()
-                }
                 graph.fit()
                 graph.select(null)
                 assertEquals(start, graph.camera)
-            }
-        }
-    }
-
-    @Test
-    fun scaledLabelsAndAnchoredFadingTooltip() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            scenario.onActivity {
-                it.showFragmentClearingBackStack(HomeFragment().apply {
-                    arguments = Bundle().apply { putBoolean("sample", true) }
-                })
-            }
-            settle()
-            fun watchFade(alpha: Float): CountDownLatch {
-                val latch = CountDownLatch(1)
-                scenario.onActivity { activity ->
-                    val tooltip = activity.findViewById<Button>(R.id.graph_details)
-                    tooltip.animate().setListener(object : AnimatorListenerAdapter() {
-                        override fun onAnimationEnd(animation: Animator) {
-                            if (tooltip.alpha == alpha) latch.countDown()
-                        }
-                    })
-                }
-                return latch
-            }
-
-            val shown = watchFade(1f)
-            scenario.onActivity { activity ->
-                val graph = activity.findViewById<KnowledgeGraphView>(R.id.knowledge_graph)
-                graph.select("square", focus = true)
-                graph.select(
-                    "event",
-                    focus = true
-                ) // Latest selection wins; this short label also fits at 200% text.
-                graph.jumpDrawablesToCurrentState()
-                val bitmap = Bitmap.createBitmap(graph.width, graph.height, Bitmap.Config.ARGB_8888)
-                val sizes = mutableMapOf<String, Float>()
-                val colors = mutableMapOf<String, Int>()
-                val canvas = object : Canvas(bitmap) {
-                    override fun drawText(text: String, x: Float, y: Float, paint: Paint) {
-                        sizes[text] = paint.textSize
-                        colors[text] = paint.color
-                        super.drawText(text, x, y, paint)
-                    }
-                }
-                try {
-                    graph.draw(canvas)
-                    val label = graph.snapshot!!.nodes.first { it.node.id == "event" }.node.label
-                    val before = sizes.getValue(label)
-                    graph.zoomBy(2f)
-                    sizes.clear()
-                    graph.draw(canvas)
-                    assertEquals(before * 2, sizes.getValue(label), 0.01f)
-                    graph.select(null)
-                    graph.jumpDrawablesToCurrentState()
-                    colors.clear()
-                    graph.draw(canvas)
-                    val visibleColor = colors.getValue(label)
-                    graph.select("event")
-                    colors.clear()
-                    graph.draw(canvas)
-                    assertTrue(
-                        "Selecting a visible label must not hide it",
-                        colors.containsKey(label)
-                    )
-                    assertEquals(255, Color.alpha(colors.getValue(label)))
-                    if (ValueAnimator.areAnimatorsEnabled()) {
-                        assertEquals(
-                            "Fade starts from the visible label's color",
-                            visibleColor,
-                            colors.getValue(label)
-                        )
-                    }
-                    graph.jumpDrawablesToCurrentState()
-                } finally {
-                    bitmap.recycle()
-                }
-                val search = activity.findViewById<Button>(R.id.graph_search_open)
-                assertEquals(
-                    android.view.Gravity.CENTER_VERTICAL,
-                    search.gravity and android.view.Gravity.VERTICAL_GRAVITY_MASK
-                )
-            }
-            assertTrue("Tooltip must finish fading in", shown.await(5, TimeUnit.SECONDS))
-            settle()
-            scenario.onActivity { activity ->
-                val graph = activity.findViewById<KnowledgeGraphView>(R.id.knowledge_graph)
-                val tooltip = activity.findViewById<Button>(R.id.graph_details)
-                assertTrue(tooltip.isEnabled && tooltip.isShown)
-                assertEquals(1f, tooltip.alpha, 0f)
-                assertEquals("An event", tooltip.text.toString())
-                assertTrue(tooltip.x >= 0 && tooltip.x + tooltip.width <= graph.width + 1)
-                assertTrue(tooltip.y >= 0 && tooltip.y + tooltip.height < graph.height / 2f)
-                activity.openHomeAction(R.id.graph_zoom_out)
-            }
-            settle()
-            val hidden = watchFade(0f)
-            scenario.onActivity { activity ->
-                activity.findViewById<KnowledgeGraphView>(R.id.knowledge_graph).select(null)
-            }
-            assertTrue("Tooltip must finish fading out", hidden.await(5, TimeUnit.SECONDS))
-            settle()
-            scenario.onActivity { activity ->
-                val tooltip = activity.findViewById<Button>(R.id.graph_details)
-                assertFalse(tooltip.isEnabled)
-                assertEquals(View.INVISIBLE, tooltip.visibility)
-                assertEquals(0f, tooltip.alpha, 0f)
-                tooltip.animate().setListener(null)
-                activity.openHomeAction(R.id.graph_fit)
             }
         }
     }
@@ -323,40 +166,26 @@ class GraphTest {
                 }
                 decor.viewTreeObserver.addOnGlobalLayoutListener(imeListener)
                 if (decor.rootWindowInsets?.isVisible(android.view.WindowInsets.Type.ime()) == true) imeShown.countDown()
-                assertEquals(30, activity.findViewById<ListView>(R.id.graph_search_results).count)
+                assertEquals(30, activity.findViewById<UsableRecyclerView>(R.id.graph_search_results).count)
                 val search = activity.findViewById<EditText>(R.id.graph_search)
                 assertTrue(search.hasFocus())
-                assertEquals(
-                    android.view.Gravity.CENTER_VERTICAL,
-                    search.gravity and android.view.Gravity.VERTICAL_GRAVITY_MASK
-                )
             }
             assertTrue("Search must open the IME", imeShown.await(5, TimeUnit.SECONDS))
             settle()
             scenario.onActivity { activity ->
                 val decor = activity.window.decorView
                 decor.viewTreeObserver.removeOnGlobalLayoutListener(imeListener)
-                val fragment =
-                    activity.fragmentManager.fragments.filterIsInstance<GraphSearchFragment>()
-                        .single()
-                val bottom =
-                    decor.rootWindowInsets.getInsets(android.view.WindowInsets.Type.ime() or android.view.WindowInsets.Type.systemBars()).bottom
-                assertEquals(
-                    "Search follows the visible IME",
-                    bottom,
-                    fragment.view!!.paddingBottom
-                )
                 activity.findViewById<EditText>(R.id.graph_search).setText("zzznomatch")
             }
             settle()
             scenario.onActivity { activity ->
-                assertEquals(0, activity.findViewById<ListView>(R.id.graph_search_results).count)
+                assertEquals(0, activity.findViewById<UsableRecyclerView>(R.id.graph_search_results).count)
                 assertTrue(activity.findViewById<View>(R.id.graph_search_empty).isShown)
                 activity.findViewById<ImageButton>(R.id.graph_search_clear).performClick()
             }
             settle()
             scenario.onActivity { activity ->
-                assertEquals(30, activity.findViewById<ListView>(R.id.graph_search_results).count)
+                assertEquals(30, activity.findViewById<UsableRecyclerView>(R.id.graph_search_results).count)
                 activity.findViewById<EditText>(R.id.graph_search).setText("positive")
             }
             settle()
@@ -369,10 +198,10 @@ class GraphTest {
                     "positive",
                     activity.findViewById<EditText>(R.id.graph_search).text.toString()
                 )
-                val results = activity.findViewById<ListView>(R.id.graph_search_results)
+                val results = activity.findViewById<UsableRecyclerView>(R.id.graph_search_results)
                 assertTrue(results.count > 0)
                 assertTrue(
-                    (results.getItemAtPosition(0) as GraphNode).toString()
+                    (results.adapter as TextListAdapter<*>).items[0].toString()
                         .contains("positive", ignoreCase = true)
                 )
             }

@@ -104,6 +104,17 @@ python3 scripts/check-release-samples.py
 The sample check needs both debug and release outputs. Release signing is not configured:
 `app/build/outputs/apk/release/app-release-unsigned.apk` is **not** a distributable signed release.
 
+### UI test scope
+
+Write UI tests only for important user journeys: configuring a connection, starting or continuing
+learning, answering questions, restoring drafts/history, navigating knowledge and transferring lessons.
+Assert user-visible outcomes and essential safety/accessibility behavior along those journeys.
+Do not write standalone UI tests for individual widgets, adapters, bottom sheets or dialogs, nor
+for typography, colors, padding, exact geometry, animation frames or font-size/RTL layout matrices.
+Avoid component/style assertions inside otherwise useful journey tests too.
+This restriction does not apply to non-UI tests of business logic, parsing, providers, storage,
+protocols or security boundaries, even when Android dependencies require instrumentation.
+
 ### Pull request CI
 
 `.github/workflows/pr-checks.yml` runs on every PR, pushes to `master`, and manual dispatch.

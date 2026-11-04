@@ -11,12 +11,12 @@
     <string name="lan_online">%1$s, online</string>
     <string name="lan_offline">%1$s, offline</string>
     <string name="lan_working">Transferring lessons…</string>
-    <string name="lan_failed">Could not connect. Check Wi-Fi and try again. Pending transfers can be retried safely.</string>
+    <string name="lan_failed">Connection failed. Check Wi-Fi. Pending transfers can be retried safely.</string>
     <string name="lan_sent">Sent: %1$d new or updated lessons.</string>
     <string name="lan_pending">Transfer pending.</string>
     <string name="lan_retry">Retry transfer</string>
     <string name="lan_discard">Discard transfer</string>
-    <string name="lan_discard_notice">The other device may already have installed these lessons. Discarding only removes this device’s pending transfer; it does not undo an installation.</string>
+    <string name="lan_discard_notice">The other device may already have the lessons. Discarding clears only this device’s pending transfer; it does not undo import.</string>
     <string name="lan_keep_computer">Keep other device version</string>
     <string name="lan_use_phone">Use this device version</string>
     <string name="lan_keep_phone">Keep this device version</string>

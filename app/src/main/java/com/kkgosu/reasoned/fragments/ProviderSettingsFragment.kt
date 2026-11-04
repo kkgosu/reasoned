@@ -1,6 +1,7 @@
 package com.kkgosu.reasoned.fragments
 
 import android.app.AlertDialog
+import android.app.Dialog
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -13,7 +14,6 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.TextView
-import com.kkgosu.reasoned.MainActivity
 import com.kkgosu.reasoned.R
 import com.kkgosu.reasoned.ReasonedApplication
 import com.kkgosu.reasoned.api.ChatGptAuth
@@ -22,6 +22,8 @@ import com.kkgosu.reasoned.api.ProviderFailure
 import com.kkgosu.reasoned.api.Providers
 import com.kkgosu.reasoned.api.WireProvider
 import com.kkgosu.reasoned.model.ChatGptStatus
+import com.kkgosu.reasoned.ui.ChoiceBottomSheet
+import com.kkgosu.reasoned.ui.adapters.TextListAdapter
 import com.kkgosu.reasoned.ui.text.runtimeError
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -36,7 +38,7 @@ import me.grishka.appkit.fragments.ToolbarFragment
 class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
     private var pageView: View? = null
     private var scope: CoroutineScope? = null
-    private var dialog: AlertDialog? = null
+    private var dialog: Dialog? = null
     private var modelsJob: Job? = null
     private var pendingPlan = false
     private lateinit var app: ReasonedApplication
@@ -69,9 +71,11 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
         views.findViewById<Button>(R.id.runtime_chatgpt_account).setOnClickListener {
             val accounts = app.chatGpt.state.value.accounts
             if (accounts.isNotEmpty()) dialog =
-                AlertDialog.Builder(activity).setTitle(R.string.chatgpt_accounts)
-                    .setItems(accounts.map { it.label }
-                        .toTypedArray()) { _, index -> chooseConnection(accounts[index].id) }
+                AlertDialog.Builder(views.context).setTitle(R.string.chatgpt_accounts)
+                    .setView(TextListAdapter(accounts.map { it.label }, onClick = { index ->
+                        dialog?.dismiss()
+                        chooseConnection(accounts[index].id)
+                    }).createView(views.context))
                     .setOnDismissListener { dialog = null }.show()
         }
         views.findViewById<Button>(R.id.runtime_chatgpt_usage)
@@ -86,7 +90,7 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
             }
         }
         views.findViewById<Button>(R.id.chatgpt_reset).setOnClickListener {
-            dialog = AlertDialog.Builder(activity).setTitle(R.string.chatgpt_reset)
+            dialog = AlertDialog.Builder(views.context).setTitle(R.string.chatgpt_reset)
                 .setMessage(R.string.chatgpt_reset_warning)
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(R.string.chatgpt_reset) { _, _ ->
@@ -104,7 +108,7 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
             val config = runCatching { app.providerConfig(connection) }
             if (config.isFailure) {
                 views.findViewById<TextView>(R.id.runtime_setup_status).setText(
-                    activity.runtimeError(
+                    views.context.runtimeError(
                         (config.exceptionOrNull() as? ProviderFailure)?.reason ?: "provider_unavailable"
                     )
                 )
@@ -113,10 +117,10 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
             val provider = config.getOrNull()
             if (provider == null || Connections.isPlan(connection)) return@setOnClickListener
             if (value.isEmpty() && provider.id != Connections.CUSTOM) {
-                key.error = getString(R.string.runtime_key_invalid); return@setOnClickListener
+                key.error = key.context.getString(R.string.runtime_key_invalid); return@setOnClickListener
             }
             if (value.isNotEmpty() && (value.length !in 16..512 || value.any { it.code !in 33..126 })) {
-                key.error = getString(R.string.runtime_key_invalid); return@setOnClickListener
+                key.error = key.context.getString(R.string.runtime_key_invalid); return@setOnClickListener
             }
             action {
                 app.extraction.stop()?.join()
@@ -147,7 +151,7 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
         views.findViewById<Button>(R.id.runtime_custom_save).setOnClickListener {
             val url = customUrl.text.toString().trim().trimEnd('/')
             if (!Connections.customUrl(url)) {
-                customUrl.error = getString(R.string.provider_custom_invalid); return@setOnClickListener
+                customUrl.error = customUrl.context.getString(R.string.provider_custom_invalid); return@setOnClickListener
             }
             val previous = runCatching { app.providerConfig(connection)?.baseUrl }.getOrNull()
             action {
@@ -167,7 +171,7 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
         views.findViewById<Button>(R.id.research_save_key).setOnClickListener {
             val value = searchKey.text.toString().trim()
             if (value.length !in 16..512 || value.any { it.code !in 33..126 }) searchKey.error =
-                getString(R.string.runtime_key_invalid)
+                searchKey.context.getString(R.string.runtime_key_invalid)
             else action {
                 app.runtime.stop().join()
                 withContext(Dispatchers.IO) { app.searchCredentials.save(value) }
@@ -226,24 +230,24 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
         val accounts = app.chatGpt.state.value.accounts
         val entries = mutableListOf<Pair<String, String>>()
         entries += (accounts.firstOrNull { it.id == app.chatGpt.state.value.active }?.id
-            ?: accounts.firstOrNull()?.id).orEmpty() to getString(R.string.chatgpt_use_plan)
+            ?: accounts.firstOrNull()?.id).orEmpty() to content.context.getString(R.string.chatgpt_use_plan)
         Providers.all().forEach { entries += Connections.key(it.id) to it.label }
         entries += (app.customConnection() ?: Connections.key(Connections.CUSTOM)) to
-                getString(R.string.provider_custom)
-        dialog = AlertDialog.Builder(activity).setTitle(R.string.provider_choose)
-            .setSingleChoiceItems(entries.map { it.second }.toTypedArray(),
-                entries.indexOfFirst { it.first.isNotEmpty() && it.first == connection }) { picker, index ->
+                content.context.getString(R.string.provider_custom)
+        dialog = ChoiceBottomSheet(
+            content.context, R.string.provider_choose, entries.map { it.second },
+            entries.indexOfFirst { it.first.isNotEmpty() && it.first == connection },
+            onConfirm = { index ->
                 val picked = entries[index].first
-                picker.dismiss(); dialog = null
                 if (picked.isEmpty()) {
                     pendingPlan = true
                     app.chatGpt.signIn(app.chatGpt.state.value.active.ifBlank { null })
-                    return@setSingleChoiceItems
-                }
-                chooseConnection(picked)
+                } else chooseConnection(picked)
             }
-            .setNegativeButton(android.R.string.cancel, null)
-            .setOnDismissListener { dialog = null }.show()
+        ).apply {
+            setOnDismissListener { if (dialog === it) dialog = null }
+            show()
+        }
     }
 
     private fun chooseModel(refresh: Boolean = false) {
@@ -252,23 +256,20 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
         val target = connection
         modelsJob = scope?.launch {
             val selected = app.savedModel(target)
-            status(R.string.chatgpt_models_loading)
             try {
                 val models = app.models(target, refresh)
                 if (pageView !== views || connection != target) return@launch
-                val labels = models.map { it.second }
-                dialog = AlertDialog.Builder(activity).setTitle(R.string.runtime_model)
-                    .setSingleChoiceItems(labels.toTypedArray(),
-                        models.indexOfFirst { it.first == selected }) { picker, index ->
-                        picker.dismiss(); dialog = null
-                        saveModel(target, models[index].first)
-                    }
-                    .setPositiveButton(R.string.provider_model_manual) { _, _ -> manualModel() }
-                    .setNeutralButton(R.string.chatgpt_refresh_models) { picker, _ ->
-                        picker.dismiss(); dialog = null; chooseModel(refresh = true)
-                    }
-                    .setNegativeButton(android.R.string.cancel, null)
-                    .setOnDismissListener { dialog = null }.show()
+                dialog = ChoiceBottomSheet(
+                    views.context, R.string.runtime_model, models.map { it.second },
+                    models.indexOfFirst { it.first == selected },
+                    onConfirm = { index -> saveModel(target, models[index].first) },
+                    onRefresh = { chooseModel(refresh = true) },
+                    onManual = { manualModel() },
+                    message = if (models.isEmpty()) R.string.provider_model_empty else 0
+                ).apply {
+                    setOnDismissListener { if (dialog === it) dialog = null }
+                    show()
+                }
                 status(if (models.isEmpty()) R.string.provider_model_empty else 0)
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -281,13 +282,13 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
     }
 
     private fun manualModel(error: Exception? = null) {
-        val input = EditText(activity).apply {
+        val input = EditText(content.context).apply {
             inputType = InputType.TYPE_CLASS_TEXT
             setSingleLine(true)
-            hint = getString(R.string.runtime_model_hint)
+            hint = context.getString(R.string.runtime_model_hint)
             setText(app.savedModel(connection))
         }
-        val builder = AlertDialog.Builder(activity).setTitle(R.string.provider_model_manual)
+        val builder = AlertDialog.Builder(input.context).setTitle(R.string.provider_model_manual)
             .setView(input)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 val value = input.text.toString().trim()
@@ -298,9 +299,9 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
             .setNegativeButton(android.R.string.cancel, null)
             .setOnDismissListener { dialog = null }
         if (error != null) builder.setMessage(
-            getString(
+            input.context.getString(
                 R.string.runtime_models_error,
-                activity.runtimeError((error as? ProviderFailure)?.reason ?: "provider_unavailable")
+                input.context.runtimeError((error as? ProviderFailure)?.reason ?: "provider_unavailable")
             )
         )
         dialog = builder.show()
@@ -335,8 +336,9 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
     }
 
     private fun status(resource: Int) {
-        if (resource == 0) return
-        pageView?.findViewById<TextView>(R.id.runtime_setup_status)?.setText(resource)
+        pageView?.findViewById<TextView>(R.id.runtime_setup_status)?.apply {
+            text = if (resource == 0) "" else context.getText(resource)
+        }
     }
 
     private fun render(views: View) {
@@ -344,12 +346,12 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
         val usePlan = Connections.isPlan(connection)
         val provider = runCatching { app.providerConfig(connection) }.getOrNull()
         views.findViewById<Button>(R.id.runtime_provider).text =
-            getString(R.string.provider_selected, app.providerLabel(connection))
+            views.context.getString(R.string.provider_selected, app.providerLabel(connection))
         val docs = provider?.docs
         views.findViewById<TextView>(R.id.runtime_provider_docs).apply {
             visibility = if (usePlan || docs == null) View.GONE else View.VISIBLE
             if (docs != null) setOnClickListener {
-                runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(docs))) }
+                runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(docs))) }
             }
         }
         views.findViewById<View>(R.id.runtime_chatgpt_fields).visibility =
@@ -362,7 +364,7 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
         views.findViewById<View>(R.id.runtime_custom_fields).visibility =
             if (custom) View.VISIBLE else View.GONE
         views.findViewById<TextView>(R.id.runtime_key_label).text =
-            getString(R.string.provider_key_label, app.providerLabel(connection))
+            views.context.getString(R.string.provider_key_label, app.providerLabel(connection))
         views.findViewById<TextView>(R.id.runtime_key_note).setText(
             if (custom && provider?.keyless == true) R.string.provider_key_optional
             else R.string.provider_key_note
@@ -372,7 +374,7 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
         views.findViewById<CheckBox>(R.id.runtime_custom_keyless).isChecked = provider?.keyless == true
         val model = app.savedModel(connection)
         views.findViewById<Button>(R.id.runtime_model).text = when {
-            model.isEmpty() -> getString(R.string.provider_model_none)
+            model.isEmpty() -> views.context.getString(R.string.provider_model_none)
             else -> app.modelCatalog.model(connection, model)?.name ?: model
         }
         if (usePlan) renderPlan(views, state)
@@ -387,14 +389,14 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
             app.saveConnection(active.id)
         }
         views.findViewById<TextView>(R.id.runtime_chatgpt_status).text = when {
-            state.busy -> getString(R.string.chatgpt_browser_pending)
-            state.error.isNotEmpty() -> activity.runtimeError(state.error)
-            active?.connected == true && active.plan -> getString(R.string.chatgpt_connected, active.label)
-            active?.connected == true -> getString(R.string.chatgpt_permission_missing, active.label)
-            else -> getString(R.string.chatgpt_disconnected)
+            state.busy -> views.context.getString(R.string.chatgpt_browser_pending)
+            state.error.isNotEmpty() -> views.context.runtimeError(state.error)
+            active?.connected == true && active.plan -> views.context.getString(R.string.chatgpt_connected, active.label)
+            active?.connected == true -> views.context.getString(R.string.chatgpt_permission_missing, active.label)
+            else -> views.context.getString(R.string.chatgpt_disconnected)
         }
         val account = views.findViewById<Button>(R.id.runtime_chatgpt_account)
-        account.text = active?.label ?: getString(R.string.chatgpt_accounts)
+        account.text = active?.label ?: account.context.getString(R.string.chatgpt_accounts)
         account.visibility = if (state.accounts.isNotEmpty()) View.VISIBLE else View.GONE
         account.isEnabled = !state.busy
         views.findViewById<Button>(R.id.runtime_chatgpt_add).visibility = account.visibility
@@ -421,7 +423,7 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
                 if (dialog == null && Connections.isPlan(connection) && state.active.isNotEmpty()) {
                     try {
                         if (app.chatGpt.needsWelcome(state.active)) dialog =
-                            AlertDialog.Builder(activity)
+                            AlertDialog.Builder(views.context)
                                 .setTitle(R.string.chatgpt_welcome_title)
                                 .setMessage(R.string.chatgpt_welcome)
                                 .setPositiveButton(R.string.chatgpt_got_it) { _, _ ->

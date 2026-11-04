@@ -5,19 +5,18 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.EditText
-import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.kkgosu.reasoned.fragments.GraphNodeFragment
 import com.kkgosu.reasoned.fragments.HomeFragment
 import com.kkgosu.reasoned.fragments.NewSessionFragment
 import com.kkgosu.reasoned.fragments.RuntimeSessionFragment
 import com.kkgosu.reasoned.fragments.SettingsFragment
+import com.kkgosu.reasoned.ui.adapters.TextListAdapter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +27,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.grishka.appkit.FragmentStackActivity
 import me.grishka.appkit.Nav
+import me.grishka.appkit.views.UsableRecyclerView
 
 class MainActivity : FragmentStackActivity() {
     private lateinit var drawer: DrawerLayout
@@ -59,6 +59,7 @@ class MainActivity : FragmentStackActivity() {
         drawer.findViewById<View>(R.id.drawer_graph).setOnClickListener { navigate(HomeFragment()) }
         drawer.findViewById<View>(R.id.drawer_settings)
             .setOnClickListener { navigate(SettingsFragment()) }
+        drawer.findViewById<UsableRecyclerView>(R.id.drawer_sessions).layoutManager = LinearLayoutManager(this)
         drawer.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
             override fun onDrawerOpened(drawerView: View) {
                 loadDrawerSessions()
@@ -97,7 +98,7 @@ class MainActivity : FragmentStackActivity() {
 
     private fun loadDrawerSessions() {
         val status = drawer.findViewById<TextView>(R.id.drawer_status)
-        val list = drawer.findViewById<ListView>(R.id.drawer_sessions)
+        val list = drawer.findViewById<UsableRecyclerView>(R.id.drawer_sessions)
         status.setText(R.string.navigation_loading)
         status.visibility = View.VISIBLE
         drawerLoad?.cancel()
@@ -105,30 +106,27 @@ class MainActivity : FragmentStackActivity() {
             try {
                 val sessions =
                     withContext(Dispatchers.IO) { (application as ReasonedApplication).sessions.list() }
-                list.adapter = ArrayAdapter(
-                    this@MainActivity,
-                    R.layout.item_session_navigation,
-                    sessions.map { it.second })
                 status.setText(R.string.navigation_empty)
                 status.visibility = if (sessions.isEmpty()) View.VISIBLE else View.GONE
                 val active = fragmentManager.fragments.filterIsInstance<RuntimeSessionFragment>()
                     .firstOrNull { it.isVisible }?.arguments?.getString("session")
-                sessions.indexOfFirst { it.first == active }.takeIf { it >= 0 }
-                    ?.let { list.setItemChecked(it, true) }
-                list.setOnItemClickListener { _, _, position, _ -> openSession(sessions[position].first) }
-                list.setOnCreateContextMenuListener { menu, _, info ->
-                    val position = (info as? AdapterView.AdapterContextMenuInfo)?.position
-                        ?: return@setOnCreateContextMenuListener
-                    val (id, title) = sessions[position]
-                    menu.add(R.string.session_rename).setOnMenuItemClickListener {
-                        renameSession(id, title)
-                        true
-                    }
-                    menu.add(R.string.session_delete).setOnMenuItemClickListener {
-                        deleteSession(id, title)
-                        true
-                    }
-                }
+                list.adapter = TextListAdapter(sessions.map { it.second },
+                    isChecked = { sessions[it].first == active },
+                    onClick = { openSession(sessions[it].first) },
+                    onLongClick = { position, row ->
+                        val (id, title) = sessions[position]
+                        row.setOnCreateContextMenuListener { menu, _, _ ->
+                            menu.add(R.string.session_rename).setOnMenuItemClickListener {
+                                renameSession(id, title)
+                                true
+                            }
+                            menu.add(R.string.session_delete).setOnMenuItemClickListener {
+                                deleteSession(id, title)
+                                true
+                            }
+                        }
+                        row.showContextMenu()
+                    })
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {

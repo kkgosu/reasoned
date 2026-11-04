@@ -137,7 +137,7 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
             tooltip.isEnabled = false
             tooltip.animate().cancel()
             val duration =
-                if (ValueAnimator.areAnimatorsEnabled()) resources.getInteger(R.integer.motion_short_ms)
+                if (ValueAnimator.areAnimatorsEnabled()) views.resources.getInteger(R.integer.motion_short_ms)
                     .toLong() else 0L
             tooltip.animate().alpha(0f).setDuration(if (tooltip.alpha > 0f) duration else 0L)
                 .withEndAction {
@@ -145,7 +145,7 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
                     if (node == null) tooltip.visibility = View.INVISIBLE
                     else {
                         tooltip.text = node.label
-                        tooltip.contentDescription = getString(R.string.graph_inspect, node.label)
+                        tooltip.contentDescription = tooltip.context.getString(R.string.graph_inspect, node.label)
                         tooltip.visibility = View.VISIBLE
                         tooltip.isEnabled = true
                         positionTooltip()
@@ -172,7 +172,7 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
         tooltip.translationX = (graph.left + x - tooltip.width / 2f)
             .coerceIn(0f, (graph.width - tooltip.width).coerceAtLeast(0).toFloat()) - tooltip.left
         tooltip.translationY =
-            (graph.top + y - tooltip.height - resources.getDimension(R.dimen.space_12))
+            (graph.top + y - tooltip.height - views.resources.getDimension(R.dimen.space_12))
                 .coerceIn(
                     0f,
                     (graph.height - tooltip.height).coerceAtLeast(0).toFloat()
@@ -181,7 +181,7 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
 
     override fun onShown() {
         super.onShown()
-        toolbar.navigationContentDescription = getString(R.string.navigation_open)
+        toolbar.navigationContentDescription = toolbar.context.getString(R.string.navigation_open)
         val views = pageView ?: return
         val graph = views.findViewById<KnowledgeGraphView>(R.id.knowledge_graph)
         renderSelection(graph.snapshot?.nodes?.firstOrNull { it.node.id == graph.selectedId }?.node)
@@ -190,7 +190,7 @@ class HomeFragment : ToolbarFragment(R.layout.fragment_shell) {
             scope.launch {
                 app.extraction.state.collectIndexed { index, status ->
                     views.findViewById<TextView>(R.id.knowledge_status).apply {
-                        text = activity.extractionStatus(status)
+                        text = context.extractionStatus(status)
                         visibility =
                             if (status.phase == "idle" || sample) View.GONE else View.VISIBLE
                     }

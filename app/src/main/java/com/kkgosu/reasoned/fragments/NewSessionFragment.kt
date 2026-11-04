@@ -17,6 +17,7 @@ import com.kkgosu.reasoned.api.Connections
 import com.kkgosu.reasoned.api.ProviderFailure
 import com.kkgosu.reasoned.api.WireProvider
 import com.kkgosu.reasoned.storage.knowledge
+import com.kkgosu.reasoned.ui.adapters.TextListAdapter
 import com.kkgosu.reasoned.ui.text.runtimeError
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -55,9 +56,9 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         val status = views.findViewById<TextView>(R.id.session_create_status)
         val destination = app.providerLabel(app.savedConnection())
         views.findViewById<TextView>(R.id.session_local_notice)
-            .text = getString(R.string.new_session_local, destination)
+            .text = views.context.getString(R.string.new_session_local, destination)
         views.findViewById<TextView>(R.id.session_research_notice)
-            .text = getString(R.string.new_session_research_notice, destination)
+            .text = views.context.getString(R.string.new_session_research_notice, destination)
         targets.clear()
         targets.addAll(
             savedInstanceState?.getStringArrayList("targets") ?: arguments?.getString("target")
@@ -83,7 +84,7 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             views.findViewById<View>(R.id.practice_targets_note).visibility =
                 if (practice) View.VISIBLE else View.GONE
             views.findViewById<Button>(R.id.practice_targets).text =
-                getString(R.string.practice_targets, targets.size)
+                views.context.getString(R.string.practice_targets, targets.size)
             views.findViewById<TextView>(R.id.runtime_goal_label)
                 .setText(if (practice) R.string.practice_intro else R.string.new_session_intro)
         }
@@ -101,16 +102,18 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                     status.setText(R.string.practice_empty); return@launch
                 }
                 val selected = targets.toMutableSet()
-                dialog = AlertDialog.Builder(activity).setTitle(R.string.practice_choose)
-                    .setMultiChoiceItems(
-                        nodes.map { it.name + "\n" + it.statement.take(120) }.toTypedArray(),
-                        nodes.map { it.id in selected }.toBooleanArray()
-                    ) { choice, index, checked ->
-                        if (checked && selected.size >= 8) {
-                            (choice as AlertDialog).listView.setItemChecked(index, false)
-                            status.setText(R.string.practice_limit)
-                        } else if (checked) selected += nodes[index].id else selected -= nodes[index].id
-                    }.setPositiveButton(android.R.string.ok) { _, _ ->
+                dialog = AlertDialog.Builder(views.context).setTitle(R.string.practice_choose)
+                    .setView(TextListAdapter(
+                        nodes.map { it.name + "\n" + it.statement.take(120) },
+                        R.layout.item_list_multiple_choice,
+                        isChecked = { nodes[it].id in selected },
+                        onClick = { index ->
+                            val id = nodes[index].id
+                            if (id in selected) selected -= id
+                            else if (selected.size >= 8) status.setText(R.string.practice_limit)
+                            else selected += id
+                        }
+                    ).createView(views.context)).setPositiveButton(android.R.string.ok) { _, _ ->
                         targets.clear(); targets.addAll(selected); modeChanged()
                     }
                     .setNegativeButton(android.R.string.cancel, null)
@@ -122,7 +125,7 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         start.setOnClickListener {
             val text = goal.text.toString().trim()
             if (text.isBlank()) {
-                goal.error = getString(R.string.runtime_goal_invalid); return@setOnClickListener
+                goal.error = goal.context.getString(R.string.runtime_goal_invalid); return@setOnClickListener
             }
             start.isEnabled = false
             scope?.launch {
@@ -143,12 +146,12 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                             start = true
                         )
                     }
-                    else status.text = activity.runtimeError(app.runtime.failure.value)
+                    else status.text = status.context.runtimeError(app.runtime.failure.value)
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
                     status.text =
-                        activity.runtimeError((error as? ProviderFailure)?.reason ?: "storage")
+                        status.context.runtimeError((error as? ProviderFailure)?.reason ?: "storage")
                 } finally {
                     start.isEnabled = model.isNotBlank()
                 }
@@ -159,7 +162,7 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
 
     override fun onShown() {
         super.onShown()
-        toolbar.navigationContentDescription = getString(R.string.navigation_open)
+        toolbar.navigationContentDescription = toolbar.context.getString(R.string.navigation_open)
         val views = pageView ?: return
         val start = views.findViewById<Button>(R.id.runtime_start)
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -173,17 +176,17 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 val ready =
                     WireProvider.MODEL_ID.matches(model) && !model.startsWith("sk-") &&
                             (!usePlan || account?.let { it.connected && it.plan } == true)
-                views.findViewById<TextView>(R.id.session_connection).text = if (ready) getString(
+                views.findViewById<TextView>(R.id.session_connection).text = if (ready) views.context.getString(
                     R.string.new_session_connection,
                     if (usePlan) account!!.label else app.providerLabel(connection), model
-                ) else getString(R.string.new_session_configure)
+                ) else views.context.getString(R.string.new_session_configure)
                 val destination =
-                    if (usePlan) account?.label ?: getString(R.string.chatgpt_use_plan)
+                    if (usePlan) account?.label ?: views.context.getString(R.string.chatgpt_use_plan)
                     else app.providerLabel(connection)
                 views.findViewById<TextView>(R.id.session_local_notice)
-                    .text = getString(R.string.new_session_local, destination)
+                    .text = views.context.getString(R.string.new_session_local, destination)
                 views.findViewById<TextView>(R.id.session_research_notice)
-                    .text = getString(R.string.new_session_research_notice, destination)
+                    .text = views.context.getString(R.string.new_session_research_notice, destination)
                 start.isEnabled = ready
             } catch (cancelled: CancellationException) {
                 throw cancelled

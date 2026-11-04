@@ -32,6 +32,7 @@ import android.widget.TextView
 import com.kkgosu.reasoned.MainActivity
 import com.kkgosu.reasoned.R
 import com.kkgosu.reasoned.ReasonedApplication
+import com.kkgosu.reasoned.ui.adapters.TextListAdapter
 import com.kkgosu.reasoned.model.NativeTransferPackage
 import com.kkgosu.reasoned.storage.TransferPreview
 import com.kkgosu.reasoned.storage.previewTransfer
@@ -189,7 +190,7 @@ class LessonTransferFragment : ToolbarFragment(R.layout.fragment_shell) {
         }
         val views = page ?: return
         if (value.blockers.isNotEmpty()) {
-            views.findViewById<TextView>(R.id.transfer_status).text = getString(R.string.transfer_blocked, value.blockers.joinToString("\n"))
+            views.findViewById<TextView>(R.id.transfer_status).text = views.context.getString(R.string.transfer_blocked, value.blockers.joinToString("\n"))
             return
         }
         val conflicts = value.lessons.filter { it.kind == "conflict" }
@@ -197,10 +198,10 @@ class LessonTransferFragment : ToolbarFragment(R.layout.fragment_shell) {
         views.findViewById<TextView>(R.id.transfer_status).setText(R.string.transfer_conflict_notice)
         val rows = views.findViewById<LinearLayout>(R.id.transfer_conflicts)
         conflicts.forEach { lesson ->
-            rows.addView(TextView(activity).apply { text = lesson.title })
-            rows.addView(RadioGroup(activity).apply {
+            rows.addView(TextView(views.context).apply { text = lesson.title })
+            rows.addView(RadioGroup(views.context).apply {
                 for ((incoming, label) in listOf(false to R.string.transfer_keep_local, true to R.string.transfer_use_incoming)) {
-                    addView(RadioButton(activity, null, 0, R.style.Widget_Harness_RadioRow).apply {
+                    addView(RadioButton(views.context, null, 0, R.style.Widget_Harness_RadioRow).apply {
                         layoutParams = RadioGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                             val margin = resources.getDimensionPixelSize(R.dimen.space_8)
                             setMargins(margin, margin, margin, margin)
@@ -241,15 +242,18 @@ class LessonTransferFragment : ToolbarFragment(R.layout.fragment_shell) {
         try {
             val installed = app.runtime.installTransfer(bytes, value, incoming, receipt)
             if (receipt != null) finishLanOperation()
-            page?.findViewById<TextView>(R.id.transfer_status)?.text = getString(R.string.transfer_installed, installed.size)
+            page?.findViewById<TextView>(R.id.transfer_status)?.text = content.context.getString(R.string.transfer_installed, installed.size)
             val open = value.lessons.filter { it.kind != "conflict" || it.id in incoming }
             page?.findViewById<Button>(R.id.transfer_open)?.apply {
                 visibility = if (open.isEmpty()) View.GONE else View.VISIBLE
                 setOnClickListener {
                     fun show(index: Int) = Nav.go(activity, RuntimeSessionFragment::class.java,
                         Bundle().apply { putString("session", open[index].id) })
-                    if (open.size == 1) show(0) else dialog = AlertDialog.Builder(activity)
-                        .setTitle(R.string.transfer_open).setItems(open.map { it.title }.toTypedArray()) { _, index -> show(index) }
+                    if (open.size == 1) show(0) else dialog = AlertDialog.Builder(content.context)
+                        .setTitle(R.string.transfer_open).setView(TextListAdapter(open.map { it.title }, onClick = { index ->
+                            dialog?.dismiss()
+                            show(index)
+                        }).createView(content.context))
                         .setNegativeButton(android.R.string.cancel, null).show()
                 }
             }
@@ -266,11 +270,13 @@ class LessonTransferFragment : ToolbarFragment(R.layout.fragment_shell) {
                 val lessons = withContext(Dispatchers.IO) { app.sessions.transferExportLessons() }
                 if (lessons.isEmpty()) { status(R.string.transfer_export_empty); return@launch }
                 val selected = linkedSetOf<String>()
-                dialog = AlertDialog.Builder(activity).setTitle(R.string.transfer_export_select)
-                    .setMultiChoiceItems(lessons.map { it.second }.toTypedArray(), null) { _, index, checked ->
-                        if (checked) selected += lessons[index].first else selected -= lessons[index].first
-                        dialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = selected.size in 1..100
-                    }
+                dialog = AlertDialog.Builder(content.context).setTitle(R.string.transfer_export_select)
+                    .setView(TextListAdapter(lessons.map { it.second }, R.layout.item_list_multiple_choice,
+                        isChecked = { lessons[it].first in selected }, onClick = { index ->
+                            val id = lessons[index].first
+                            if (id in selected) selected -= id else selected += id
+                            dialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = selected.size in 1..100
+                        }).createView(content.context))
                     .setNegativeButton(android.R.string.cancel, null)
                     .setPositiveButton(if (sendToComputer) R.string.lan_send else R.string.transfer_export) { _, _ ->
                         if (sendToComputer) prepareLanSend(selected.toList()) else prepareExport(selected.toList())
@@ -310,12 +316,12 @@ class LessonTransferFragment : ToolbarFragment(R.layout.fragment_shell) {
         views.findViewById<Button>(R.id.lan_scan).setOnClickListener {
             try {
                 val intent = IntentIntegrator.forFragment(this).setDesiredBarcodeFormats(IntentIntegrator.QR_CODE)
-                    .setBeepEnabled(false).setPrompt(getString(R.string.lan_scan)).createScanIntent()
+                    .setBeepEnabled(false).setPrompt(views.context.getString(R.string.lan_scan)).createScanIntent()
                 startActivityForResult(intent, 44)
             } catch (_: Exception) { status(R.string.lan_failed) }
         }
         views.findViewById<Button>(R.id.lan_enter).setOnClickListener {
-            val content = LayoutInflater.from(activity).inflate(R.layout.dialog_session_name, null)
+            val content = LayoutInflater.from(views.context).inflate(R.layout.dialog_session_name, null)
             val input = content.findViewById<EditText>(R.id.session_name).apply {
                 hint = "learnharness-lan://pair?…"; isSaveEnabled = false
                 importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
@@ -324,14 +330,14 @@ class LessonTransferFragment : ToolbarFragment(R.layout.fragment_shell) {
                 inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI or
                     android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
             }
-            dialog = AlertDialog.Builder(activity).setTitle(R.string.lan_enter).setView(content)
+            dialog = AlertDialog.Builder(views.context).setTitle(R.string.lan_enter).setView(content)
                 .setNegativeButton(android.R.string.cancel, null).setPositiveButton(R.string.lan_connect) { _, _ -> pairLan(input.text.toString().trim()) }.show()
         }
         views.findViewById<Button>(R.id.lan_send).setOnClickListener { selectExportLessons(sendToComputer = true) }
         views.findViewById<Button>(R.id.lan_receive).setOnClickListener { receiveLan() }
         views.findViewById<Button>(R.id.lan_retry).setOnClickListener { retryLan() }
         views.findViewById<Button>(R.id.lan_discard).setOnClickListener {
-            dialog = AlertDialog.Builder(activity).setMessage(R.string.lan_discard_notice).setNegativeButton(android.R.string.cancel, null)
+            dialog = AlertDialog.Builder(views.context).setMessage(R.string.lan_discard_notice).setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(R.string.lan_discard) { _, _ -> lanAction { clearApproval(); finishLanOperation() } }.show()
         }
         views.findViewById<View>(R.id.lan_forget).setOnClickListener { lanAction {
@@ -364,17 +370,17 @@ class LessonTransferFragment : ToolbarFragment(R.layout.fragment_shell) {
     private fun renderLanDevice(online: Boolean) {
         val label = page?.findViewById<TextView>(R.id.lan_status) ?: return
         val peer = lanConnection
-        label.text = peer?.name?.substringBefore(" · ") ?: getString(R.string.lan_disconnected)
-        label.contentDescription = if (peer == null) label.text else getString(if (online) R.string.lan_online else R.string.lan_offline, label.text)
+        label.text = peer?.name?.substringBefore(" · ") ?: label.context.getString(R.string.lan_disconnected)
+        label.contentDescription = if (peer == null) label.text else label.context.getString(if (online) R.string.lan_online else R.string.lan_offline, label.text)
         val dot = peer?.let {
             android.graphics.drawable.GradientDrawable().apply {
                 shape = android.graphics.drawable.GradientDrawable.OVAL
-                setSize(resources.getDimensionPixelSize(R.dimen.space_8), resources.getDimensionPixelSize(R.dimen.space_8))
-                setColor(resources.getColor(if (online) R.color.answer_correct else R.color.answer_incorrect, activity.theme))
+                setSize(label.resources.getDimensionPixelSize(R.dimen.space_8), label.resources.getDimensionPixelSize(R.dimen.space_8))
+                setColor(label.context.getColor(if (online) R.color.answer_correct else R.color.answer_incorrect))
             }
         }
         label.setCompoundDrawablesRelativeWithIntrinsicBounds(dot, null, null, null)
-        label.compoundDrawablePadding = resources.getDimensionPixelSize(R.dimen.space_8)
+        label.compoundDrawablePadding = label.resources.getDimensionPixelSize(R.dimen.space_8)
     }
 
     private fun pairLan(raw: String) = lanAction {
@@ -419,7 +425,7 @@ class LessonTransferFragment : ToolbarFragment(R.layout.fragment_shell) {
             clearApproval(); lanPending = true
             val result = withContext(Dispatchers.IO) { lan.install(target, bytes, operation, value.revision, decisions) }
             finishLanOperation()
-            page?.findViewById<TextView>(R.id.transfer_status)?.text = getString(R.string.lan_sent, result.getJSONArray("installed").length())
+            page?.findViewById<TextView>(R.id.transfer_status)?.text = content.context.getString(R.string.lan_sent, result.getJSONArray("installed").length())
         } catch (cancelled: CancellationException) { throw cancelled }
         catch (_: Exception) { refreshLan(); status(R.string.lan_failed) }
         finally { setBusy(false) }
@@ -432,12 +438,14 @@ class LessonTransferFragment : ToolbarFragment(R.layout.fragment_shell) {
         val rows = remote.getJSONArray("lessons")
         if (rows.length() == 0) { status(R.string.lan_empty); return@lanAction }
         val selected = linkedSetOf<String>()
-        dialog = AlertDialog.Builder(activity).setTitle(R.string.transfer_export_select)
-            .setMultiChoiceItems((0 until rows.length()).map { rows.getJSONObject(it).getString("title") }.toTypedArray(), null) { _, index, checked ->
-                val id = rows.getJSONObject(index).getString("id")
-                if (checked) selected += id else selected -= id
-                dialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = selected.size in 1..100
-            }.setNegativeButton(android.R.string.cancel, null).setPositiveButton(R.string.lan_receive) { _, _ ->
+        dialog = AlertDialog.Builder(content.context).setTitle(R.string.transfer_export_select)
+            .setView(TextListAdapter((0 until rows.length()).map { rows.getJSONObject(it).getString("title") },
+                R.layout.item_list_multiple_choice,
+                isChecked = { rows.getJSONObject(it).getString("id") in selected }, onClick = { index ->
+                    val id = rows.getJSONObject(index).getString("id")
+                    if (id in selected) selected -= id else selected += id
+                    dialog?.getButton(AlertDialog.BUTTON_POSITIVE)?.isEnabled = selected.size in 1..100
+                }).createView(content.context)).setNegativeButton(android.R.string.cancel, null).setPositiveButton(R.string.lan_receive) { _, _ ->
                 lanAction {
                     clearApproval(); status(R.string.lan_working)
                     val bytes = withContext(Dispatchers.IO) { lan.export(target, selected.toList()) }
@@ -463,14 +471,14 @@ class LessonTransferFragment : ToolbarFragment(R.layout.fragment_shell) {
                 receipt = withContext(Dispatchers.IO) { lan.install(target, bytes, operation, pending.getString("revision"), pending.getJSONObject("choices")) }
             }
             finishLanOperation()
-            page?.findViewById<TextView>(R.id.transfer_status)?.text = getString(R.string.lan_sent, receipt.getJSONArray("installed").length())
+            page?.findViewById<TextView>(R.id.transfer_status)?.text = content.context.getString(R.string.lan_sent, receipt.getJSONArray("installed").length())
         } else {
             check(pending.getString("kind") == "receive")
             val key = TransferReceiptKey(operation, pending.getString("peer"))
             val receipt = withContext(Dispatchers.IO) { app.sessions.transferReceipt(key) }
             if (receipt != null) {
                 check(receipt.first == pending.getString("sha")); finishLanOperation()
-                page?.findViewById<TextView>(R.id.transfer_status)?.text = getString(R.string.transfer_installed, receipt.second.size)
+                page?.findViewById<TextView>(R.id.transfer_status)?.text = content.context.getString(R.string.transfer_installed, receipt.second.size)
             } else preview(readLanPending(pending), importImmediately = true, receipt = key)
         }
     }

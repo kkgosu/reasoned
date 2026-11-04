@@ -58,12 +58,12 @@ class GraphNodeFragment : ToolbarFragment(R.layout.fragment_shell) {
         statement.text = ""
         sourceLabel.text = ""
         val sample = BuildConfig.DEBUG && arguments?.getBoolean("sample") == true
-        val app = activity.application as ReasonedApplication
+        val app = views.context.applicationContext as ReasonedApplication
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).also { visible ->
             visible.launch {
                 try {
                     val (data, knowledge) = withContext(Dispatchers.IO) {
-                        if (BuildConfig.DEBUG && sample) SampleGraph.create(resources) to null
+                        if (BuildConfig.DEBUG && sample) SampleGraph.create(views.resources) to null
                         else app.sessions.knowledge().let { it.data() to it }
                     }
                     val node = data.nodes.firstOrNull {

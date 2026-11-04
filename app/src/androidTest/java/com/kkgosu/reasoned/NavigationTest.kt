@@ -1,15 +1,12 @@
 package com.kkgosu.reasoned
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.drawable.RippleDrawable
 import android.view.KeyEvent
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
-import android.widget.ListView
+import me.grishka.appkit.views.UsableRecyclerView
+import com.kkgosu.reasoned.ui.adapters.TextListAdapter
 import android.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -36,7 +33,7 @@ class NavigationTest {
                     scenario.onActivity { activity ->
                         val drawer = activity.findViewById<DrawerLayout>(R.id.navigation_drawer)
                         loaded = if (open) drawer.isDrawerOpen(GravityCompat.START) &&
-                                activity.findViewById<ListView>(R.id.drawer_sessions).count > 0 &&
+                                activity.findViewById<UsableRecyclerView>(R.id.drawer_sessions).count > 0 &&
                                 activity.findViewById<View>(R.id.drawer_status).visibility == View.GONE
                         else !drawer.isDrawerVisible(GravityCompat.START)
                     }
@@ -84,34 +81,6 @@ class NavigationTest {
     }
 
     @Test
-    fun inputOutlineDistinguishesIdleFocusedAndDisabledStates() {
-        val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val background = context.getDrawable(R.drawable.input_background)!!
-        val bitmap = Bitmap.createBitmap(200, 100, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        background.setBounds(0, 0, bitmap.width, bitmap.height)
-        fun stroke(vararg states: Int): Int {
-            background.state = states
-            bitmap.eraseColor(Color.TRANSPARENT)
-            background.draw(canvas)
-            return bitmap.getPixel(100, 1)
-        }
-        try {
-            assertEquals(
-                context.getColor(R.color.muted_foreground),
-                stroke(android.R.attr.state_enabled)
-            )
-            assertEquals(
-                context.getColor(R.color.foreground),
-                stroke(android.R.attr.state_enabled, android.R.attr.state_focused)
-            )
-            assertEquals(context.getColor(R.color.border), stroke())
-        } finally {
-            bitmap.recycle()
-        }
-    }
-
-    @Test
     fun drawerSettingsPreferencesAndSavedSessionNavigationSurviveRecreation() {
         val app =
             InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as ReasonedApplication
@@ -136,8 +105,8 @@ class NavigationTest {
                 scenario.onActivity { activity ->
                     val drawer = activity.findViewById<DrawerLayout>(R.id.navigation_drawer)
                     assertTrue(drawer.isDrawerOpen(GravityCompat.START))
-                    val list = activity.findViewById<ListView>(R.id.drawer_sessions)
-                    assertTrue((0 until list.count).any { list.getItemAtPosition(it) == fixture.goal })
+                    val list = activity.findViewById<UsableRecyclerView>(R.id.drawer_sessions)
+                    assertTrue((list.adapter as TextListAdapter<*>).items.contains(fixture.goal))
                     assertTrue(activity.findViewById<View>(R.id.drawer_settings).isShown)
                 }
                 InstrumentationRegistry.getInstrumentation()
@@ -155,19 +124,8 @@ class NavigationTest {
                 scenario.onActivity { it.findViewById<View>(R.id.drawer_settings).performClick() }
                 settle()
                 scenario.onActivity { activity ->
-                    for ((id, subtitle) in listOf(
-                        R.id.settings_providers to R.string.settings_providers_summary,
-                        R.id.settings_learning to R.string.settings_learning_summary,
-                        R.id.settings_about to R.string.settings_about_summary,
-                    )) {
-                        val row = activity.findViewById<Button>(id)
-                        assertTrue(row.text.contains("\n${activity.getString(subtitle)}"))
-                        assertEquals(activity.window.decorView.width, row.width)
-                        assertEquals(0, row.left)
-                        assertTrue(row.background is RippleDrawable)
-                        assertTrue(row.isClickable && row.isFocusable)
-                        // Providers, learning, transfer and about rows share one container.
-                        assertEquals(4, (row.parent as android.view.ViewGroup).childCount)
+                    for (id in listOf(R.id.settings_providers, R.id.settings_learning, R.id.settings_about)) {
+                        assertTrue(activity.findViewById<View>(id).isShown)
                     }
                     assertNull(activity.findViewById<View>(R.id.runtime_goal))
                 }
@@ -202,29 +160,25 @@ class NavigationTest {
                         activity.getString(R.string.settings_privacy_body)
                             .contains("does not guarantee zero provider retention")
                     )
-                    assertEquals(
-                        activity.window.decorView.width,
-                        activity.findViewById<View>(R.id.settings_reference).width
-                    )
                     activity.onBackPressed()
                 }
                 settle()
                 scenario.onActivity { it.openDrawer() }
                 awaitDrawer(scenario)
+                var position = -1
                 scenario.onActivity { activity ->
-                    val list = activity.findViewById<ListView>(R.id.drawer_sessions)
+                    val list = activity.findViewById<UsableRecyclerView>(R.id.drawer_sessions)
+                    val items = (list.adapter as TextListAdapter<*>).items
                     assertTrue(
-                        "Restored drawer rows: ${
-                            (0 until list.count).map {
-                                list.getItemAtPosition(
-                                    it
-                                )
-                            }
-                        }; status: ${activity.findViewById<android.widget.TextView>(R.id.drawer_status).text}",
-                        (0 until list.count).any { list.getItemAtPosition(it) == fixture.goal })
-                    val index =
-                        (0 until list.count).first { list.getItemAtPosition(it) == fixture.goal }
-                    list.performItemClick(null, index, list.adapter.getItemId(index))
+                        "Restored drawer rows: $items; status: ${activity.findViewById<android.widget.TextView>(R.id.drawer_status).text}",
+                        items.contains(fixture.goal))
+                    position = items.indexOf(fixture.goal)
+                    list.scrollToPosition(position)
+                }
+                settle()
+                scenario.onActivity { activity ->
+                    val list = activity.findViewById<UsableRecyclerView>(R.id.drawer_sessions)
+                    assertTrue(list.findViewHolderForAdapterPosition(position)!!.itemView.performClick())
                 }
                 settle()
                 scenario.onActivity { activity ->

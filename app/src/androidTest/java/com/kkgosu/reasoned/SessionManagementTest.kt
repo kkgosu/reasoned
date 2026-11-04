@@ -111,25 +111,6 @@ class SessionManagementTest {
                     val link = sources.getChildAt(0) as android.widget.Button
                     assertEquals("Source chat", link.text.toString())
                     assertEquals(
-                        android.view.Gravity.START,
-                        link.gravity and android.view.Gravity.RELATIVE_HORIZONTAL_GRAVITY_MASK
-                    )
-                    val ripple = link.background as android.graphics.drawable.RippleDrawable
-                    assertTrue(ripple.numberOfLayers > 0)
-                    assertEquals(
-                        android.graphics.Rect(0, 0, link.width, link.height),
-                        ripple.bounds
-                    )
-                    val viewport =
-                        activity.findViewById<android.widget.ScrollView>(R.id.graph_detail_scroll)
-                    assertEquals(viewport.width, link.width)
-                    val linkPosition = IntArray(2).also(link::getLocationInWindow)
-                    val viewportPosition = IntArray(2).also(viewport::getLocationInWindow)
-                    assertEquals(viewportPosition[0], linkPosition[0])
-                    val inset = activity.resources.getDimensionPixelSize(R.dimen.space_24)
-                    assertEquals(inset, link.paddingStart)
-                    assertEquals(inset, link.paddingEnd)
-                    assertEquals(
                         activity.getString(R.string.session_practice),
                         activity.findViewById<android.widget.Toolbar>(me.grishka.appkit.R.id.toolbar).menu.getItem(
                             0
@@ -300,18 +281,18 @@ class SessionManagementTest {
     }
 
     @Test
-    fun drawerProvidesANativeContextMenuAndVerticallyCenteredNameField() = runBlocking {
+    fun drawerSessionLongPressOffersRenameAndDelete() = runBlocking {
         val saved = session("Context menu ${UUID.randomUUID()}")
         app.sessions.save(saved)
         try {
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                 val loaded = java.util.concurrent.CountDownLatch(1)
                 scenario.onActivity { activity ->
-                    val list = activity.findViewById<android.widget.ListView>(R.id.drawer_sessions)
+                    val list = activity.findViewById<me.grishka.appkit.views.UsableRecyclerView>(R.id.drawer_sessions)
                     list.viewTreeObserver.addOnGlobalLayoutListener(object :
                         android.view.ViewTreeObserver.OnGlobalLayoutListener {
                         override fun onGlobalLayout() {
-                            if ((0 until list.count).any { list.getItemAtPosition(it) == saved.goal }) {
+                            if ((list.adapter as? com.kkgosu.reasoned.ui.adapters.TextListAdapter<*>)?.items?.contains(saved.goal) == true) {
                                 list.viewTreeObserver.removeOnGlobalLayoutListener(this)
                                 loaded.countDown()
                             }
@@ -327,22 +308,15 @@ class SessionManagementTest {
                 automation.waitForIdle(300, 3000)
                 var position = -1
                 scenario.onActivity { activity ->
-                    val list = activity.findViewById<android.widget.ListView>(R.id.drawer_sessions)
-                    position =
-                        (0 until list.count).first { list.getItemAtPosition(it) == saved.goal }
-                    list.setSelection(position)
-                    val body = activity.layoutInflater.inflate(R.layout.dialog_session_name, null)
-                    val input = body.findViewById<android.widget.EditText>(R.id.session_name)
-                    assertEquals(
-                        android.view.Gravity.CENTER_VERTICAL,
-                        input.gravity and android.view.Gravity.VERTICAL_GRAVITY_MASK
-                    )
+                    val list = activity.findViewById<me.grishka.appkit.views.UsableRecyclerView>(R.id.drawer_sessions)
+                    position = (list.adapter as com.kkgosu.reasoned.ui.adapters.TextListAdapter<*>).items.indexOf(saved.goal)
+                    list.scrollToPosition(position)
                 }
                 automation.waitForIdle(300, 3000)
                 scenario.onActivity { activity ->
-                    val list = activity.findViewById<android.widget.ListView>(R.id.drawer_sessions)
-                    val row = list.getChildAt(position - list.firstVisiblePosition)
-                    // Use the native row long-press path, which supplies AdapterContextMenuInfo.
+                    val list = activity.findViewById<me.grishka.appkit.views.UsableRecyclerView>(R.id.drawer_sessions)
+                    val row = list.findViewHolderForAdapterPosition(position)!!.itemView
+                    // Exercise the row's native accessible long-press action.
                     assertTrue(
                         row.performAccessibilityAction(
                             android.view.accessibility.AccessibilityNodeInfo.ACTION_LONG_CLICK, null

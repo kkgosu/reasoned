@@ -63,7 +63,7 @@ class SessionPlanFragment : ToolbarFragment(R.layout.fragment_shell) {
     ): View {
         setTitle(if (sample) R.string.sample_plan_title else R.string.learning_plan)
         val views = inflater.inflate(R.layout.fragment_session_plan, container, false)
-        val app = activity.application as ReasonedApplication
+        val app = inflater.context.applicationContext as ReasonedApplication
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).also { visible ->
             visible.launch {
                 val list = views.findViewById<LinearLayout>(R.id.plan_nodes)
@@ -86,7 +86,7 @@ class SessionPlanFragment : ToolbarFragment(R.layout.fragment_shell) {
                     updates.distinctUntilChanged()
                         .collect { (plan, position) ->
                             list.removeAllViews()
-                            if (plan == null) paragraph(getString(R.string.plan_missing))
+                            if (plan == null) paragraph(views.context.getString(R.string.plan_missing))
                             else {
                                 val diagram = TextView(inflater.context).apply {
                                     setTextAppearance(R.style.TextAppearance_Harness_Prose)
@@ -98,7 +98,7 @@ class SessionPlanFragment : ToolbarFragment(R.layout.fragment_shell) {
                                 )
                                 val (current, visited) = position
                                 plan.nodes.forEach { node ->
-                                    val status = getString(
+                                    val status = views.context.getString(
                                         when {
                                             node.id == current -> R.string.plan_current; node.id in visited -> R.string.plan_visited; else -> R.string.plan_upcoming
                                         }
@@ -106,9 +106,9 @@ class SessionPlanFragment : ToolbarFragment(R.layout.fragment_shell) {
                                     val requires = plan.edges.filter { it.second == node.id }
                                         .map { edge -> plan.nodes.first { it.id == edge.first }.title }
                                     paragraph(
-                                        "${node.title}\n$status\n${node.summary}\n" + if (requires.isEmpty()) getString(
+                                        "${node.title}\n$status\n${node.summary}\n" + if (requires.isEmpty()) views.context.getString(
                                             R.string.plan_foundation
-                                        ) else getString(
+                                        ) else views.context.getString(
                                             R.string.plan_requires,
                                             requires.joinToString(", ")
                                         )
@@ -119,7 +119,7 @@ class SessionPlanFragment : ToolbarFragment(R.layout.fragment_shell) {
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {
-                    paragraph(getString(R.string.runtime_storage_error))
+                    paragraph(views.context.getString(R.string.runtime_storage_error))
                 }
             }
         }

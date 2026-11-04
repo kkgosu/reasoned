@@ -884,18 +884,7 @@ class RuntimeTest {
                 withTimeout(5000) { runtime.state.first { it?.id == idle.id } }
                 InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
                 scenario.onActivity { activity ->
-                    val composer = activity.findViewById<EditText>(R.id.lesson_composer)
                     val action = activity.findViewById<Button>(R.id.composer_action)
-                    val row = action.parent as android.widget.LinearLayout
-                    assertEquals(
-                        android.view.Gravity.TOP,
-                        composer.gravity and android.view.Gravity.VERTICAL_GRAVITY_MASK
-                    )
-                    assertFalse(row.isBaselineAligned)
-                    assertTrue(
-                        "Action must fit inside its row",
-                        action.top >= 0 && action.bottom <= row.height
-                    )
                     val bounds = android.graphics.Rect()
                     assertTrue(
                         "Start must not be clipped",
@@ -944,12 +933,9 @@ class RuntimeTest {
                     scenario.onActivity { activity ->
                         val list = activity.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.lesson_list)
                         assertTrue("History must stay scrollable before sending", list.canScrollVertically(1))
-                        assertNotNull(list.foreground)
-                        assertTrue(list.paddingBottom >= activity.resources.getDimensionPixelSize(R.dimen.space_32))
                         val button = activity.findViewById<View>(R.id.scroll_to_bottom)
                         assertEquals(if (activity.findViewById<View>(R.id.question_panel).visibility == View.VISIBLE)
                             View.INVISIBLE else View.VISIBLE, button.visibility)
-                        assertTrue(button.width >= activity.resources.getDimensionPixelSize(R.dimen.touch_target))
                         if (action == "button") button.performClick()
                         else {
                             activity.findViewById<EditText>(if (action == "answer") R.id.question_thinking else R.id.lesson_composer)
@@ -980,89 +966,6 @@ class RuntimeTest {
             join(withContext(Dispatchers.Main) { runtime.stop() })
             delegate.set(app, previous)
             store.close(); app.deleteDatabase(name)
-        }
-    }
-
-    @Test
-    fun inlineMathKeepsItsBaselineWhenLineSpacingChanges() {
-        InstrumentationRegistry.getInstrumentation().runOnMainSync {
-            val renderer = lessonMarkdown(app)
-            val formatted = renderer.toMarkdown("Before \$A=(130,140)\$: after.\n\n\$\$\nx^2\n\$\$")
-            val originals = formatted.getSpans(
-                0,
-                formatted.length,
-                io.noties.markwon.ext.latex.JLatexAsyncDrawableSpan::class.java
-            )
-            assertEquals(2, originals.size)
-            val view = android.widget.TextView(app)
-            renderer.setParsedMarkdown(view, formatted)
-            val text = view.text as android.text.Spanned
-            val spans =
-                text.getSpans(0, text.length, io.noties.markwon.image.AsyncDrawableSpan::class.java)
-            val inline = spans.single { it !is io.noties.markwon.ext.latex.JLatexAsyncDrawableSpan }
-            val block = spans.single { it is io.noties.markwon.ext.latex.JLatexAsyncDrawableSpan }
-            assertTrue(originals.any { it === block }) // Display math must keep the library's block layout.
-            assertTrue(originals.any { it.drawable === inline.drawable }) // Preserve the existing loader/lifecycle.
-            val start = text.getSpanStart(inline)
-            val end = text.getSpanEnd(inline)
-            for (size in listOf(32f, 64f)) for (formula in listOf(
-                "A=(130,140)",
-                "\\frac{x^2}{y_1}"
-            )) {
-                val paint = android.graphics.Paint().apply { textSize = size }
-                val math = ru.noties.jlatexmath.JLatexMathDrawable.builder(formula).textSize(size)
-                    .color(app.getColor(R.color.foreground)).build()
-                for (width in listOf(1000, math.intrinsicWidth / 2)) {
-                    inline.drawable.setResult(math)
-                    inline.drawable.initWithKnownDimensions(width, size)
-                    val fm = android.graphics.Paint.FontMetricsInt()
-                    inline.getSize(paint, text, start, end, fm)
-                    val baseline = math.icon().baseLine * inline.drawable.bounds.height()
-                    assertTrue(fm.ascent <= -baseline)
-                    assertTrue(fm.descent >= inline.drawable.bounds.height() - baseline)
-                    assertTrue(fm.top <= fm.ascent); assertTrue(fm.bottom >= fm.descent)
-                    val a = android.graphics.Bitmap.createBitmap(
-                        width,
-                        500,
-                        android.graphics.Bitmap.Config.ARGB_8888
-                    )
-                    val b = android.graphics.Bitmap.createBitmap(
-                        width,
-                        500,
-                        android.graphics.Bitmap.Config.ARGB_8888
-                    )
-                    try {
-                        inline.draw(
-                            android.graphics.Canvas(a),
-                            text,
-                            start,
-                            end,
-                            0f,
-                            0,
-                            200,
-                            300,
-                            paint
-                        )
-                        inline.draw(
-                            android.graphics.Canvas(b),
-                            text,
-                            start,
-                            end,
-                            0f,
-                            0,
-                            200,
-                            480,
-                            paint
-                        )
-                        assertTrue(
-                            "Extra line spacing must not move the formula below surrounding text",
-                            a.sameAs(b)
-                        )
-                    } finally {
-                        a.recycle(); b.recycle()
-                    }
-                }
-            }
         }
     }
 

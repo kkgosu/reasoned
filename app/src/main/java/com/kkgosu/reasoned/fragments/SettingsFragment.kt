@@ -64,7 +64,7 @@ class SettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
                         try {
                             withContext(Dispatchers.IO) {
                                 val file =
-                                    AtomicFile(File(activity.application.filesDir, "AGENTS.md"))
+                                    AtomicFile(File(views.context.applicationContext.filesDir, "AGENTS.md"))
                                 val out = file.startWrite()
                                 try {
                                     out.write(value.toByteArray(Charsets.UTF_8)); file.finishWrite(
@@ -89,12 +89,12 @@ class SettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
 
             "about" -> {
                 views.findViewById<Button>(R.id.about_version).apply {
-                    text = getString(R.string.about_version, BuildConfig.VERSION_NAME)
+                    text = context.getString(R.string.about_version, BuildConfig.VERSION_NAME)
                     contentDescription =
-                        getString(R.string.about_version_releases, BuildConfig.VERSION_NAME)
+                        context.getString(R.string.about_version_releases, BuildConfig.VERSION_NAME)
                     setOnClickListener {
                         try {
-                            startActivity(
+                            views.context.startActivity(
                                 Intent(
                                     Intent.ACTION_VIEW,
                                     Uri.parse(AppUpdates.RELEASES_URL)
@@ -115,11 +115,11 @@ class SettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
                         try {
                             val latest = AppUpdates.latestVersion()
                             status.text = when {
-                                latest == null -> getString(R.string.about_update_no_releases)
+                                latest == null -> views.context.getString(R.string.about_update_no_releases)
                                 AppUpdates.isNewer(latest, BuildConfig.VERSION_NAME) ->
-                                    getString(R.string.about_update_available, latest)
+                                    views.context.getString(R.string.about_update_available, latest)
 
-                                else -> getString(R.string.about_update_current)
+                                else -> views.context.getString(R.string.about_update_current)
                             }
                         } catch (cancelled: CancellationException) {
                             status.text = ""
@@ -132,7 +132,7 @@ class SettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
                     }
                 }
                 views.findViewById<Button>(R.id.settings_reference).setOnClickListener {
-                    startActivity(
+                    views.context.startActivity(
                         Intent(
                             Intent.ACTION_VIEW,
                             Uri.parse("https://github.com/amosblomqvist/learnharness")
@@ -164,11 +164,11 @@ class SettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
                         R.string.settings_about_summary
                     ),
                 )) {
-                    val label = SpannableStringBuilder(getString(title)).append("\n")
+                    val label = SpannableStringBuilder(views.context.getString(title)).append("\n")
                     val start = label.length
-                    label.append(getString(subtitle))
+                    label.append(views.context.getString(subtitle))
                     label.setSpan(
-                        TextAppearanceSpan(activity, R.style.TextAppearance_Harness_Meta),
+                        TextAppearanceSpan(views.context, R.style.TextAppearance_Harness_Meta),
                         start,
                         label.length,
                         Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
@@ -203,7 +203,7 @@ class SettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         if (page == "learning" && loadPreferences) {
             loadPreferences = false
-            val file = File(activity.application.filesDir, "AGENTS.md")
+            val file = File(views.context.applicationContext.filesDir, "AGENTS.md")
             scope?.launch {
                 try {
                     val value = withContext(Dispatchers.IO) {

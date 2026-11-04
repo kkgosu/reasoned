@@ -7,6 +7,7 @@ import android.graphics.Outline
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.LayerDrawable
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
@@ -19,20 +20,22 @@ import android.view.WindowInsets
 import android.view.WindowInsetsAnimation
 import android.view.animation.PathInterpolator
 import android.view.inputmethod.InputMethodManager
-import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.ImageButton
-import android.widget.ListView
 import android.widget.Toolbar
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.kkgosu.reasoned.BuildConfig
 import com.kkgosu.reasoned.R
 import com.kkgosu.reasoned.ReasonedApplication
 import com.kkgosu.reasoned.model.GraphNode
 import com.kkgosu.reasoned.model.SampleGraph
 import com.kkgosu.reasoned.storage.knowledge
+import com.kkgosu.reasoned.ui.adapters.TextListAdapter
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -41,6 +44,8 @@ import me.grishka.appkit.Nav
 import me.grishka.appkit.fragments.CustomTransitionsFragment
 import me.grishka.appkit.fragments.ToolbarFragment
 import me.grishka.appkit.utils.V
+import me.grishka.appkit.views.UsableRecyclerView
+import java.util.Locale
 
 /**
  * Search transition adapted from Mastodon Android's SearchQueryFragment (GPL-3.0),
@@ -51,7 +56,9 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
     private var pageView: View? = null
     private var search: EditText? = null
     private lateinit var navigation: LayerDrawable
-    private var adapter: ArrayAdapter<GraphNode>? = null
+    private var adapter: TextListAdapter<GraphNode>? = null
+    private var nodes: List<GraphNode> = emptyList()
+    private var filterJob: Job? = null
     private var scope: CoroutineScope? = null
     private val sample get() = BuildConfig.DEBUG && arguments?.getBoolean("sample") == true
 
@@ -67,9 +74,9 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
         setTitle("")
         navigation = LayerDrawable(
             arrayOf(
-                activity.getDrawable(R.drawable.ic_search)!!.mutate(),
-                activity.getDrawable(me.grishka.appkit.R.drawable.ic_arrow_back)!!.mutate()
-                    .apply { setTint(activity.getColor(R.color.foreground)) },
+                inflater.context.getDrawable(R.drawable.ic_search)!!.mutate(),
+                inflater.context.getDrawable(me.grishka.appkit.R.drawable.ic_arrow_back)!!.mutate()
+                    .apply { setTint(inflater.context.getColor(R.color.foreground)) },
             )
         ).apply { getDrawable(0).alpha = 0 }
         return inflater.inflate(R.layout.fragment_graph_search, container, false)
@@ -79,25 +86,28 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val views = pageView ?: return
-        val results = views.findViewById<ListView>(R.id.graph_search_results)
-        val adapter = ArrayAdapter<GraphNode>(
-            activity,
-            R.layout.item_graph_search,
-            R.id.graph_result_text,
-            mutableListOf()
-        ).also { this.adapter = it }
-        results.emptyView = views.findViewById(R.id.graph_search_empty)
+        val results = views.findViewById<UsableRecyclerView>(R.id.graph_search_results)
+        results.layoutManager = LinearLayoutManager(views.context)
+        results.addItemDecoration(DividerItemDecoration(views.context, DividerItemDecoration.VERTICAL).apply {
+            setDrawable(GradientDrawable().apply {
+                setColor(views.context.getColor(R.color.border))
+                setSize(1, views.resources.displayMetrics.density.toInt().coerceAtLeast(1))
+            })
+        })
+        val adapter = TextListAdapter<GraphNode>(emptyList(), R.layout.item_graph_search,
+            R.id.graph_result_text).also { this.adapter = it }
+        results.setEmptyView(views.findViewById(R.id.graph_search_empty))
         results.adapter = adapter
-        results.setOnItemClickListener { _, _, position, _ ->
-            val node = adapter.getItem(position) ?: return@setOnItemClickListener
-            results.onItemClickListener = null
+        adapter.onClick = { position ->
+            val node = adapter.items[position]
+            adapter.onClick = null
             fragmentManager.fragments.filterIsInstance<HomeFragment>()
                 .lastOrNull { (it.arguments?.getBoolean("sample") == true) == sample }
                 ?.selectNode(node.id)
             Nav.finish(this)
         }
-        val bar = layoutInflater.inflate(R.layout.view_graph_search_toolbar, toolbar, false)
-        toolbar.minimumHeight = (72 * resources.displayMetrics.density).toInt()
+        val bar = LayoutInflater.from(view.context).inflate(R.layout.view_graph_search_toolbar, toolbar, false)
+        toolbar.minimumHeight = (72 * views.resources.displayMetrics.density).toInt()
         toolbar.layoutParams = toolbar.layoutParams.apply { height = toolbar.minimumHeight }
         toolbar.addView(
             bar,
@@ -111,7 +121,7 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
         search = edit
         edit.addTextChangedListener(object : TextWatcher {
             override fun afterTextChanged(text: Editable?) {
-                adapter.filter.filter(text.toString())
+                filterResults()
                 V.setVisibilityAnimated(
                     clear,
                     if (text.isNullOrEmpty()) View.INVISIBLE else View.VISIBLE
@@ -130,7 +140,7 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
         })
         clear.setOnClickListener { edit.setText(""); edit.requestFocus() }
         edit.setOnEditorActionListener { _, _, _ ->
-            activity.getSystemService(InputMethodManager::class.java)
+            edit.context.getSystemService(InputMethodManager::class.java)
                 .hideSoftInputFromWindow(edit.windowToken, 0)
             true
         }
@@ -156,6 +166,7 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
 
     override fun onShown() {
         super.onShown()
+        val resources = content.resources
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).also { visible ->
             visible.launch {
                 try {
@@ -163,11 +174,8 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
                         if (BuildConfig.DEBUG && sample) SampleGraph.create(resources) else (activity.application as ReasonedApplication).sessions.knowledge()
                             .data()
                     }
-                    adapter?.apply {
-                        clear(); addAll(data.nodes.filterNot { it.implication }); filter.filter(
-                        search?.text?.toString().orEmpty()
-                    )
-                    }
+                    nodes = data.nodes.filterNot { it.implication }
+                    filterResults()
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (_: Exception) {
@@ -178,14 +186,29 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
         }
         search?.let { edit ->
             edit.post {
-                if (search === edit && isVisible) activity.getSystemService(InputMethodManager::class.java)
+                if (search === edit && isVisible) edit.context.getSystemService(InputMethodManager::class.java)
                     .showSoftInput(edit, InputMethodManager.SHOW_IMPLICIT)
             }
         }
     }
 
+    private fun filterResults() {
+        val source = nodes
+        val query = search?.text?.toString().orEmpty().lowercase(Locale.getDefault())
+        filterJob?.cancel()
+        filterJob = scope?.launch {
+            val filtered = withContext(Dispatchers.Default) {
+                if (query.isEmpty()) source else source.filter { node ->
+                    val text = node.toString().lowercase(Locale.getDefault())
+                    text.startsWith(query) || text.split(' ').any { it.startsWith(query) }
+                }
+            }
+            adapter?.submit(filtered)
+        }
+    }
+
     override fun onHidden() {
-        scope?.cancel(); scope = null; super.onHidden()
+        scope?.cancel(); scope = null; filterJob = null; super.onHidden()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -219,7 +242,7 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
         bar.getLocationInWindow(location)
         val dx = x - location[0]
         val dy = y - location[1] + (source.height - bar.height) / 2f
-        val buttonRadius = 28 * resources.displayMetrics.density
+        val buttonRadius = 28 * container.resources.displayMetrics.density
         val bounds = Rect()
         var radius = 0f
         val outline = container.outlineProvider
@@ -261,9 +284,11 @@ class GraphSearchFragment : ToolbarFragment(R.layout.fragment_shell), CustomTran
     }
 
     override fun onDestroyView() {
-        if (Build.VERSION.SDK_INT >= 30) view?.setWindowInsetsAnimationCallback(null)
+        if (Build.VERSION.SDK_INT >= 30) content?.setWindowInsetsAnimationCallback(null)
         scope?.cancel(); scope = null
         adapter = null
+        nodes = emptyList()
+        filterJob = null
         search = null
         pageView = null
         super.onDestroyView()

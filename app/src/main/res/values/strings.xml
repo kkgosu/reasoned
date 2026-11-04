@@ -55,7 +55,7 @@
     <string name="confidence_unavailable">CONFIDENCE · NOT GIVEN</string>
     <string name="confidence_accessibility">Confidence in your answer</string>
     <string name="thinking_label">YOUR THINKING</string>
-    <string name="thinking_hint">Why this answer? Whatever comes to mind. (Optional)</string>
+    <string name="thinking_hint">Your reasoning (optional)</string>
     <string name="submit_answer">Submit answer</string>
     <string name="your_answer">YOUR ANSWER</string>
     <string name="your_answer_confidence">YOUR ANSWER · %1$d%% CONFIDENCE</string>

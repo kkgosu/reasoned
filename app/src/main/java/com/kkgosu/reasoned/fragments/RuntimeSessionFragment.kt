@@ -2,6 +2,7 @@ package com.kkgosu.reasoned.fragments
 
 import android.animation.ValueAnimator
 import android.app.AlertDialog
+import android.app.Dialog
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
@@ -45,6 +46,8 @@ import com.kkgosu.reasoned.model.NativeQuestion
 import com.kkgosu.reasoned.model.RuntimeSession
 import com.kkgosu.reasoned.storage.extractionUsage
 import com.kkgosu.reasoned.storage.uncovered
+import com.kkgosu.reasoned.ui.ChoiceBottomSheet
+import com.kkgosu.reasoned.ui.adapters.TextListAdapter
 import com.kkgosu.reasoned.ui.adapters.LessonAdapter
 import com.kkgosu.reasoned.ui.adapters.confidenceColor
 import com.kkgosu.reasoned.ui.text.lessonMarkdown
@@ -90,7 +93,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     private var pageViews: SessionViews? = null
     private var adapter = LessonAdapter()
     private var scope: CoroutineScope? = null
-    private var dialog: AlertDialog? = null
+    private var dialog: Dialog? = null
     private var markdown: Markwon? = null
     private var rendering = false
     private var loadingModels = false
@@ -150,28 +153,28 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 )
             }
             if (state != null) dialog =
-                AlertDialog.Builder(activity).setTitle(R.string.runtime_mechanic_note)
-                    .setSingleChoiceItems(
-                        arrayOf(
-                            getString(R.string.runtime_mechanic_choice),
-                            getString(R.string.runtime_mechanic_recall)
-                        ),
-                        if (state.mechanic == "recall") 1 else 0
-                    ) { picker, index ->
-                        runtime.chooseMechanic(if (index == 1) "recall" else "choice"); picker.dismiss()
-                    }.setNegativeButton(android.R.string.cancel, null)
+                AlertDialog.Builder(content.context).setTitle(R.string.runtime_mechanic_note)
+                    .setView(TextListAdapter(
+                        listOf(content.context.getString(R.string.runtime_mechanic_choice), content.context.getString(R.string.runtime_mechanic_recall)),
+                        R.layout.item_sheet_choice,
+                        isChecked = { it == if (state.mechanic == "recall") 1 else 0 },
+                        onClick = { index ->
+                            runtime.chooseMechanic(if (index == 1) "recall" else "choice")
+                            dialog?.dismiss()
+                        }
+                    ).createView(content.context)).setNegativeButton(android.R.string.cancel, null)
                     .setOnDismissListener { dialog = null }.show()
             true
         }
 
         R.id.session_steer -> {
-            val content = LayoutInflater.from(activity).inflate(R.layout.dialog_session_name, null)
+            val content = LayoutInflater.from(this.content.context).inflate(R.layout.dialog_session_name, null)
             val input = content.findViewById<EditText>(R.id.session_name).apply {
                 setHint(R.string.native_steer_hint)
                 inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES or InputType.TYPE_TEXT_FLAG_MULTI_LINE
                 setSingleLine(false); minLines = 2; maxLines = 4
             }
-            val prompt = AlertDialog.Builder(activity).setTitle(R.string.native_steer)
+            val prompt = AlertDialog.Builder(content.context).setTitle(R.string.native_steer)
                 .setMessage(R.string.native_steer_note).setView(content)
                 .setPositiveButton(R.string.runtime_send, null)
                 .setNegativeButton(android.R.string.cancel, null)
@@ -183,7 +186,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                     button.isEnabled = false
                     try {
                         if (runtime.steer(sessionId, input.text.toString())) prompt.dismiss()
-                        else input.error = getString(R.string.native_steer_unavailable)
+                        else input.error = input.context.getString(R.string.native_steer_unavailable)
                     } finally { button.isEnabled = true }
                 }
             }
@@ -192,7 +195,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
 
         R.id.question_dismiss -> {
             val callId = runtime.state.value?.takeIf { it.id == sessionId }?.question?.callId
-            if (callId != null) dialog = AlertDialog.Builder(activity).setTitle(R.string.runtime_question_dismiss)
+            if (callId != null) dialog = AlertDialog.Builder(content.context).setTitle(R.string.runtime_question_dismiss)
                 .setMessage(R.string.runtime_question_dismiss_warning)
                 .setPositiveButton(android.R.string.ok) { _, _ -> runtime.dismissQuestion(callId) }
                 .setNegativeButton(android.R.string.cancel, null)
@@ -201,7 +204,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         }
 
         R.id.practice_dismiss -> {
-            dialog = AlertDialog.Builder(activity).setTitle(R.string.practice_dismiss)
+            dialog = AlertDialog.Builder(content.context).setTitle(R.string.practice_dismiss)
                 .setMessage(R.string.practice_dismiss_warning)
                 .setPositiveButton(android.R.string.ok) { _, _ -> runtime.dismissProblem() }
                 .setNegativeButton(android.R.string.cancel, null)
@@ -218,7 +221,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
 
         R.id.session_research -> {
             if (runtime.state.value?.researchAllowed == true) runtime.allowResearch(false)
-            else dialog = AlertDialog.Builder(activity).setTitle(R.string.research_enable_warning)
+            else dialog = AlertDialog.Builder(content.context).setTitle(R.string.research_enable_warning)
                 .setMessage(R.string.research_permission)
                 .setPositiveButton(R.string.research_enable) { _, _ -> runtime.allowResearch(true) }
                 .setNegativeButton(android.R.string.cancel, null)
@@ -348,7 +351,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     }
 
     override fun onApplyWindowInsets(insets: WindowInsets) {
-        val root = view
+        val root = content
         val bottom = root?.paddingBottom ?: 0
         super.onApplyWindowInsets(insets)
         // AppKit receives the final IME inset before the animation's first frame. Keep the current
@@ -390,7 +393,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
 
     override fun onShown() {
         super.onShown()
-        toolbar.navigationContentDescription = getString(R.string.navigation_open)
+        toolbar.navigationContentDescription = toolbar.context.getString(R.string.navigation_open)
         val views = pageViews ?: return
         val start = arguments!!.getBoolean("start_session")
         arguments!!.remove("start_session") // One explicit start, never replayed by reopening/recreation.
@@ -414,7 +417,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                     views.knowledgeStatus.apply {
                         visibility =
                             if (status.running || (status.session == sessionId && status.phase != "idle")) View.VISIBLE else View.GONE
-                        text = activity.extractionStatus(status)
+                        text = context.extractionStatus(status)
                     }
                     invalidateOptionsMenu()
                 }
@@ -426,7 +429,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             }
             visible.launch {
                 runtime.failure.collect {
-                    if (it.isNotBlank()) views.lessonStatus.text = activity.runtimeError(it)
+                    if (it.isNotBlank()) views.lessonStatus.text = views.lessonStatus.context.runtimeError(it)
                 }
             }
             if (!sample) visible.launch {
@@ -451,7 +454,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     override fun onDestroyView() {
         scope?.cancel(); scope = null
         dialog?.dismiss(); dialog = null
-        if (Build.VERSION.SDK_INT >= 30) view?.setWindowInsetsAnimationCallback(null)
+        if (Build.VERSION.SDK_INT >= 30) content?.setWindowInsetsAnimationCallback(null)
         imeAnimations = 0
         followingTail = false
         pageViews?.let {
@@ -514,25 +517,25 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 scrollToBottom(lessonList, smooth = sent)
             }
             val role =
-                getString(
+                context.getString(
                     when (state.phase) {
                         "practice" -> R.string.session_practice; "probe" -> R.string.runtime_prober; else -> R.string.runtime_teacher
                     }
                 )
             lessonStatus.text = when (state.status) {
-                "running" -> if (state.compacting) getString(R.string.runtime_compacting) else role
-                "question" -> getString(R.string.runtime_waiting, role)
-                "route" -> getString(R.string.runtime_route)
-                "plan" -> getString(R.string.plan_ready)
-                "interrupted" -> getString(if (state.nativeRecord != null) R.string.native_runtime_interrupted else R.string.runtime_interrupted)
-                "error" -> activity.runtimeError(state.error)
-                "complete" -> getString(R.string.runtime_complete)
-                else -> if (state.phase == "practice") getString(if (state.activeProblem != null) R.string.practice_working else R.string.practice_paused) else getString(
+                "running" -> if (state.compacting) context.getString(R.string.runtime_compacting) else role
+                "question" -> context.getString(R.string.runtime_waiting, role)
+                "route" -> context.getString(R.string.runtime_route)
+                "plan" -> context.getString(R.string.plan_ready)
+                "interrupted" -> context.getString(if (state.nativeRecord != null) R.string.native_runtime_interrupted else R.string.runtime_interrupted)
+                "error" -> context.runtimeError(state.error)
+                "complete" -> context.getString(R.string.runtime_complete)
+                else -> if (state.phase == "practice") context.getString(if (state.activeProblem != null) R.string.practice_working else R.string.practice_paused) else context.getString(
                     R.string.runtime_ready
                 )
             }
                 val queued = org.json.JSONArray(state.nativeSteers).length()
-            if (queued > 0) lessonStatus.append("\n" + getString(R.string.native_steer_pending, queued))
+            if (queued > 0) lessonStatus.append("\n" + context.getString(R.string.native_steer_pending, queued))
             val question = state.question?.takeIf { state.status == "question" }
             val expanded = question != null && state.expanded
             if (isLaidOut && ValueAnimator.areAnimatorsEnabled() && (questionPanel.visibility == View.VISIBLE) != expanded) {
@@ -638,12 +641,12 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                     kotlin.math.abs(NativeQuestion.CONFIDENCE_STOPS[it] - state.confidence)
                 }
                 val confidenceTint =
-                    android.content.res.ColorStateList.valueOf(activity.confidenceColor(state.confidence))
+                    android.content.res.ColorStateList.valueOf(context.confidenceColor(state.confidence))
                 questionConfidence.progressTintList = confidenceTint
                 questionConfidence.thumbTintList = confidenceTint
-                confidenceLabel.text = getString(R.string.confidence_label, state.confidence)
+                confidenceLabel.text = context.getString(R.string.confidence_label, state.confidence)
                 questionConfidence.stateDescriptionCompat(
-                    getString(
+                    context.getString(
                         R.string.runtime_context_percent,
                         state.confidence
                     )
@@ -691,8 +694,8 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                     composerAction.layoutParams = params
                 }
             }
-            composerAction.text = if (icon == 0) getString(action) else ""
-            composerAction.contentDescription = getString(action)
+            composerAction.text = if (icon == 0) context.getString(action) else ""
+            composerAction.contentDescription = context.getString(action)
             composerAction.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0)
             composerAction.isEnabled = (!sampleLimit || state.status == "running") &&
                 !(state.nativeRecord != null && state.status == "interrupted" && state.draft.isBlank() &&
@@ -705,14 +708,14 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             val editable = state.status != "running" && state.status != "complete"
             views.sessionModel.apply {
                 text =
-                    if (loadingModels) getString(R.string.runtime_models_loading) else app.modelCatalog.model(state.connection, state.model)?.name
-                        ?: state.model.ifBlank { getString(R.string.runtime_model) }
-                contentDescription = getString(R.string.runtime_model) + ": " + text
+                    if (loadingModels) context.getString(R.string.runtime_models_loading) else app.modelCatalog.model(state.connection, state.model)?.name
+                        ?: state.model.ifBlank { context.getString(R.string.runtime_model) }
+                contentDescription = context.getString(R.string.runtime_model) + ": " + text
                 isEnabled = !sample && editable && !loadingModels
             }
             views.sessionThinking.apply {
                 text = effortLabel(state.effort)
-                contentDescription = getString(R.string.runtime_thinking_selected, text)
+                contentDescription = context.getString(R.string.runtime_thinking_selected, text)
                 isEnabled = !sample && editable
             }
             val capacity = app.modelCatalog.model(state.connection, state.model)?.window ?: 0
@@ -722,10 +725,10 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             views.contextProgress.progress = percent ?: 0
             views.sessionContext.apply {
                 text = percent?.toString() ?: "?"
-                contentDescription = getString(
+                contentDescription = context.getString(
                     R.string.runtime_context_accessibility,
-                    percent?.let { getString(R.string.runtime_context_percent, it) }
-                        ?: getString(R.string.runtime_context_unknown))
+                    percent?.let { context.getString(R.string.runtime_context_percent, it) }
+                        ?: context.getString(R.string.runtime_context_unknown))
             }
         } finally {
             rendering = false
@@ -751,28 +754,29 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                     state.model to (app.modelCatalog.model(state.connection, state.model)?.name ?: state.model)
                 ) + models).distinctBy { it.first }
                 if (runtime.state.value?.id != sessionId) return@launch
-                dialog = AlertDialog.Builder(activity).setTitle(R.string.runtime_model)
-                    .setSingleChoiceItems(
-                        choices.map { it.second }.toTypedArray(),
-                        choices.indexOfFirst { it.first == state.model }) { picker, index ->
+                dialog = ChoiceBottomSheet(
+                    content.context, R.string.runtime_model, choices.map { it.second },
+                    choices.indexOfFirst { it.first == state.model },
+                    onConfirm = { index ->
                         val id = choices[index].first
                         val effort =
                             state.effort.takeIf { it in app.modelCatalog.model(state.connection, id)?.efforts.orEmpty() }
                                 .orEmpty()
                         runtime.configure(id, effort)
-                        picker.dismiss()
-                    }.setNegativeButton(android.R.string.cancel, null)
-                    .setNeutralButton(R.string.chatgpt_refresh_models) { picker, _ ->
-                        picker.dismiss(); dialog = null; chooseModel(refresh = true)
-                    }.setOnDismissListener { dialog = null }.show()
+                    },
+                    onRefresh = { chooseModel(refresh = true) }
+                ).apply {
+                    setOnDismissListener { if (dialog === it) dialog = null }
+                    show()
+                }
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                dialog = AlertDialog.Builder(activity).setTitle(R.string.runtime_model)
+                dialog = AlertDialog.Builder(content.context).setTitle(R.string.runtime_model)
                     .setMessage(
-                        getString(
+                        content.context.getString(
                             R.string.runtime_models_error,
-                            getString(R.string.runtime_models_note)
+                            content.context.getString(R.string.runtime_models_note)
                         )
                     )
                     .setPositiveButton(android.R.string.ok, null)
@@ -792,21 +796,23 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 ?: return
         val model = app.modelCatalog.model(state.connection, state.model)
         val levels = listOf("") + model?.efforts.orEmpty()
-        val builder = AlertDialog.Builder(activity).setTitle(R.string.runtime_thinking)
-        if (levels.size == 1) builder.setMessage(if (model == null) R.string.runtime_thinking_unknown else R.string.runtime_thinking_unavailable)
-            .setPositiveButton(android.R.string.ok, null)
-        else builder.setSingleChoiceItems(
-            levels.map(::effortLabel).toTypedArray(),
-            levels.indexOf(state.effort).coerceAtLeast(0)
-        ) { picker, index ->
-            runtime.configure(state.model, levels[index]); picker.dismiss()
-        }.setNegativeButton(android.R.string.cancel, null)
-        dialog = builder.setOnDismissListener { dialog = null }.show()
+        dialog = ChoiceBottomSheet(
+            content.context, R.string.runtime_thinking,
+            if (levels.size == 1) emptyList() else levels.map(::effortLabel),
+            levels.indexOf(state.effort).coerceAtLeast(0),
+            onConfirm = { index -> runtime.configure(state.model, levels[index]) },
+            message = if (levels.size > 1) 0 else if (model == null)
+                R.string.runtime_thinking_unknown else R.string.runtime_thinking_unavailable
+        ).apply {
+            setOnDismissListener { if (dialog === it) dialog = null }
+            show()
+        }
     }
 
     private fun showContext() {
+        val context = content.context
         if (sample) {
-            dialog = AlertDialog.Builder(activity).setTitle(R.string.sample_session_title)
+            dialog = AlertDialog.Builder(context).setTitle(R.string.sample_session_title)
                 .setMessage(R.string.sample_offline_notice).setPositiveButton(android.R.string.ok, null)
                 .setOnDismissListener { dialog = null }.show()
             return
@@ -828,40 +834,40 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             val plan = Connections.isPlan(state.connection)
             val label =
                 if (plan) app.chatGpt.state.value.accounts.find { it.id == state.connection }?.label
-                    ?: getString(R.string.chatgpt_use_plan)
+                    ?: context.getString(R.string.chatgpt_use_plan)
                 else app.providerLabel(state.connection)
             val message = listOf(
-                getString(R.string.runtime_tokens_reported, state.inputTokens, state.outputTokens),
-                if (state.contextTokens > 0) getString(
+                context.getString(R.string.runtime_tokens_reported, state.inputTokens, state.outputTokens),
+                if (state.contextTokens > 0) context.getString(
                     R.string.runtime_context_reported,
                     state.contextTokens
-                ) else getString(R.string.runtime_context_unreported),
-                capacity?.let { getString(R.string.runtime_context_capacity, it) }
-                    ?: getString(R.string.runtime_context_capacity_unknown),
-                getString(R.string.runtime_context_local_limit),
+                ) else context.getString(R.string.runtime_context_unreported),
+                capacity?.let { context.getString(R.string.runtime_context_capacity, it) }
+                    ?: context.getString(R.string.runtime_context_capacity_unknown),
+                context.getString(R.string.runtime_context_local_limit),
                 state.compaction?.let {
-                    getString(
+                    context.getString(
                         R.string.runtime_context_compacted,
                         java.text.DateFormat.getDateTimeInstance().format(java.util.Date(it.at))
                     )
                 }.orEmpty(),
-                getString(R.string.runtime_context_connection, label),
+                context.getString(R.string.runtime_context_connection, label),
                 details?.let { (usage, _) ->
-                    getString(
+                    context.getString(
                         R.string.knowledge_tokens,
                         usage.first,
                         usage.second
                     )
-                } ?: getString(R.string.runtime_storage_error),
+                } ?: context.getString(R.string.runtime_storage_error),
                 details?.second?.let { pending ->
-                    getString(
+                    context.getString(
                         R.string.knowledge_pending,
                         pending.size,
                         pending.sumOf { it.tokens })
                 }.orEmpty()
             ).filter { it.isNotBlank() }.joinToString("\n")
             val builder =
-                AlertDialog.Builder(activity).setTitle(R.string.runtime_context).setMessage(message)
+                AlertDialog.Builder(context).setTitle(R.string.runtime_context).setMessage(message)
                     .setPositiveButton(android.R.string.ok, null)
             if (plan) builder.setNeutralButton(R.string.chatgpt_manage_usage) { _, _ ->
                 ChatGptAuth.openUsage(
@@ -919,7 +925,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             list.scrollBy(0, manager.getDecoratedBottom(row) - list.height + list.paddingBottom)
     }
 
-    private fun effortLabel(effort: String): String = getString(
+    private fun effortLabel(effort: String): String = content.context.getString(
         when (effort) {
             "none" -> R.string.runtime_thinking_none
             "minimal" -> R.string.runtime_thinking_minimal

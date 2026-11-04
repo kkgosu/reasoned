@@ -58,15 +58,11 @@
             android:textAppearance="@style/TextAppearance.Harness.Meta"
             android:visibility="gone" />
 
-        <ListView
+        <me.grishka.appkit.views.UsableRecyclerView
             android:id="@+id/drawer_sessions"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
-            android:choiceMode="singleChoice"
-            android:divider="@null"
-            android:drawSelectorOnTop="true"
-            android:listSelector="?android:attr/selectableItemBackground" />
+            android:layout_weight="1" />
 
         <View
             android:layout_width="match_parent"

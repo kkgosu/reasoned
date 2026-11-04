@@ -181,6 +181,19 @@ class ProviderSetupTest {
                 clickDialog("DeepSeek")
                 settle()
                 scenario.onActivity { activity ->
+                    assertEquals(Connections.key("openai"), app.savedConnection())
+                }
+                clickDialog(app.getString(android.R.string.cancel))
+                scenario.onActivity { activity ->
+                    assertEquals(Connections.key("openai"), app.savedConnection())
+                    assertEquals("test-only-unsaved-key-for-openai",
+                        activity.findViewById<EditText>(R.id.runtime_key).text.toString())
+                    activity.findViewById<Button>(R.id.runtime_provider).performClick()
+                }
+                clickDialog("DeepSeek")
+                clickDialog(app.getString(android.R.string.ok))
+                settle()
+                scenario.onActivity { activity ->
                     assertEquals(
                         "",
                         activity.findViewById<EditText>(R.id.runtime_key).text.toString()
