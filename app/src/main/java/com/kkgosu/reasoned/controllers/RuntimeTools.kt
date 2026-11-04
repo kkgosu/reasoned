@@ -1,5 +1,6 @@
 package com.kkgosu.reasoned.controllers
 
+import com.kkgosu.reasoned.api.Connections
 import com.kkgosu.reasoned.api.ProviderFailure
 import com.kkgosu.reasoned.api.openAiErrorCode
 import com.kkgosu.reasoned.model.NativeChat
@@ -46,7 +47,7 @@ internal object RuntimeTools {
             response.optJSONArray("output") ?: throw ProviderFailure("invalid_output_shape")
         android.util.Log.d(
             "ReasonedRuntime",
-            "validating completed output: items=${output.length()}; plan=${session.connection != "api"}"
+            "validating completed output: items=${output.length()}; plan=${Connections.isPlan(session.connection)}"
         )
         if (output.length() !in 1..16) throw ProviderFailure("invalid_output_count")
         if (output.toString()
@@ -121,7 +122,7 @@ internal object RuntimeTools {
                             tools.objects().any { it.getString("name") == name }
                         }; namespace=${if (namespace.isEmpty()) "none" else if (namespace == NAMESPACE) "expected" else "foreign"}"
                     )
-                    if (namespace.isNotEmpty() && (session.connection == "api" || namespace != NAMESPACE)) throw ProviderFailure(
+                    if (namespace.isNotEmpty() && (!Connections.namespacesTools(session.connection) || namespace != NAMESPACE)) throw ProviderFailure(
                         "tool_denied"
                     )
                     if (session.planPending && (name in questionNames - "ask_user_question" || name in setOf(

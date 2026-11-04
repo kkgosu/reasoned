@@ -18,28 +18,35 @@
             android:text="@string/provider_intro"
             android:textAppearance="@style/TextAppearance.Harness.Meta" />
 
-        <RadioGroup
-            android:id="@+id/runtime_billing"
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/space_16"
-            android:checkedButton="@id/runtime_use_api"
-            android:orientation="vertical">
+            android:layout_marginHorizontal="@dimen/space_24"
+            android:layout_marginTop="@dimen/space_24"
+            android:text="@string/provider_connection"
+            android:textAppearance="@style/TextAppearance.Harness.Title" />
 
-            <RadioButton
-                android:id="@+id/runtime_use_chatgpt"
-                style="@style/Widget.Harness.BillingChoice"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/chatgpt_use_plan" />
+        <Button
+            android:id="@+id/runtime_provider"
+            style="@style/Widget.Harness.Button.Secondary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24"
+            android:layout_marginTop="@dimen/space_8"
+            android:gravity="center_vertical|start"
+            android:text="@string/provider_choose" />
 
-            <RadioButton
-                android:id="@+id/runtime_use_api"
-                style="@style/Widget.Harness.BillingChoice"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/chatgpt_use_api" />
-        </RadioGroup>
+        <TextView
+            android:id="@+id/runtime_provider_docs"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24"
+            android:layout_marginTop="@dimen/space_8"
+            android:background="?android:attr/selectableItemBackground"
+            android:paddingVertical="@dimen/space_8"
+            android:text="@string/provider_docs"
+            android:textAppearance="@style/TextAppearance.Harness.Meta"
+            android:visibility="gone" />
 
         <LinearLayout
             android:id="@+id/runtime_chatgpt_fields"
@@ -69,11 +76,11 @@
             <Button
                 android:id="@+id/runtime_chatgpt_account"
                 style="@style/Widget.Harness.Button.Secondary"
-                android:gravity="center_vertical|start"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/space_24"
                 android:layout_marginTop="@dimen/space_8"
+                android:gravity="center_vertical|start"
                 android:text="@string/chatgpt_accounts" />
 
             <Button
@@ -102,11 +109,11 @@
 
             <TextView
                 android:id="@+id/runtime_key_label"
-                android:gravity="center_vertical|start"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/space_24"
                 android:layout_marginTop="@dimen/space_24"
+                android:gravity="center_vertical|start"
                 android:labelFor="@id/runtime_key"
                 android:text="@string/runtime_key" />
 
@@ -126,11 +133,21 @@
                 android:singleLine="true" />
 
             <TextView
+                android:id="@+id/runtime_key_note"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/space_24"
+                android:layout_marginTop="@dimen/space_8"
+                android:text="@string/provider_key_note"
+                android:textAppearance="@style/TextAppearance.Harness.Meta" />
+
+            <TextView
                 android:id="@+id/runtime_key_status"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/space_24"
                 android:layout_marginTop="@dimen/space_8"
+                android:accessibilityLiveRegion="polite"
                 android:textAppearance="@style/TextAppearance.Harness.Meta" />
 
             <Button
@@ -151,55 +168,89 @@
                 android:text="@string/runtime_forget_key" />
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/runtime_custom_fields"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/runtime_custom_url_label"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/space_24"
+                android:layout_marginTop="@dimen/space_24"
+                android:labelFor="@id/runtime_custom_url"
+                android:text="@string/provider_custom_url" />
+
+            <EditText
+                android:id="@+id/runtime_custom_url"
+                style="@style/Widget.Harness.Input"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/space_24"
+                android:layout_marginTop="@dimen/space_8"
+                android:gravity="center_vertical|start"
+                android:hint="@string/provider_custom_url_hint"
+                android:importantForAutofill="no"
+                android:inputType="textUri"
+                android:maxLength="300"
+                android:singleLine="true" />
+
+            <CheckBox
+                android:id="@+id/runtime_custom_keyless"
+                style="@style/Widget.Harness.BillingChoice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_8"
+                android:text="@string/provider_custom_keyless" />
+
+            <Button
+                android:id="@+id/runtime_custom_save"
+                style="@style/Widget.Harness.Button"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/space_24"
+                android:layout_marginTop="@dimen/space_8"
+                android:text="@string/provider_custom_save" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/space_24"
+                android:layout_marginTop="@dimen/space_8"
+                android:text="@string/provider_custom_note"
+                android:textAppearance="@style/TextAppearance.Harness.Meta" />
+        </LinearLayout>
+
         <TextView
             android:id="@+id/runtime_model_label"
-            android:gravity="center_vertical|start"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="@dimen/space_24"
             android:layout_marginTop="@dimen/space_24"
+            android:gravity="center_vertical|start"
             android:labelFor="@id/runtime_model"
             android:text="@string/runtime_model" />
 
-        <EditText
+        <Button
             android:id="@+id/runtime_model"
-            style="@style/Widget.Harness.Input"
+            style="@style/Widget.Harness.Button.Secondary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="@dimen/space_24"
             android:layout_marginTop="@dimen/space_8"
             android:gravity="center_vertical|start"
-            android:hint="@string/runtime_model_hint"
-            android:inputType="textVisiblePassword"
-            android:maxLength="100"
-            android:singleLine="true" />
+            android:text="@string/provider_model_none" />
 
-        <Button
-            android:id="@+id/runtime_save_model"
-            style="@style/Widget.Harness.Button.Secondary"
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="@dimen/space_24"
             android:layout_marginTop="@dimen/space_8"
-            android:text="@string/provider_save_model" />
-
-        <RadioGroup
-            android:id="@+id/runtime_chatgpt_model_list"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:saveEnabled="false"
-            android:visibility="gone" />
-
-        <Button
-            android:id="@+id/runtime_chatgpt_models"
-            style="@style/Widget.Harness.Button.Secondary"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="@dimen/space_24"
-            android:layout_marginTop="@dimen/space_8"
-            android:text="@string/chatgpt_refresh_models"
-            android:visibility="gone" />
+            android:text="@string/provider_model_note"
+            android:textAppearance="@style/TextAppearance.Harness.Meta" />
 
         <TextView
             android:id="@+id/runtime_setup_status"
@@ -229,11 +280,11 @@
         <EditText
             android:id="@+id/research_key"
             style="@style/Widget.Harness.Input"
-            android:gravity="center_vertical|start"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="@dimen/space_24"
             android:layout_marginTop="@dimen/space_16"
+            android:gravity="center_vertical|start"
             android:hint="@string/research_key_hint"
             android:importantForAutofill="noExcludeDescendants"
             android:inputType="textPassword"

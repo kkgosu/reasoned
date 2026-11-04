@@ -166,7 +166,8 @@ class NavigationTest {
                         assertEquals(0, row.left)
                         assertTrue(row.background is RippleDrawable)
                         assertTrue(row.isClickable && row.isFocusable)
-                        assertEquals(3, (row.parent as android.view.ViewGroup).childCount)
+                        // Providers, learning, transfer and about rows share one container.
+                        assertEquals(4, (row.parent as android.view.ViewGroup).childCount)
                     }
                     assertNull(activity.findViewById<View>(R.id.runtime_goal))
                 }
@@ -249,7 +250,7 @@ class NavigationTest {
                 settle()
                 scenario.onActivity { activity ->
                     assertNotNull(activity.findViewById<View>(R.id.runtime_goal))
-                    assertNull(activity.findViewById<View>(R.id.runtime_billing))
+                    assertNull(activity.findViewById<View>(R.id.runtime_key))
                     assertEquals(
                         activity.window.decorView.width,
                         activity.findViewById<View>(R.id.session_settings).width

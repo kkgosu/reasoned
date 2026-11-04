@@ -23,8 +23,8 @@ internal object NativeResponses {
     fun user(text: String, now: Long) = JSONObject().put("id", id(now)).put("role", "user")
         .put("content", text).put("timestamp", now)
 
-    private fun provider(connection: String) = if (connection == "api") "openai" else "openai-codex"
-    private fun api(connection: String) = if (connection == "api") "openai-responses" else "openai-codex-responses"
+    private fun provider(connection: String) = Providers.providerName(connection)
+    private fun api(connection: String) = Providers.apiName(connection)
 
     fun assistant(response: JSONObject, model: String, connection: String, now: Long): JSONObject {
         val content = JSONArray()
@@ -43,11 +43,15 @@ internal object NativeResponses {
                 "reasoning" -> content.put(JSONObject().put("type", "thinking")
                     .put("thinking", item.optJSONArray("summary")?.objects()?.filter { it.optString("type") == "summary_text" }
                         ?.joinToString("\n\n") { it.getString("text") }.orEmpty())
-                    .put("thinkingSignature", item.toString()))
+                    .put("thinkingSignature", if (api(connection) == Wire.ANTHROPIC.id)
+                        item.optString("encrypted_content") else item.toString())
+                    .apply { if (item.optBoolean("redacted")) put("redacted", true) })
                 "function_call" -> content.put(JSONObject().put("type", "toolCall")
                     .put("id", item.getString("call_id") + (item.optString("id").takeIf { it.isNotEmpty() }?.let { "|$it" } ?: ""))
                     .put("name", item.getString("name")).put("arguments", JSONObject(item.getString("arguments")))
-                    .put("namespace", item.opt("namespace")))
+                    .put("namespace", item.opt("namespace"))
+                    // Gemini 3 rejects a replayed call whose signature was dropped.
+                    .apply { item.optString("thoughtSignature").takeIf { it.isNotEmpty() }?.let { put("thoughtSignature", it) } })
                 else -> throw ProviderFailure("invalid_output")
             }
         }
@@ -150,7 +154,15 @@ internal object NativeResponses {
                     message.getJSONArray("content").objects().forEach { block ->
                         when (block.getString("type")) {
                             "thinking" -> if (sameModel && block.optString("thinkingSignature").isNotEmpty()) {
-                                val item = JSONObject(block.getString("thinkingSignature"))
+                                val signature = block.getString("thinkingSignature")
+                                // Anthropic/pi stores the opaque signature itself. Keep reading the
+                                // Responses-shaped JSON written by earlier Android provider builds.
+                                val item = if (api(connection) == Wire.ANTHROPIC.id && !signature.startsWith("{")) {
+                                    JSONObject().put("type", "reasoning").put("encrypted_content", signature)
+                                        .put("summary", JSONArray().put(JSONObject().put("type", "summary_text")
+                                            .put("text", block.optString("thinking"))))
+                                        .apply { if (block.optBoolean("redacted")) put("redacted", true) }
+                                } else JSONObject(signature)
                                 if (item.optString("type") != "reasoning") throw ProviderFailure("native_runtime_unavailable")
                                 out.put(item)
                             }
@@ -170,7 +182,11 @@ internal object NativeResponses {
                                 out.put(JSONObject().put("type", "function_call").put("call_id", ids[0])
                                     .put("name", block.getString("name")).put("arguments", block.getJSONObject("arguments").toString()).apply {
                                         if (sameModel && ids.getOrNull(1)?.matches(Regex("fc_[A-Za-z0-9_-]{1,61}")) == true) put("id", ids[1])
-                                        if (sameModel) put("namespace", block.opt("namespace"))
+                                        if (sameModel) {
+                                            put("namespace", block.opt("namespace"))
+                                            block.optString("thoughtSignature").takeIf { it.isNotEmpty() }
+                                                ?.let { put("thoughtSignature", it) }
+                                        }
                                     })
                             }
                             else -> throw ProviderFailure("native_runtime_unavailable")

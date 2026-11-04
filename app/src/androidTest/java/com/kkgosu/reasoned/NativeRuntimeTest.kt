@@ -419,12 +419,12 @@ class NativeRuntimeTest {
                                 store.queueNativeSteer(initial.id, JSONObject(compacting.nativeTurn).getJSONObject("entry").getString("id"),
                                     "A summary request is not a live teacher")
                             }
-                            assertFalse(request.has("tools")) // Account payload: genuinely tool-free.
+                            assertEquals(0, request.optJSONArray("tools")?.length() ?: 0) // No tools.
                             assertFalse(request.optJSONObject("reasoning")?.has("summary") == true)
                             response().put("status", "incomplete")
                         }
                         3 -> {
-                            assertFalse(request.has("tools"))
+                            assertEquals(0, request.optJSONArray("tools")?.length() ?: 0)
                             val committed = store.load(initial.id)!!.nativeRecord!!
                             assertNull(committed.pendingQuestion()) // Answer is durable before any summary request.
                             assertTrue(request.getJSONArray("input").toString().contains("Even integers (basics)"))
@@ -435,7 +435,7 @@ class NativeRuntimeTest {
                             val saved = store.load(initial.id)!!.nativeRecord!!.snapshot()
                             val marker = saved.getJSONArray("messages").objects().last()
                             assertEquals("compaction", marker.getString("customType"))
-                            assertEquals("openai-codex:fixture", marker.getJSONObject("details").getString("model"))
+                            assertEquals("fixture-account:fixture", marker.getJSONObject("details").getString("model"))
                             assertEquals(marker.getString("content"), request.getJSONArray("input").getJSONObject(0)
                                 .getJSONArray("content").getJSONObject(0).getString("text"))
                             response()
@@ -496,7 +496,7 @@ class NativeRuntimeTest {
                 val fake = ModelProvider { request, _ ->
                     if (++calls == 1) response(question = true).apply { getJSONObject("usage").put("input_tokens", 200000) }
                     else {
-                        assertFalse(request.has("tools"))
+                        assertEquals(0, request.optJSONArray("tools")?.length() ?: 0)
                         assertEquals("call_next|fc_next", store.load(initial.id)!!.nativeRecord!!.pendingQuestion()!!.question.callId)
                         response()
                     }
@@ -602,7 +602,7 @@ class NativeRuntimeTest {
                     assertEquals(ids, state.nativeDisplayIds.filterKeys { it in ids })
                     assertEquals("fixture", state.model); assertEquals("fixture-account", state.connection)
                     assertEquals(listOf("fixture-account"), connections)
-                    assertEquals("openai-codex", state.nativeRecord!!.snapshot().getJSONArray("messages").objects().last().getString("provider"))
+                    assertEquals("fixture-account", state.nativeRecord!!.snapshot().getJSONArray("messages").objects().last().getString("provider"))
                     runtime.edit("Unsubmitted answer", -1, 70, false)
                     runtime.stop().join()
                     val reopened = SessionRuntime(app, store, fake,

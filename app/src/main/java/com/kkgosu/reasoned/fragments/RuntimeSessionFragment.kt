@@ -38,7 +38,7 @@ import com.kkgosu.reasoned.MainActivity
 import com.kkgosu.reasoned.R
 import com.kkgosu.reasoned.ReasonedApplication
 import com.kkgosu.reasoned.api.ChatGptAuth
-import com.kkgosu.reasoned.api.OpenAiProvider
+import com.kkgosu.reasoned.api.Connections
 import com.kkgosu.reasoned.controllers.extractionStatus
 import com.kkgosu.reasoned.model.LessonDisplayItem.Role
 import com.kkgosu.reasoned.model.NativeQuestion
@@ -705,7 +705,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             val editable = state.status != "running" && state.status != "complete"
             views.sessionModel.apply {
                 text =
-                    if (loadingModels) getString(R.string.runtime_models_loading) else app.modelCatalog[state.model]?.name
+                    if (loadingModels) getString(R.string.runtime_models_loading) else app.modelCatalog.model(state.connection, state.model)?.name
                         ?: state.model.ifBlank { getString(R.string.runtime_model) }
                 contentDescription = getString(R.string.runtime_model) + ": " + text
                 isEnabled = !sample && editable && !loadingModels
@@ -715,7 +715,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 contentDescription = getString(R.string.runtime_thinking_selected, text)
                 isEnabled = !sample && editable
             }
-            val capacity = app.modelCatalog[state.model]?.window ?: 0
+            val capacity = app.modelCatalog.model(state.connection, state.model)?.window ?: 0
             val percent =
                 if (state.contextTokens > 0 && capacity > 0) ((state.contextTokens.toDouble() / capacity) * 100).toInt()
                     .coerceIn(0, 100) else null
@@ -746,14 +746,9 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             loadingModels = true
             pageViews?.let { render(it, state) }
             try {
-                val models = app.modelCatalog.available(state.connection, refresh) {
-                    if (state.connection == "api") OpenAiProvider(app.credentials).models()
-                        .filter { app.modelCatalog[it] != null }
-                        .map { it to (app.modelCatalog[it]?.name ?: it) }
-                    else app.chatGpt.models(state.connection).map { it.slug to it.name }
-                }
+                val models = app.models(state.connection, refresh)
                 val choices = (listOf(
-                    state.model to (app.modelCatalog[state.model]?.name ?: state.model)
+                    state.model to (app.modelCatalog.model(state.connection, state.model)?.name ?: state.model)
                 ) + models).distinctBy { it.first }
                 if (runtime.state.value?.id != sessionId) return@launch
                 dialog = AlertDialog.Builder(activity).setTitle(R.string.runtime_model)
@@ -762,7 +757,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                         choices.indexOfFirst { it.first == state.model }) { picker, index ->
                         val id = choices[index].first
                         val effort =
-                            state.effort.takeIf { it in app.modelCatalog[id]?.efforts.orEmpty() }
+                            state.effort.takeIf { it in app.modelCatalog.model(state.connection, id)?.efforts.orEmpty() }
                                 .orEmpty()
                         runtime.configure(id, effort)
                         picker.dismiss()
@@ -795,7 +790,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         val state =
             runtime.state.value?.takeIf { it.id == sessionId && it.status != "running" && it.status != "complete" }
                 ?: return
-        val model = app.modelCatalog[state.model]
+        val model = app.modelCatalog.model(state.connection, state.model)
         val levels = listOf("") + model?.efforts.orEmpty()
         val builder = AlertDialog.Builder(activity).setTitle(R.string.runtime_thinking)
         if (levels.size == 1) builder.setMessage(if (model == null) R.string.runtime_thinking_unknown else R.string.runtime_thinking_unavailable)
@@ -829,12 +824,12 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             } catch (_: Exception) {
                 null
             }
-            val capacity = app.modelCatalog[state.model]?.window
-            val plan = state.connection != "api"
+            val capacity = app.modelCatalog.model(state.connection, state.model)?.window
+            val plan = Connections.isPlan(state.connection)
             val label =
                 if (plan) app.chatGpt.state.value.accounts.find { it.id == state.connection }?.label
                     ?: getString(R.string.chatgpt_use_plan)
-                else getString(R.string.chatgpt_use_api)
+                else app.providerLabel(state.connection)
             val message = listOf(
                 getString(R.string.runtime_tokens_reported, state.inputTokens, state.outputTokens),
                 if (state.contextTokens > 0) getString(

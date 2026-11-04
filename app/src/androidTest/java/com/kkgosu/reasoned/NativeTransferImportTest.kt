@@ -4,6 +4,7 @@ import android.database.sqlite.SQLiteConstraintException
 import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.kkgosu.reasoned.api.Connections
 import com.kkgosu.reasoned.api.ModelProvider
 import com.kkgosu.reasoned.controllers.SessionRuntime
 import com.kkgosu.reasoned.model.NativeChat
@@ -94,7 +95,9 @@ class NativeTransferImportTest {
 
     @Test fun importedZipAndJsonContinueWithLocalModelOnlyAfterExplicitInput() = runBlocking {
         val preferences = app.getSharedPreferences("provider", 0)
-        val before = preferences.all.filterKeys { it in setOf("chatgpt", "model", "model:api") }
+        val before = preferences.all.filterKeys {
+            it in setOf("chatgpt", "model", "model:api", "model:key:openai", "connection")
+        }
         try {
             val snapshot = chat().snapshot().put("settings", JSONObject().put("model",
                 JSONObject().put("provider", "foreign_billing").put("id", "foreign_model")))
@@ -104,7 +107,9 @@ class NativeTransferImportTest {
                 .put("content", JSONArray().put(JSONObject().put("type", "text").put("text", "Authored explanation"))))
             val original = NativeChat.parse(snapshot.toString())
             for (bytes in listOf(original.raw.toByteArray(Charsets.UTF_8), zip(original))) {
-                preferences.edit().putBoolean("chatgpt", false).putString("model", "").putString("model:api", "").commit()
+                preferences.edit().putBoolean("chatgpt", false).putString("model", "")
+                    .putString("model:api", "").putString("model:key:openai", "")
+                    .remove("connection").commit()
                 SessionStore(app, null).use { store ->
                     var calls = 0
                     val fake = ModelProvider { payload, _ ->
@@ -117,7 +122,7 @@ class NativeTransferImportTest {
                             .put("usage", JSONObject().put("input_tokens", 40).put("output_tokens", 10))
                     }
                     val runtime = SessionRuntime(app, store, fake, providerFor = { connection ->
-                        assertEquals("api", connection); fake
+                        assertEquals(Connections.key("openai"), connection); fake
                     })
                     runtime.installTransfer(bytes, store.previewTransfer(bytes), emptySet())
                     runtime.open(original.id).join()
@@ -126,10 +131,10 @@ class NativeTransferImportTest {
                     assertEquals("model_settings_invalid", runtime.failure.value)
                     assertEquals(0, calls)
                     assertEquals(original.raw, store.load(original.id)!!.nativeRecord!!.raw)
-                    preferences.edit().putString("model:api", "fixture_local").commit()
+                    preferences.edit().putString("model:key:openai", "fixture_local").commit()
                     runtime.open(original.id).join()
                     assertEquals("fixture_local", runtime.state.value!!.model)
-                    assertEquals("api", runtime.state.value!!.connection)
+                    assertEquals(Connections.key("openai"), runtime.state.value!!.connection)
                     assertEquals(original.raw, store.load(original.id)!!.nativeRecord!!.raw)
                     assertEquals(0, calls)
                     runtime.retry(continueLesson = true).join()
@@ -148,7 +153,8 @@ class NativeTransferImportTest {
                 }
             }
         } finally {
-            preferences.edit().remove("chatgpt").remove("model").remove("model:api").apply {
+            preferences.edit().remove("chatgpt").remove("model").remove("model:api")
+                .remove("model:key:openai").remove("connection").apply {
                 before.forEach { (key, value) -> when (value) {
                     is Boolean -> putBoolean(key, value)
                     is String -> putString(key, value)
@@ -171,7 +177,7 @@ class NativeTransferImportTest {
             assertFalse(text.contains("read-only", ignoreCase = true))
             assertFalse(text.contains("Inspect imported"))
             assertFalse(text.contains("saved native version"))
-            assertTrue(text.contains("Connect a device"))
+            assertTrue(text.contains("No device connected"))
             assertFalse(text.contains("LAN sync", ignoreCase = true))
             assertFalse(text.contains("computer", ignoreCase = true))
             assertFalse(text.contains("No model requests", ignoreCase = true))

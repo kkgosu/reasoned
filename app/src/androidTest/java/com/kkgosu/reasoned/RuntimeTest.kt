@@ -8,6 +8,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import com.kkgosu.reasoned.api.Connections
 import com.kkgosu.reasoned.api.ModelProvider
 import com.kkgosu.reasoned.api.OpenAiProvider
 import com.kkgosu.reasoned.api.ProviderFailure
@@ -674,7 +675,7 @@ class RuntimeTest {
                 .body((if (status == 200) payload else fake).toResponseBody()).build()
         }.build()
         try {
-            val provider = OpenAiProvider(credentials, client)
+            val provider = OpenAiProvider({ credentials.read().orEmpty() }, client)
             for (mime in listOf(
                 "text/event-stream",
                 "TEXT/EVENT-STREAM; charset=utf-8",
@@ -687,7 +688,7 @@ class RuntimeTest {
                 var text = ""
                 assertEquals(
                     completed.toString(),
-                    provider.respond(JSONObject()) { text += it }.toString()
+                    provider.respond(JSONObject().put("model", "fixture").put("input", JSONArray().put(JSONObject().put("role", "user").put("content", "fixture")))) { text += it }.toString()
                 )
                 assertEquals("Local transport fixture", text)
             }
@@ -695,14 +696,14 @@ class RuntimeTest {
             for (invalid in listOf(completed.toString() + "\n\n", "<!DOCTYPE html>\n" + stream)) {
                 payload = invalid
                 try {
-                    provider.respond(JSONObject()) { }; fail("Non-SSE body accepted")
+                    provider.respond(JSONObject().put("model", "fixture").put("input", JSONArray().put(JSONObject().put("role", "user").put("content", "fixture")))) { }; fail("Non-SSE body accepted")
                 } catch (error: ProviderFailure) {
                     assertEquals("protocol", error.reason)
                 }
             }
             status = 401
             try {
-                provider.respond(JSONObject()) { }; fail("Unauthorized response accepted")
+                provider.respond(JSONObject().put("model", "fixture").put("input", JSONArray().put(JSONObject().put("role", "user").put("content", "fixture")))) { }; fail("Unauthorized response accepted")
             } catch (error: ProviderFailure) {
                 assertEquals("unauthorized", error.reason); assertFalse(
                     error.toString().contains(fake)
@@ -751,7 +752,9 @@ class RuntimeTest {
                 }).build()
         }.build()
         try {
-            val running = launch { OpenAiProvider(credentials, client).respond(JSONObject()) { } }
+            val running = launch {
+                OpenAiProvider({ credentials.read().orEmpty() }, client).respond(JSONObject().put("model", "fixture").put("input", JSONArray().put(JSONObject().put("role", "user").put("content", "fixture")))) { }
+            }
             withTimeout(5000) { entered.await() }
             running.cancel()
             withTimeout(5000) { running.join() }
@@ -809,6 +812,8 @@ class RuntimeTest {
         val preferences = app.getSharedPreferences("provider", 0)
         val wasPlan = preferences.getBoolean("chatgpt", false)
         val oldModel = preferences.getString("model:api", null)
+        val oldConnection = preferences.getString("connection", null)
+        val oldProviderModel = preferences.getString("model:key:openai", null)
         try {
             delegate.set(
                 app,
@@ -836,18 +841,13 @@ class RuntimeTest {
                         "",
                         activity.findViewById<EditText>(R.id.runtime_key).text.toString()
                     )
-                    activity.findViewById<android.widget.RadioGroup>(R.id.runtime_billing)
-                        .check(R.id.runtime_use_api)
-                    activity.findViewById<EditText>(R.id.runtime_model).setText("fake-model")
-                    activity.findViewById<Button>(R.id.runtime_save_model).performClick()
                 }
-                withTimeout(5000) {
-                    while (preferences.getString(
-                            "model:api",
-                            ""
-                        ) != "fake-model"
-                    ) kotlinx.coroutines.delay(20)
+                // The provider picker replaced the billing radios; select the same state directly
+                // so this test stays about key protection and single-start behavior.
+                withContext(Dispatchers.Main) {
+                    app.saveConnection(Connections.key("openai"), "fake-model")
                 }
+                assertEquals("fake-model", preferences.getString("model:key:openai", ""))
                 scenario.onActivity { it.showFragmentClearingBackStack(NewSessionFragment()) }
                 InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
                 scenario.onActivity { activity ->
@@ -909,6 +909,7 @@ class RuntimeTest {
             join(withContext(Dispatchers.Main) { runtime.stop() })
             delegate.set(app, previous)
             preferences.edit().putBoolean("chatgpt", wasPlan).putString("model:api", oldModel)
+                .putString("connection", oldConnection).putString("model:key:openai", oldProviderModel)
                 .commit()
             store.close(); app.deleteDatabase(name)
         }
@@ -956,7 +957,8 @@ class RuntimeTest {
                             activity.findViewById<Button>(R.id.composer_action).performClick()
                         }
                     }
-                    withTimeout(8000) {
+                    // Full-suite runs on a loaded emulator can take longer than 8s to settle.
+                    withTimeout(20_000) {
                         if (action != "button") runtime.state.first {
                             it?.status == "question" && it.answers == if (action == "answer") 1 else 0
                         }
@@ -1086,11 +1088,12 @@ class RuntimeTest {
                 io.noties.markwon.image.AsyncDrawableSpan::class.java
             ).isEmpty()
         )
-        assertNull(app.modelCatalog["unknown-fixture"])
-        val sol = requireNotNull(app.modelCatalog["gpt-6.1-sol"])
+        val openAi = Connections.key("openai")
+        assertNull(app.modelCatalog.model(openAi, "unknown-fixture"))
+        val sol = requireNotNull(app.modelCatalog.model(openAi, "gpt-6.1-sol"))
         assertTrue(sol.window > 0)
         assertEquals(listOf("low", "medium", "high", "xhigh", "max"), sol.efforts)
-        assertNull(app.modelCatalog["chat:gpt-6.1-sol"])
+        assertNull(app.modelCatalog.model("chat:gpt-6.1-sol", "gpt-6.1-sol"))
         val transcript = LessonAdapter(renderer)
         val rows = listOf(LessonDisplayItem.TextDisplayItem(1, "First message"))
         transcript.submit(rows, running = true)

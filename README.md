@@ -35,7 +35,8 @@ just reading.
 
 **Android 8.0+** · [Download the latest release](https://github.com/kkgosu/reasoned/releases/latest)
 
-1. Open **Settings → Providers & models** and connect a ChatGPT account or enter an OpenAI API key.
+1. Open **Settings → Providers & models** and choose a provider. Enter its API key, or connect a
+   ChatGPT account.
 2. Choose and save a model. Adjust **Learning preferences** if needed.
 3. Start a **New session** with something you want to understand. Keep the app open while it generates.
 
@@ -54,16 +55,28 @@ lesson, plan and graph work offline without an account.
 
 ## Connections, costs and data
 
-OpenAI is the only model provider: use a ChatGPT account or an API key. Live API-key use remains
-untested. Model availability and limits depend on your account.
+Open **Providers & models** and choose a provider. The picker offers 33 API-key providers, a custom
+OpenAI-compatible endpoint, and a ChatGPT plan connection. Each API-key provider keeps its own
+encrypted key on this device, and a key is sent only to the provider that owns it. The full list is
+in [docs/PROVIDERS.md](docs/PROVIDERS.md).
+
+Request translation and stream parsing are covered by JVM tests. `ProviderWireTest` runs 24 tests
+over the Chat, Anthropic and Gemini wires, inline images, native thinking signatures, the provider
+registry and the connection ids, and all 24 pass. `ProviderKeylessTest` adds six tests for the
+keyless transport rules and verbatim custom endpoint URLs. That is offline verification of the translation layer only. No live API
+call has been made to any API-key provider, so account eligibility, model availability,
+tool-calling quality and live image acceptance are unverified for each of the 33. The ChatGPT plan
+connection was exercised on a device, and the custom
+endpoint path was exercised on an API 36 emulator against the local stub at
+`scripts/local-provider-stub.mjs`, while every live vendor provider remains unverified.
 
 Lessons, graph extraction, figures, research and context summaries consume model allowance or API
 credit. ChatGPT usage and API billing are separate; the app never silently switches connections.
 Brave Search requires its own key and has separate billing. AI output and grading can be wrong.
 
-Sessions and the graph are stored on your device; relevant context is sent to OpenAI when you make
-requests. Optional research sends queries to Brave and retrieves public pages. Credentials use
-Keystore-backed encryption; the local database is not encrypted.
+Sessions and the graph are stored on your device; relevant context is sent to the provider you
+selected when you make requests. Optional research sends queries to Brave and retrieves public
+pages. Credentials use Keystore-backed encryption; the local database is not encrypted.
 
 There is no sync, export/import or app backup. **Uninstalling or clearing app storage deletes local
 data.** PDF import and background agents are not supported.
