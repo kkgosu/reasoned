@@ -85,6 +85,17 @@ class ProviderKeylessTest {
         assertEquals("Bearer sk-saved", captured.single().header("Authorization"))
     }
 
+    @Test fun customBaseUrlsAreUsedVerbatimForModelsAndGeneration() = runBlocking {
+        for (base in listOf("https://endpoint.example", "https://endpoint.example/tenant/openai", "https://endpoint.example/v1/")) {
+            val endpoint = provider(Connections.CUSTOM, keyless = true).copy(baseUrl = base)
+            val wire = transport(endpoint, "")
+            wire.models()
+            wire.respond(chatRequest()) { }
+            assertEquals("${base.trimEnd('/')}/models", captured[captured.lastIndex - 1].url.toString())
+            assertEquals("${base.trimEnd('/')}/chat/completions", captured.last().url.toString())
+        }
+    }
+
     private fun provider(id: String, keyless: Boolean) = Provider(
         id = id,
         label = id,

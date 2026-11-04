@@ -128,23 +128,16 @@ internal class WireProvider(
 
     private fun url(modelId: String) = when (provider.wire) {
         Wire.RESPONSES -> "${provider.root}/responses"
-        Wire.CHAT -> "${chatRoot()}/chat/completions"
+        Wire.CHAT -> "${provider.root}/chat/completions"
         Wire.ANTHROPIC -> "${provider.root}/v1/messages"
         Wire.GEMINI -> "${provider.root}/models/$modelId:streamGenerateContent?alt=sse"
     }
 
     private fun modelsUrl() = when (provider.wire) {
         Wire.RESPONSES -> "${provider.root}/models"
-        Wire.CHAT -> "${chatRoot()}/models"
+        Wire.CHAT -> "${provider.root}/models"
         Wire.ANTHROPIC -> "${provider.root}/v1/models?limit=1000"
         Wire.GEMINI -> "${provider.root}/models?pageSize=1000"
-    }
-
-    /** pi's data omits `/v1` for some OpenAI-compatible roots; add it only when absent. */
-    private fun chatRoot(): String {
-        val root = provider.root
-        val last = root.substringAfterLast('/')
-        return if (last.matches(Regex("v\\d+[a-z0-9]*"))) root else "$root/v1"
     }
 
     private fun responsesPayload(canonical: JSONObject, modelId: String, model: ProviderModel): JSONObject =

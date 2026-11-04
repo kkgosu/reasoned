@@ -1,5 +1,6 @@
 package com.kkgosu.reasoned.api
 
+import com.kkgosu.reasoned.utils.objects
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import okio.BufferedSource
@@ -91,6 +92,9 @@ internal class WireResponse {
 
     private val reasoning = StringBuilder()
     private var signature = ""
+    private val reasoningItems = JSONArray()
+    private var reasoningSize = 0
+    private var signatureSize = 0
     private val text = StringBuilder()
     private val calls = linkedMapOf<String, Call>()
     private var usage: JSONObject? = null
@@ -104,14 +108,29 @@ internal class WireResponse {
     }
 
     fun reasoning(chunk: String) {
-        if (reasoning.length + chunk.length > 24_000) throw ProviderFailure("output_limit")
+        if (reasoningSize + chunk.length > 24_000) throw ProviderFailure("output_limit")
+        reasoningSize += chunk.length
         reasoning.append(chunk)
     }
 
     /** Provider proof that the reasoning block came from it, replayed verbatim on the next turn. */
     fun signature(value: String) {
-        if (signature.length + value.length > 65_536) throw ProviderFailure("output_limit")
+        if (signatureSize + value.length > 65_536) throw ProviderFailure("output_limit")
+        signatureSize += value.length
         signature += value
+    }
+
+    /** Each Anthropic thinking block has its own proof; concatenating proofs invalidates them. */
+    fun endReasoning(redacted: Boolean = false) {
+        if (reasoning.isEmpty() && signature.isEmpty()) return
+        reasoningItems.put(JSONObject().put("type", "reasoning").put("id", "rs_${token()}")
+            .put("summary", JSONArray().put(JSONObject().put("type", "summary_text").put("text", reasoning.toString())))
+            .apply {
+                if (signature.isNotEmpty()) put("encrypted_content", signature)
+                if (redacted) put("redacted", true)
+            })
+        reasoning.setLength(0)
+        signature = ""
     }
 
     /** Arguments arrive in fragments; a call is keyed by stream index when the id is not yet known. */
@@ -180,12 +199,8 @@ internal class WireResponse {
     fun complete(): JSONObject {
         if (!stopped) throw ProviderFailure("incomplete")
         if (calls.values.any { it.name.isBlank() }) throw ProviderFailure("invalid_output")
-        val output = JSONArray()
-        if (reasoning.isNotEmpty()) output.put(
-            JSONObject().put("type", "reasoning").put("id", "rs_${token()}")
-                .put("summary", JSONArray().put(JSONObject().put("type", "summary_text").put("text", reasoning.toString())))
-                .apply { if (signature.isNotEmpty()) put("encrypted_content", signature) }
-        )
+        endReasoning()
+        val output = JSONArray(reasoningItems.objects())
         if (text.isNotEmpty()) output.put(
             JSONObject().put("type", "message").put("id", "msg_${token()}").put("role", "assistant")
                 .put("status", "completed")

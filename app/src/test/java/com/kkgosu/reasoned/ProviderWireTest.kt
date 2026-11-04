@@ -11,10 +11,12 @@ import com.kkgosu.reasoned.api.ProviderModel
 import com.kkgosu.reasoned.api.Providers
 import com.kkgosu.reasoned.api.Wire
 import com.kkgosu.reasoned.api.WireProvider
+import com.kkgosu.reasoned.api.WireResponse
 import com.kkgosu.reasoned.api.httpFailure
 import com.kkgosu.reasoned.controllers.canonicalRequest
 import com.kkgosu.reasoned.controllers.ToolSchemas
 import com.kkgosu.reasoned.model.NativeChat
+import com.kkgosu.reasoned.model.NativeTransferPackage
 import com.kkgosu.reasoned.utils.objects
 import kotlinx.coroutines.runBlocking
 import okio.Buffer
@@ -233,6 +235,79 @@ class ProviderWireTest {
         assertEquals(25, response.getJSONObject("usage").getInt("input_tokens"))
         assertEquals(5, response.getJSONObject("usage").getJSONObject("input_tokens_details").getInt("cached_tokens"))
         assertEquals(9, response.getJSONObject("usage").getInt("output_tokens"))
+    }
+
+    /** pi-ai 1.4.0, used by LearnHarness 958328c, stores raw proofs and a redacted flag. */
+    @Test fun anthropicSignaturesSurviveNativeTransferAndReplayAsSeparateBlocks() = runBlocking {
+        val model = provider("anthropic").model("claude-sonnet-5-5")!!
+        val events = listOf(
+            "message_start" to """{"message":{"id":"msg_fixture"}}""",
+            "content_block_start" to """{"index":0,"content_block":{"type":"thinking","thinking":"First thought"}}""",
+            "content_block_delta" to """{"index":0,"delta":{"type":"signature_delta","signature":"c2ln"}}""",
+            "content_block_delta" to """{"index":0,"delta":{"type":"signature_delta","signature":"LTE="}}""",
+            "content_block_stop" to """{"index":0}""",
+            "content_block_start" to """{"index":1,"content_block":{"type":"redacted_thinking","data":"cmVkYWN0ZWQ="}}""",
+            "content_block_stop" to """{"index":1}""",
+            "content_block_start" to """{"index":2,"content_block":{"type":"thinking","thinking":"Second thought","signature":"c2lnLTI="}}""",
+            "content_block_stop" to """{"index":2}""",
+            "content_block_delta" to """{"index":3,"delta":{"type":"text_delta","text":"Explanation"}}""",
+            "message_delta" to """{"delta":{"stop_reason":"end_turn"}}""",
+            "message_stop" to "{}",
+        )
+        val response = AnthropicWire.read(Buffer().writeUtf8(events.joinToString("") { (event, data) ->
+            "event: $event\ndata: $data\n\n"
+        })) { }
+        val connection = Connections.key("anthropic")
+        val assistant = NativeResponses.assistant(response, model.id, connection, 1L)
+        val thoughts = assistant.getJSONArray("content").objects().filter { it.getString("type") == "thinking" }
+        assertEquals(listOf("c2lnLTE=", "cmVkYWN0ZWQ=", "c2lnLTI="), thoughts.map { it.getString("thinkingSignature") })
+        assertTrue(thoughts[1].getBoolean("redacted"))
+        val chat = NativeChat.parse(JSONObject().put("id", "chat_anthropic_fixture").put("messages", JSONArray()
+            .put(NativeResponses.user("Explain", 0L)).put(assistant)).toString())
+        val imported = NativeTransferPackage.read(NativeTransferPackage.write(listOf(chat))).chats.single()
+        assertEquals(chat.raw, imported.raw)
+        val request = AnthropicWire.request(canonicalRequest(model.id, "Teach",
+            NativeResponses.input(imported, model.id, connection), JSONArray()), model, model.id)
+        val blocks = request.getJSONArray("messages").getJSONObject(1).getJSONArray("content")
+        assertEquals("First thought", blocks.getJSONObject(0).getString("thinking"))
+        assertEquals("c2lnLTE=", blocks.getJSONObject(0).getString("signature"))
+        assertEquals("redacted_thinking", blocks.getJSONObject(1).getString("type"))
+        assertEquals("cmVkYWN0ZWQ=", blocks.getJSONObject(1).getString("data"))
+        assertEquals("Second thought", blocks.getJSONObject(2).getString("thinking"))
+        assertEquals("c2lnLTI=", blocks.getJSONObject(2).getString("signature"))
+        assertFalse(NativeResponses.input(imported, "another-model", connection).objects()
+            .any { it.optString("type") == "reasoning" })
+        assertFalse(NativeResponses.input(imported, model.id, "api").objects()
+            .any { it.optString("type") == "reasoning" })
+    }
+
+    @Test fun legacyAnthropicReasoningRemainsReadableAndResponsesSignaturesStayUnchanged() {
+        val model = provider("anthropic").model("claude-sonnet-5-5")!!
+        val reasoning = JSONObject().put("type", "reasoning").put("id", "rs_fixture")
+            .put("encrypted_content", "legacy-proof")
+            .put("summary", JSONArray().put(JSONObject().put("type", "summary_text").put("text", "Thought")))
+        val response = JSONObject().put("status", "completed").put("output", JSONArray().put(reasoning))
+        for (connection in listOf("api", "oaiapp_fixture", "key:anthropic")) {
+            val assistant = NativeResponses.assistant(response, model.id, connection, 1L)
+            if (connection == "key:anthropic") {
+                // Simulate an archive written before the native Anthropic signature fix.
+                assistant.getJSONArray("content").getJSONObject(0).put("thinkingSignature", reasoning.toString())
+            } else assertEquals(reasoning.toString(), assistant.getJSONArray("content")
+                .getJSONObject(0).getString("thinkingSignature"))
+            val chat = NativeChat.parse(JSONObject().put("id", "chat_legacy_fixture")
+                .put("messages", JSONArray().put(assistant)).toString())
+            assertEquals(reasoning.toString(), NativeResponses.input(chat, model.id, connection)
+                .getJSONObject(0).toString())
+        }
+    }
+
+    @Test fun separateReasoningBlocksKeepTheOriginalAggregateLimits() {
+        val response = WireResponse()
+        response.reasoning("x".repeat(24_000))
+        response.signature("s".repeat(65_536))
+        response.endReasoning()
+        rejects("output_limit") { response.reasoning("x") }
+        rejects("output_limit") { response.signature("s") }
     }
 
     @Test fun geminiRequestAndStreamTranslateAcrossTheWire() = runBlocking {

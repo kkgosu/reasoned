@@ -62,7 +62,10 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
             if (app.chatGpt.state.value.busy) app.chatGpt.cancelSignIn()
             else app.chatGpt.signIn(app.chatGpt.state.value.active.ifBlank { null })
         }
-        views.findViewById<Button>(R.id.runtime_chatgpt_add).setOnClickListener { app.chatGpt.signIn() }
+        views.findViewById<Button>(R.id.runtime_chatgpt_add).setOnClickListener {
+            pendingPlan = true
+            app.chatGpt.signIn()
+        }
         views.findViewById<Button>(R.id.runtime_chatgpt_account).setOnClickListener {
             val accounts = app.chatGpt.state.value.accounts
             if (accounts.isNotEmpty()) dialog =
@@ -190,6 +193,7 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
     /** ChatGPT plan needs a real account id, so an empty account list starts sign-in first. */
     private fun chooseConnection(next: String, clearKey: Boolean = true) {
         if (Connections.isPlan(next) && next.isBlank()) return
+        pendingPlan = false
         connection = next
         // A key typed for the previous provider must never be submitted for the next one. Saving
         // an endpoint that keeps the same server is not a provider switch, so its typed key stays.
@@ -409,9 +413,9 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
         connection = app.savedConnection()
         scope?.launch {
             app.chatGpt.state.collect { state ->
-                if (pendingPlan && state.active.isNotEmpty() && Connections.isPlan(state.active)) {
+                if (pendingPlan && !state.busy) {
                     pendingPlan = false
-                    chooseConnection(state.active)
+                    if (state.error.isEmpty() && Connections.isPlan(state.active)) chooseConnection(state.active)
                 }
                 render(views)
                 if (dialog == null && Connections.isPlan(connection) && state.active.isNotEmpty()) {

@@ -43,7 +43,9 @@ internal object NativeResponses {
                 "reasoning" -> content.put(JSONObject().put("type", "thinking")
                     .put("thinking", item.optJSONArray("summary")?.objects()?.filter { it.optString("type") == "summary_text" }
                         ?.joinToString("\n\n") { it.getString("text") }.orEmpty())
-                    .put("thinkingSignature", item.toString()))
+                    .put("thinkingSignature", if (api(connection) == Wire.ANTHROPIC.id)
+                        item.optString("encrypted_content") else item.toString())
+                    .apply { if (item.optBoolean("redacted")) put("redacted", true) })
                 "function_call" -> content.put(JSONObject().put("type", "toolCall")
                     .put("id", item.getString("call_id") + (item.optString("id").takeIf { it.isNotEmpty() }?.let { "|$it" } ?: ""))
                     .put("name", item.getString("name")).put("arguments", JSONObject(item.getString("arguments")))
@@ -152,7 +154,15 @@ internal object NativeResponses {
                     message.getJSONArray("content").objects().forEach { block ->
                         when (block.getString("type")) {
                             "thinking" -> if (sameModel && block.optString("thinkingSignature").isNotEmpty()) {
-                                val item = JSONObject(block.getString("thinkingSignature"))
+                                val signature = block.getString("thinkingSignature")
+                                // Anthropic/pi stores the opaque signature itself. Keep reading the
+                                // Responses-shaped JSON written by earlier Android provider builds.
+                                val item = if (api(connection) == Wire.ANTHROPIC.id && !signature.startsWith("{")) {
+                                    JSONObject().put("type", "reasoning").put("encrypted_content", signature)
+                                        .put("summary", JSONArray().put(JSONObject().put("type", "summary_text")
+                                            .put("text", block.optString("thinking"))))
+                                        .apply { if (block.optBoolean("redacted")) put("redacted", true) }
+                                } else JSONObject(signature)
                                 if (item.optString("type") != "reasoning") throw ProviderFailure("native_runtime_unavailable")
                                 out.put(item)
                             }

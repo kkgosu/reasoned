@@ -669,6 +669,8 @@ fingerprint of the normalized URL. The URL, keyless flag and encrypted credentia
 that fingerprint, so editing the saved URL creates a separate endpoint instead of redirecting an
 existing session or reusing its key. The first custom-endpoint build stored one shared URL and key;
 startup pins that legacy endpoint once, and sessions that still hold `key:custom` keep using it.
+Chat-compatible base URLs are used verbatim: only `/models` or `/chat/completions` is appended,
+never an inferred `/v1` segment.
 `max_output_tokens` stays out of ChatGPT-plan requests; the plan payload allowlist strips it even
 when a shared caller supplies it.
 
@@ -688,18 +690,26 @@ Each wire parses its stream into `WireResponse`, the shared accumulator that ret
 Responses-shaped envelope the OpenAI path produces. `NativeResponses` projects that envelope into
 the archived assistant message, so session, tool and compaction code read one shape for every
 provider. Unknown vendor fields stay in `reasonedResponses`, and missing usage is never invented.
+Anthropic thinking blocks retain their individual raw `thinkingSignature` proofs and `redacted`
+flags, matching LearnHarness/pi-ai. Legacy Android Responses-JSON signatures remain readable;
+replay still requires the same provider, API and model. Aggregate reasoning/signature limits remain
+24,000/65,536 characters even across multiple blocks.
 
 Per-model differences live in the asset as compatibility flags. The wire code branches on those
 flags, not on provider names. The examples are `thinkingFormat` and `thinkingMap` for the Chat wire,
 `adaptive` and `effort` for Anthropic, and `thinkingParam` for Gemini.
 
-`ProviderWireTest` exercises request translation and stream parsing with canned streams. Its 21
-tests pass, covering the Chat, Anthropic and Gemini wires, inline images, Gemini function-call
-thought signatures through the native archive, the registry and the connection ids. The full JVM
-suite is 79 tests with one pre-existing Windows-only CRLF failure in `NativeTransferPackageTest`,
-reproduced on the base commit; CI runs on Ubuntu. That is offline verification of the translation layer only. No live
-call has been made to any API-key provider, so account eligibility, model availability,
-tool-calling quality and live image acceptance remain unverified for each of them.
+`ProviderWireTest` passes 24 tests covering the wires, inline images, native Anthropic/Gemini
+signatures, legacy archives, aggregate limits, the registry and connection ids. `ProviderKeylessTest`
+passes six tests, including verbatim custom model/generation URLs. The full JVM suite reports
+83 tests: 80 passed, two skipped and one pre-existing Windows-only CRLF failure in
+`NativeTransferPackageTest`, reproduced on the base commit; CI runs on Ubuntu.
+On 2026-11-04, debug/app-test assembly and debug lint passed; the focused offline API-36 ChatGPT
+fixture passed with account addition, account switching and provider selection during sign-in.
+A synthetic two-way check against pi-ai 1.4.0, as used by LearnHarness reference `958328c`, preserved
+separate Anthropic signatures and redacted blocks through native replay with all HTTP mocked.
+These are offline checks only. No live call has been made to any API-key provider, so account
+eligibility, model availability, tool-calling quality and live image acceptance remain unverified.
 
 ## Graph: phase 3 implemented
 

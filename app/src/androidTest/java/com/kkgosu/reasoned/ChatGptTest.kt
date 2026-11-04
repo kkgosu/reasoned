@@ -286,6 +286,58 @@ class ChatGptTest {
                             activity.findViewById<android.widget.Button>(R.id.runtime_model).text.toString()
                         )
                     }
+                    val originalAccounts = encrypted.read()!!
+                    val document = ChatGptAuth::class.java.getDeclaredField("document").apply { isAccessible = true }
+                    try {
+                        authorization = CompletableDeferred()
+                        scenario.onActivity { it.findViewById<View>(R.id.runtime_chatgpt_add).performClick() }
+                        withTimeout(5000) { authorization.await() }
+                        assertEquals("oaiapp_fixture", app.savedConnection())
+                        // Publish a synthetic completed registration while sign-in is still busy.
+                        // The old account remains present, exactly as with Add account in production.
+                        encrypted.save(JSONObject(originalAccounts).apply {
+                            val second = JSONObject(getJSONArray("accounts").getJSONObject(0).toString())
+                                .put("client", "oaiapp_second").put("email", "second@example.invalid")
+                            getJSONArray("accounts").put(second)
+                            put("active", "oaiapp_second")
+                        }.toString())
+                        document.set(auth, null) // Invalidate only this fixture's cached account file.
+                        auth.reload()
+                        assertTrue(auth.state.value.busy)
+                        assertEquals("oaiapp_fixture", app.savedConnection())
+                        auth.cancelSignIn() // Close the unused local callback and publish idle.
+                        withTimeout(5000) {
+                            while (app.savedConnection() != "oaiapp_second") delay(20)
+                        }
+                        scenario.onActivity { activity ->
+                            assertEquals("second@example.invalid", activity.findViewById<android.widget.Button>(
+                                R.id.runtime_chatgpt_account).text.toString())
+                            activity.findViewById<View>(R.id.runtime_chatgpt_account).performClick()
+                        }
+                        clickDialog("fixture@example.invalid")
+                        withTimeout(5000) {
+                            while (app.savedConnection() != "oaiapp_fixture") delay(20)
+                        }
+                        assertEquals("oaiapp_fixture", auth.state.value.active)
+
+                        // A provider explicitly chosen during sign-in wins over its later result.
+                        authorization = CompletableDeferred()
+                        scenario.onActivity { it.findViewById<View>(R.id.runtime_chatgpt_add).performClick() }
+                        withTimeout(5000) { authorization.await() }
+                        scenario.onActivity { it.findViewById<View>(R.id.runtime_provider).performClick() }
+                        clickDialog("OpenAI")
+                        auth.select("oaiapp_second")
+                        auth.cancelSignIn()
+                        withTimeout(5000) { auth.state.first { !it.busy } }
+                        InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
+                        assertEquals("key:openai", app.savedConnection())
+                    } finally {
+                        auth.cancelSignIn()
+                        withTimeout(5000) { auth.state.first { !it.busy } }
+                        encrypted.save(originalAccounts)
+                        document.set(auth, null)
+                        auth.reload()
+                    }
                 }
             } finally {
                 delegate.set(app, previous)

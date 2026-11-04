@@ -73,9 +73,10 @@ internal object AnthropicWire {
                     val text = item.optJSONArray("summary")?.objects()
                         ?.filter { it.optString("type") == "summary_text" }
                         ?.joinToString("") { it.optString("text") }.orEmpty()
-                    if (text.isNotEmpty() && signature.isNotEmpty()) append(
+                    if (signature.isNotEmpty()) append(
                         "assistant",
-                        JSONObject().put("type", "thinking").put("thinking", text).put("signature", signature)
+                        if (item.optBoolean("redacted")) JSONObject().put("type", "redacted_thinking").put("data", signature)
+                        else JSONObject().put("type", "thinking").put("thinking", text).put("signature", signature)
                     )
                 }
 
@@ -156,6 +157,7 @@ internal object AnthropicWire {
     suspend fun read(source: BufferedSource, delta: suspend (String) -> Unit): JSONObject {
         val response = WireResponse()
         val signatures = mutableMapOf<Int, String>()
+        val thinkingBlocks = mutableMapOf<Int, Boolean>()
         var terminal = false
         readSse(source) { event, data ->
             val payload = try {
@@ -172,8 +174,18 @@ internal object AnthropicWire {
                 "content_block_start" -> {
                     val block = payload.optJSONObject("content_block") ?: return@readSse false
                     val index = payload.optInt("content_block_index", payload.optInt("index", 0))
-                    if (block.optString("type") == "tool_use") {
-                        response.call(
+                    when (block.optString("type")) {
+                        "thinking" -> {
+                            thinkingBlocks[index] = false
+                            response.reasoning(block.optString("thinking"))
+                            signatures[index] = block.optString("signature")
+                        }
+                        "redacted_thinking" -> {
+                            thinkingBlocks[index] = true
+                            response.reasoning("[Reasoning redacted]")
+                            signatures[index] = block.getString("data")
+                        }
+                        "tool_use" -> response.call(
                             key = "block-$index",
                             id = block.optString("id").takeIf { it.isNotEmpty() },
                             name = block.optString("name").takeIf { it.isNotEmpty() },
@@ -201,7 +213,10 @@ internal object AnthropicWire {
 
                 "content_block_stop" -> {
                     val block = payload.optInt("index", 0)
-                    signatures[block]?.let { response.signature(it) }
+                    thinkingBlocks.remove(block)?.let { redacted ->
+                        signatures.remove(block)?.let { response.signature(it) }
+                        response.endReasoning(redacted)
+                    }
                 }
 
                 "message_delta" -> {
@@ -233,7 +248,7 @@ internal object AnthropicWire {
             }
             false
         }
-        if (!terminal) throw ProviderFailure("incomplete")
+        if (!terminal || thinkingBlocks.isNotEmpty()) throw ProviderFailure("incomplete")
         return response.complete()
     }
 
