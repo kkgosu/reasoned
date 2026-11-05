@@ -457,7 +457,8 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
         pageView?.findViewById<EditText>(R.id.runtime_key)?.text?.clear()
         pageView?.findViewById<EditText>(R.id.research_key)?.text?.clear()
         activity.window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
-        dialog?.dismiss(); dialog = null
+        (dialog as? ChoiceBottomSheet)?.dismissWithoutAnimation() ?: dialog?.dismiss()
+        dialog = null
         scope?.cancel(); scope = null
         modelsJob = null
         super.onHidden()
@@ -466,7 +467,8 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
     override fun onDestroyView() {
         scope?.cancel(); scope = null
         modelsJob = null
-        dialog?.dismiss(); dialog = null
+        (dialog as? ChoiceBottomSheet)?.dismissWithoutAnimation() ?: dialog?.dismiss()
+        dialog = null
         pageView = null
         super.onDestroyView()
     }

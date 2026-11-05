@@ -78,8 +78,10 @@ Sessions and the graph are stored on your device; relevant context is sent to th
 selected when you make requests. Optional research sends queries to Brave and retrieves public
 pages. Credentials use Keystore-backed encryption; the local database is not encrypted.
 
-There is no sync, export/import or app backup. **Uninstalling or clearing app storage deletes local
-data.** PDF import and background agents are not supported.
+Export/import and device sync are temporarily hidden from release builds while the upstream
+LearnHarness integration is under review; they remain available in debug builds. App backup is
+disabled. **Uninstalling or clearing app storage deletes local data.** PDF import and background
+agents are not supported.
 
 [Privacy](PRIVACY.md) · [Security](SECURITY.md)
 

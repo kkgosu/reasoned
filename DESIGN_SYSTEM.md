@@ -121,7 +121,17 @@ Dialogs retain the shared native AlertDialog theme without a Material Components
 
 The drawer, graph search and all dialog option lists use AppKit UsableRecyclerView, including single/multiple-choice AlertDialogs. Shared text rows retain native focus, accessibility click/long-click actions, ripple feedback and checked state when recycled. Graph search retains asynchronous, case-insensitive word-prefix filtering and its empty state.
 
-Provider, model and thinking-level pickers use AppKit BottomSheet with single-choice UsableRecyclerViews and fixed OK/Cancel footers. Selection is provisional until OK; Cancel, Back and swipe dismissal leave settings unchanged. Model refresh and manual model ID entry (in Settings) are in the sheet toolbar overflow. AppKit owns sheet sizing, insets, animation and dismissal; only the list and any informational message scroll. Model discovery does not leave a loading message on the settings page after the sheet opens.
+Provider, model and thinking-level pickers use AppKit BottomSheet with single-choice
+UsableRecyclerViews and fixed OK/Cancel footers. Selection is provisional until OK; Cancel, Back and
+swipe dismissal leave settings unchanged. Model refresh and manual model ID entry (in Settings) are
+in the sheet toolbar overflow. AppKit owns sheet sizing, insets and normal show/dismiss animations;
+only the list and any informational message scroll. When a fragment is hidden or its view is
+destroyed, cleanup immediately finishes even an in-progress dismissal before its window is detached.
+Model discovery does not leave a loading message on the settings page after the sheet opens.
+
+The Export/import entry in Settings is temporarily debug-only while the upstream LearnHarness
+integration is under review. Release builds hide the entry without removing the transfer
+implementation.
 
 The connection-string dialog reuses the padded native input layout: 24-dp outer horizontal gutters and the shared field's internal padding. URI input retains disabled suggestions, autofill and view-state saving; the pairing parser, not a name-field truncation filter, validates its length. `LessonTransferUiTest` covers entering and cancelling a pairing string without retaining it, with view-state saving, autofill and keyboard suggestions disabled. It does not exercise pairing or lesson exchange. UI tests cover important user journeys, not isolated widgets or visual layout matrices; see `AGENTS.md`.
 

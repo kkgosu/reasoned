@@ -6,8 +6,8 @@ import android.app.Dialog
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
-import android.text.TextWatcher
 import android.text.InputType
+import android.text.TextWatcher
 import android.transition.ChangeBounds
 import android.transition.Fade
 import android.transition.TransitionManager
@@ -28,8 +28,8 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.RadioButton
-import android.widget.SeekBar
 import android.widget.ScrollView
+import android.widget.SeekBar
 import android.widget.TextView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.LinearSmoothScroller
@@ -47,8 +47,8 @@ import com.kkgosu.reasoned.model.RuntimeSession
 import com.kkgosu.reasoned.storage.extractionUsage
 import com.kkgosu.reasoned.storage.uncovered
 import com.kkgosu.reasoned.ui.ChoiceBottomSheet
-import com.kkgosu.reasoned.ui.adapters.TextListAdapter
 import com.kkgosu.reasoned.ui.adapters.LessonAdapter
+import com.kkgosu.reasoned.ui.adapters.TextListAdapter
 import com.kkgosu.reasoned.ui.adapters.confidenceColor
 import com.kkgosu.reasoned.ui.text.lessonMarkdown
 import com.kkgosu.reasoned.ui.text.runtimeError
@@ -444,7 +444,8 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     }
 
     override fun onHidden() {
-        dialog?.dismiss(); dialog = null
+        (dialog as? ChoiceBottomSheet)?.dismissWithoutAnimation() ?: dialog?.dismiss()
+        dialog = null
         runtime.stop()
         scope?.cancel(); scope = null
         loadingModels = false
@@ -453,7 +454,8 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
 
     override fun onDestroyView() {
         scope?.cancel(); scope = null
-        dialog?.dismiss(); dialog = null
+        (dialog as? ChoiceBottomSheet)?.dismissWithoutAnimation() ?: dialog?.dismiss()
+        dialog = null
         if (Build.VERSION.SDK_INT >= 30) content?.setWindowInsetsAnimationCallback(null)
         imeAnimations = 0
         followingTail = false

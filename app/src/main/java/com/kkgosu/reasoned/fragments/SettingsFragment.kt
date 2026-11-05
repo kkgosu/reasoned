@@ -182,8 +182,11 @@ class SettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
                         null
                     )
                 }
-                views.findViewById<Button>(R.id.settings_transfer).setOnClickListener {
-                    Nav.go(activity, LessonTransferFragment::class.java, null)
+                views.findViewById<Button>(R.id.settings_transfer).apply {
+                    visibility = if (BuildConfig.DEBUG) View.VISIBLE else View.GONE
+                    setOnClickListener {
+                        Nav.go(activity, LessonTransferFragment::class.java, null)
+                    }
                 }
                 views.findViewById<Button>(R.id.settings_learning)
                     .setOnClickListener { openPage("learning") }

@@ -282,6 +282,7 @@ class ChatGptTest {
                             "Plan model was not saved; visible=${activeLabels()}", timeout
                         )
                     }
+                    // Recreate immediately: confirming the model may still be animating the sheet closed.
                     scenario.recreate()
                     InstrumentationRegistry.getInstrumentation().uiAutomation.waitForIdle(300, 3000)
                     scenario.onActivity { activity ->

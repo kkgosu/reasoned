@@ -5,10 +5,10 @@ import android.graphics.drawable.ColorDrawable
 import android.view.Menu
 import android.view.Window
 import android.widget.Button
-import androidx.recyclerview.widget.ConcatAdapter
-import androidx.recyclerview.widget.LinearLayoutManager
 import android.widget.TextView
 import android.widget.Toolbar
+import androidx.recyclerview.widget.ConcatAdapter
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.kkgosu.reasoned.R
 import com.kkgosu.reasoned.ui.adapters.TextListAdapter
 import me.grishka.appkit.utils.SingleViewRecyclerAdapter
@@ -25,6 +25,12 @@ class ChoiceBottomSheet(
     onManual: (() -> Unit)? = null,
     message: Int = 0
 ) : BottomSheet(context) {
+    override fun dismissWithoutAnimation() {
+        // Finish even an in-flight animated dismissal before the owner's window is destroyed.
+        dismissed = false
+        super.dismissWithoutAnimation()
+    }
+
     init {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(R.layout.sheet_choice)

@@ -1,5 +1,26 @@
 # Public-release preparation
 
+## 1.2.0 preparation (not published)
+
+- Version name **1.2.0**, version code **3**. Export/import is hidden from release Settings;
+  debug builds retain it while the upstream LearnHarness integration is under review.
+- Offline debug, Android-test and unsigned release assembly passed. Debug/release lint each report
+  **0 errors and 77 warnings**.
+- JVM suite: **81 passed, 2 skipped, 0 failures**. The previously reported Windows fixture failure
+  did not occur in this run; no assertion was changed for this preparation.
+- `scripts/check-release-samples.py` passed: sample lesson, graph and style screens remain in debug
+  and are removed from release.
+- Nine navigation/restoration, account/model and provider-setup checks passed on the disposable
+  offline API 36 emulator after fixing the bottom-sheet lifecycle crash. Fragment cleanup now
+  finishes an in-progress dismissal before its window detaches; normal sheet animations remain.
+- Two lesson controls/draft/keyboard checks also passed. The previously reported keyboard-test
+  timeout did not reproduce in this run; no assertions were relaxed.
+- The full instrumentation suite and live-provider acceptance were not run.
+- Release output: `app/build/outputs/apk/release/app-release-unsigned.apk`. It is **not
+  distributable**
+  until signed with the same release key as v1.1 and checked as an update. No tag, upload or GitHub
+  release was created by this preparation.
+
 ## Verified locally
 
 - [x] Application license selected by the owner: **AGPL-3.0-only**; root `LICENSE`, README and
