@@ -62,6 +62,10 @@ internal data class Provider(
     val baseUrl: String,
     val docs: String?,
     val models: List<ProviderModel>,
+    /** Upstream headers every model on this endpoint declares identically. */
+    val headers: Map<String, String> = emptyMap(),
+    /** Header that carries the conversation id, or null when the endpoint routes per request. */
+    val sessionHeader: String? = null,
     /** Only the custom endpoint can be keyless; a registry provider always sends a key. */
     val keyless: Boolean = false,
     /**
@@ -171,10 +175,37 @@ internal object Providers {
                         compat = model.optJSONObject("compat")?.let(::compat) ?: ModelCompat(),
                     )
                 },
+                headers = provider.optJSONObject("headers")?.let(::providerHeaders) ?: emptyMap(),
+                sessionHeader = sessionHeader(provider),
             )
         }
         require(providers.isNotEmpty()) { "Empty provider registry" }
         registry = providers
+    }
+
+    /** RFC 7230 field-name token, bounded so a malformed asset cannot smuggle a header. */
+    private val HEADER_NAME = Regex("[!#\$%&'*+.^_`|~0-9A-Za-z-]{1,64}")
+
+    /** Visible ASCII only, bounded, so no control byte or line break reaches OkHttp. */
+    private val HEADER_VALUE = Regex("[\\x20-\\x7E]{1,512}")
+
+    private fun providerHeaders(raw: JSONObject): Map<String, String> {
+        require(raw.length() <= 16) { "Too many headers in the provider asset" }
+        return raw.keys().asSequence().associateWith { name ->
+            require(name.matches(HEADER_NAME)) { "Invalid header name in the provider asset" }
+            val value = raw.opt(name) as? String
+                ?: throw IllegalArgumentException("Invalid header value in the provider asset")
+            require(value.matches(HEADER_VALUE)) { "Invalid header value in the provider asset" }
+            value
+        }
+    }
+
+    private fun sessionHeader(provider: JSONObject): String? {
+        if (!provider.has("sessionHeader")) return null
+        val name = provider.opt("sessionHeader") as? String
+            ?: throw IllegalArgumentException("Invalid session header in the provider asset")
+        require(name.matches(HEADER_NAME)) { "Invalid session header in the provider asset" }
+        return name
     }
 
     private fun compat(raw: JSONObject) = ModelCompat(

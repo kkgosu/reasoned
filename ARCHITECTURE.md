@@ -670,9 +670,18 @@ that fingerprint, so editing the saved URL creates a separate endpoint instead o
 existing session or reusing its key. The first custom-endpoint build stored one shared URL and key;
 startup pins that legacy endpoint once, and sessions that still hold `key:custom` keep using it.
 Chat-compatible base URLs are used verbatim: only `/models` or `/chat/completions` is appended,
-never an inferred `/v1` segment.
+never an inferred `/v1` segment. Mistral and Vercel AI Gateway therefore carry `/v1` in their
+provider base URLs.
 `max_output_tokens` stays out of ChatGPT-plan requests; the plan payload allowlist strips it even
 when a shared caller supplies it.
+
+Every API-key request carries `User-Agent: Reasoned/<version> (Android)`. The registry asset can also
+carry provider-level headers and one session header. OpenCode Zen and OpenCode Go send
+`x-opencode-client` and the stable `RuntimeSession.id` in `x-opencode-session`; NVIDIA sends its
+poll and billing-origin headers. The transport owns the credential and the SSE `Accept` after the
+provider headers are applied, so provider data cannot replace either. Model-list requests omit the
+session header. Imported lesson ids are bounded visible ASCII at parse time, and the transport skips
+an unsafe id rather than passing it to OkHttp.
 
 The Chat, Anthropic and Gemini wires translate a `input_image` data URL into their native inline
 image shape. Gemini function calls keep their `thoughtSignature` in the archived tool call and
@@ -700,16 +709,20 @@ flags, not on provider names. The examples are `thinkingFormat` and `thinkingMap
 `adaptive` and `effort` for Anthropic, and `thinkingParam` for Gemini.
 
 `ProviderWireTest` passes 24 tests covering the wires, inline images, native Anthropic/Gemini
-signatures, legacy archives, aggregate limits, the registry and connection ids. `ProviderKeylessTest`
-passes six tests, including verbatim custom model/generation URLs. The full JVM suite reports
-83 tests: 80 passed, two skipped and one pre-existing Windows-only CRLF failure in
-`NativeTransferPackageTest`, reproduced on the base commit; CI runs on Ubuntu.
+signatures, legacy archives, aggregate limits, the registry and connection ids.
+`ProviderEndpointTest` passes four tests that drive the real transport for all 33 providers against
+a mock HTTP client, including exact URLs and provider/session headers. `ProviderKeylessTest` passes
+six tests, including verbatim custom model/generation URLs. The full JVM suite reports 87 tests:
+84 passed, two skipped and one pre-existing Windows-only CRLF failure in `NativeTransferPackageTest`,
+reproduced on the base commit; CI runs on Ubuntu.
 On 2026-11-04, debug/app-test assembly and debug lint passed; the focused offline API-36 ChatGPT
 fixture passed with account addition, account switching and provider selection during sign-in.
 A synthetic two-way check against pi-ai 1.4.0, as used by LearnHarness reference `958328c`, preserved
 separate Anthropic signatures and redacted blocks through native replay with all HTTP mocked.
-These are offline checks only. No live call has been made to any API-key provider, so account
-eligibility, model availability, tool-calling quality and live image acceptance remain unverified.
+On 2026-11-06, the app's exact request shape was sent once to each of the 33 live endpoints with a
+fake key. All reached an auth or model gate after fixing OpenCode Go's missing session header and the
+Mistral and Vercel base paths. No successful model request was made. Account eligibility, model
+availability, tool-calling quality and live image acceptance remain unverified.
 
 ## Graph: phase 3 implemented
 

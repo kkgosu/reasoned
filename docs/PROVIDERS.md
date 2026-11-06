@@ -2,7 +2,7 @@
 
 Reasoned sends model requests straight from your device. There is no relay server. The connectable providers are fixed in [`app/src/main/assets/providers.json`](../app/src/main/assets/providers.json), and each one maps to one of four wire formats the app speaks natively.
 
-**Status.** Request translation and stream parsing for every wire are covered by passing JVM tests. No live API call has been made to any API-key provider, so treat this page as what the app sends, not as a promise that a given account can use it. Read [Verification status](#verification-status) for the limits.
+**Status.** Request translation, stream parsing and endpoint headers for every wire are covered by passing JVM tests. The app's exact request shape has been probed against each endpoint with a fake key. No authenticated model call has been made, so treat this page as what the app sends, not as a promise that a given account can use it. Read [Verification status](#verification-status) for the limits.
 
 ## What you can connect
 
@@ -27,7 +27,7 @@ A wire is the request and stream format a provider speaks. The app implements fo
 | `ANTHROPIC` | Anthropic Messages | `<base>/v1/messages` |
 | `GEMINI` | Google Generative Language | `<base>/models/<model>:streamGenerateContent?alt=sse` |
 
-The `CHAT` wire appends `/v1` when the provider base URL does not already end in a version segment. `https://api.deepseek.com` becomes `https://api.deepseek.com/v1/chat/completions`.
+The provider base URL is the exact prefix the app uses. A provider whose API lives under `/v1` carries that segment in its base URL. DeepSeek uses `https://api.deepseek.com/chat/completions`, Mistral uses `https://api.mistral.ai/v1/chat/completions`, and Vercel AI Gateway uses `https://ai-gateway.vercel.sh/v1/chat/completions`.
 
 | Wire | Auth header | Extra header |
 | --- | --- | --- |
@@ -35,6 +35,8 @@ The `CHAT` wire appends `/v1` when the provider base URL does not already end in
 | `CHAT` | `Authorization: Bearer <key>` | none |
 | `ANTHROPIC` | `x-api-key: <key>` | `anthropic-version: 2023-06-01` |
 | `GEMINI` | `x-goog-api-key: <key>` | none |
+
+Every request also sends `User-Agent: Reasoned/<version> (Android)`. OpenCode Zen and OpenCode Go send `x-opencode-client: Reasoned` and the stable conversation id in `x-opencode-session`. NVIDIA sends `NVCF-POLL-SECONDS: 3600` and `X-BILLING-INVOKE-ORIGIN: Reasoned`.
 
 The Gemini key goes in a header, not in the query string. Every request asks for an SSE stream.
 
@@ -78,7 +80,9 @@ The table lists all 33 entries, grouped by wire. The model count is the number o
 | Z.AI | `zai` | `CHAT` | 7 |
 | Z.AI Coding CN | `zai-coding-cn` | `CHAT` | 4 |
 
-Vercel AI Gateway runs on the Chat wire even though the generator copies its models from the Anthropic Messages bucket. The bucket picks which model records to copy, and the wire decides what the client sends.
+Vercel AI Gateway runs on the Chat wire at `https://ai-gateway.vercel.sh/v1` even though the generator copies its models from the Anthropic Messages bucket. The bucket picks which model records to copy, and the wire decides what the client sends. The live endpoint audit confirmed that this base reaches the gateway auth gate.
+
+OpenCode Go requires `x-opencode-session` on every generate request. The app sends the session's stable internal id, so a conversation keeps the same routing identity across teaching, compaction, extraction, research and figure review. OpenCode Zen sends the same header for parity even though it did not reject a request without it.
 
 ## Not included
 
@@ -168,11 +172,15 @@ The provider list and the exclusion list are arrays in [`scripts/update-provider
 
 ## Verification status
 
-[`ProviderWireTest.kt`](../app/src/test/java/com/kkgosu/reasoned/ProviderWireTest.kt) exercises request translation and stream parsing with canned provider streams. It has 21 tests, and all 21 pass. They cover the Chat, Anthropic and Gemini request translators and their stream parsers, inline image translation, Gemini function-call thought signatures through the native archive, the provider registry, the connection ids and the custom endpoint URL rule.
+[`ProviderWireTest.kt`](../app/src/test/java/com/kkgosu/reasoned/ProviderWireTest.kt) exercises request translation and stream parsing with canned provider streams. It has 24 tests, and all 24 pass. They cover the Chat, Anthropic and Gemini request translators and their stream parsers, inline image translation, Gemini function-call thought signatures through the native archive, the provider registry, the connection ids and the custom endpoint URL rule.
 
-The full JVM suite is 79 tests with one pre-existing Windows-only CRLF failure in `NativeTransferPackageTest`, reproduced on the base commit; CI runs on Ubuntu. The provider tests do not depend on it. `ProviderKeylessTest` adds five cases for the keyless transport rules: no auth header on the model list or on respond even with a saved key, a non-keyless custom endpoint that fails before either call without a key, and a registry provider that is never keyless. To run them alone, use `./gradlew :app:testDebugUnitTest --tests "com.kkgosu.reasoned.ProviderWireTest"`.
+[`ProviderEndpointTest.kt`](../app/src/test/java/com/kkgosu/reasoned/ProviderEndpointTest.kt) drives the real `WireProvider` with a mock HTTP client for every one of the 33 providers. It pins each full request URL literally and asserts the credential header, `User-Agent`, OpenCode session and client headers, NVIDIA headers, model field and model-list behavior. It makes no network call.
 
-That is offline verification of the translation layer only. No live API-key call has been made to any of the 33 providers. That leaves these unverified for each provider:
+The full JVM suite is 87 tests with one pre-existing Windows-only CRLF failure in `NativeTransferPackageTest`, reproduced on the base commit; CI runs on Ubuntu. The provider tests do not depend on it. `ProviderKeylessTest` adds five cases for the keyless transport rules: no auth header on the model list or on respond even with a saved key, a non-keyless custom endpoint that fails before either call without a key, and a registry provider that is never keyless. To run the provider suites alone, use `./gradlew :app:testDebugUnitTest --tests "com.kkgosu.reasoned.ProviderWireTest" --tests "com.kkgosu.reasoned.ProviderEndpointTest"`.
+
+On 2026-11-06 the app's exact request shape was sent once to each of the 33 registered endpoints with a fake key. Thirty-two reached an auth or model gate. `opencode-go` returned HTTP 400 `MissingSessionID`; after the session header fix it returned HTTP 401. Mistral and Vercel AI Gateway returned HTTP 404 at their old app URLs; after the `/v1` base fixes they returned HTTP 401. No successful model request was made.
+
+That is endpoint and translation verification only. No authenticated API-key call has been made to any of the 33 providers. That leaves these unverified for each provider:
 
 - account eligibility and sign-up requirements
 - which models your account can use

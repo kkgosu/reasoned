@@ -4801,7 +4801,7 @@
       "id": "mistral",
       "label": "Mistral",
       "wire": "chat",
-      "baseUrl": "https://api.mistral.ai",
+      "baseUrl": "https://api.mistral.ai/v1",
       "models": [
         {
           "id": "codestral-latest",
@@ -5709,6 +5709,9 @@
       "label": "NVIDIA",
       "wire": "chat",
       "baseUrl": "https://integrate.api.nvidia.com/v1",
+      "headers": {
+        "NVCF-POLL-SECONDS": "3600"
+      },
       "models": [
         {
           "id": "nvidia/cosmos-reason2-8b",
@@ -6128,6 +6131,7 @@
       "label": "OpenCode Zen",
       "wire": "chat",
       "baseUrl": "https://opencode.ai/inference/v1",
+      "sessionHeader": "x-opencode-session",
       "models": [
         {
           "id": "beam-free",
@@ -6836,6 +6840,7 @@
       "label": "OpenCode Go",
       "wire": "chat",
       "baseUrl": "https://opencode.ai/inference/go/v1",
+      "sessionHeader": "x-opencode-session",
       "models": [
         {
           "id": "beam-free",
@@ -18200,7 +18205,7 @@
       "id": "vercel-ai-gateway",
       "label": "Vercel AI Gateway",
       "wire": "chat",
-      "baseUrl": "https://ai-gateway.vercel.sh",
+      "baseUrl": "https://ai-gateway.vercel.sh/v1",
       "models": [
         {
           "id": "callstack/apex",

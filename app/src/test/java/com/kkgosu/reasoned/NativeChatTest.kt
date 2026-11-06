@@ -152,5 +152,11 @@ class NativeChatTest {
         messages.getJSONObject(1).put("id", messages.getJSONObject(0).getString("id"))
         assertThrows(IllegalArgumentException::class.java) { NativeChat.parse(original.toString()) }
         assertThrows(IllegalArgumentException::class.java) { NativeChat.parse(" ".repeat(NativeChat.MAX_BYTES + 1)) }
+        val identity = chat("chat_contract_teach").snapshot()
+        for (id in listOf("lesson\u00e9", "line\nbreak", "x".repeat(201))) {
+            assertThrows("Unsafe identity $id", IllegalArgumentException::class.java) {
+                NativeChat.parse(JSONObject(identity.toString()).put("id", id).toString())
+            }
+        }
     }
 }

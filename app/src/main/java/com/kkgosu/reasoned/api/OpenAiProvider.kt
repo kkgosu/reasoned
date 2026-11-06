@@ -26,7 +26,11 @@ class OpenAiProvider(
     private val accessToken: suspend () -> String,
     private val client: OkHttpClient = openAiHttpClient(),
 ) : ModelProvider {
-    override suspend fun respond(request: JSONObject, delta: suspend (String) -> Unit): JSONObject {
+    override suspend fun respond(
+        request: JSONObject,
+        delta: suspend (String) -> Unit,
+        sessionId: String?,
+    ): JSONObject {
         val key = accessToken()
         val payload = chatGptPayload(request, request.getString("model"))
         val call = client.newCall(
@@ -63,4 +67,7 @@ class OpenAiProvider(
             }
         }
     }
+
+    override suspend fun respond(request: JSONObject, delta: suspend (String) -> Unit): JSONObject =
+        respond(request, delta, null)
 }

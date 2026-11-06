@@ -77,7 +77,7 @@ internal class Researcher(
                 "reasoning",
                 JSONObject().put("effort", session.effort)
             )
-            val response = provider.respond(request) { }
+            val response = provider.respond(request, { }, session.id)
             // Account for every completed request even if its subsequent tool/output validation fails.
             response.optJSONObject("usage")
                 ?.let { usage(it.optLong("input_tokens"), it.optLong("output_tokens")) }

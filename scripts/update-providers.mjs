@@ -65,9 +65,40 @@ function compat(model) {
     };
 }
 
+// Headers every kept model declares identically, hoisted to the provider so one request cannot
+// omit a header the endpoint needs. The app only carries provider-level headers, so a header that
+// is not universal is a hard error instead of a silent per-model drop.
+function commonHeaders(models) {
+    const headers = {};
+    for (const name of new Set(models.flatMap(model => Object.keys(model)))) {
+        const value = models[0][name];
+        if (typeof value !== 'string' || !models.every(model => model[name] === value)) {
+            throw new Error(`Provider header ${name} is not universal across models`);
+        }
+        headers[name] = value;
+    }
+    return headers;
+}
+
+/** Mirrors the app's provider-header validation so a bad value fails here, not at launch. */
+const HEADER_NAME = /^[!#$%&'*+.^_`|~0-9A-Za-z-]{1,64}$/;
+const HEADER_VALUE = /^[\x20-\x7E]{1,512}$/;
+
+function validateHeaders(providerId, headers) {
+    const entries = Object.entries(headers);
+    if (entries.length > 16) throw new Error(`${providerId}: too many provider headers`);
+    for (const [name, value] of entries) {
+        if (!HEADER_NAME.test(name) || !HEADER_VALUE.test(value)) {
+            throw new Error(`${providerId}: invalid provider header ${name}`);
+        }
+    }
+}
+
 // Every connectable provider: which pi-ai model bucket supplies it, which wire protocol the
 // app speaks to it, and where the user creates a key. A bucket may differ from the model's
 // native api when the provider exposes an OpenAI-compatible projection of the same models.
+// `sessionHeader` marks an endpoint that routes a conversation by an explicit header.
+// `baseUrl` overrides the model's native base URL when the app's wire needs a different prefix.
 const PROVIDERS = [
     { id: 'openai', label: 'OpenAI', wire: 'responses', bucket: 'openai-responses', docs: 'https://platform.openai.com/api-keys' },
     { id: 'xai', label: 'xAI', wire: 'responses', bucket: 'openai-responses', docs: 'https://console.x.ai/' },
@@ -84,18 +115,18 @@ const PROVIDERS = [
     { id: 'groq', label: 'Groq', wire: 'chat', bucket: 'openai-completions', docs: 'https://console.groq.com/keys' },
     { id: 'huggingface', label: 'Hugging Face', wire: 'chat', bucket: 'openai-completions', docs: 'https://huggingface.co/settings/tokens' },
     { id: 'kimi-coding', label: 'Kimi For Coding', wire: 'chat', bucket: 'openai-completions' },
-    { id: 'mistral', label: 'Mistral', wire: 'chat', bucket: 'mistral-conversations', docs: 'https://console.mistral.ai/api-keys' },
+    { id: 'mistral', label: 'Mistral', wire: 'chat', bucket: 'mistral-conversations', docs: 'https://console.mistral.ai/api-keys', baseUrl: 'https://api.mistral.ai/v1' },
     { id: 'moonshotai', label: 'Moonshot AI', wire: 'chat', bucket: 'openai-completions', docs: 'https://platform.moonshot.ai/console/api-keys' },
     { id: 'moonshotai-cn', label: 'Moonshot AI CN', wire: 'chat', bucket: 'openai-completions', docs: 'https://platform.moonshot.cn/console/api-keys' },
     { id: 'nvidia', label: 'NVIDIA', wire: 'chat', bucket: 'openai-completions', docs: 'https://build.nvidia.com/' },
-    { id: 'opencode', label: 'OpenCode Zen', wire: 'chat', bucket: 'openai-completions', docs: 'https://opencode.ai/auth' },
-    { id: 'opencode-go', label: 'OpenCode Go', wire: 'chat', bucket: 'openai-completions', docs: 'https://opencode.ai/auth' },
+    { id: 'opencode', label: 'OpenCode Zen', wire: 'chat', bucket: 'openai-completions', docs: 'https://opencode.ai/auth', sessionHeader: 'x-opencode-session' },
+    { id: 'opencode-go', label: 'OpenCode Go', wire: 'chat', bucket: 'openai-completions', docs: 'https://opencode.ai/auth', sessionHeader: 'x-opencode-session' },
     { id: 'openrouter', label: 'OpenRouter', wire: 'chat', bucket: 'openai-completions', docs: 'https://openrouter.ai/keys' },
     { id: 'qwen-token-plan', label: 'Qwen Token Plan', wire: 'chat', bucket: 'openai-completions' },
     { id: 'qwen-token-plan-cn', label: 'Qwen Token Plan CN', wire: 'chat', bucket: 'openai-completions' },
     { id: 'qwen-token-plan-individual', label: 'Qwen Token Plan Individual', wire: 'chat', bucket: 'openai-completions' },
     { id: 'together', label: 'Together', wire: 'chat', bucket: 'openai-completions', docs: 'https://api.together.ai/settings/api-keys' },
-    { id: 'vercel-ai-gateway', label: 'Vercel AI Gateway', wire: 'chat', bucket: 'anthropic-messages', docs: 'https://vercel.com/ai-gateway' },
+    { id: 'vercel-ai-gateway', label: 'Vercel AI Gateway', wire: 'chat', bucket: 'anthropic-messages', docs: 'https://vercel.com/ai-gateway', baseUrl: 'https://ai-gateway.vercel.sh/v1' },
     { id: 'xiaomi', label: 'Xiaomi', wire: 'chat', bucket: 'openai-completions' },
     { id: 'xiaomi-token-plan-ams', label: 'Xiaomi Token Plan AMS', wire: 'chat', bucket: 'openai-completions' },
     { id: 'xiaomi-token-plan-cn', label: 'Xiaomi Token Plan CN', wire: 'chat', bucket: 'openai-completions' },
@@ -123,8 +154,9 @@ for (const entry of PROVIDERS) {
     source[entry.id] = { sha256: createHash('sha256').update(raw).digest('hex') };
 
     const models = [];
+    const headerSources = [];
     const seen = new Set();
-    let baseUrl = null;
+    let baseUrl = entry.baseUrl ?? null;
     for (const model of Object.values(bucket)) {
         if (model.type !== 'chat' || seen.has(model.id)) continue;
         if (!(model.contextWindow > 0)) throw new Error(`${entry.id}: invalid context window for ${model.id}`);
@@ -159,6 +191,7 @@ for (const entry of PROVIDERS) {
             item.compat = { encryptedReasoning: entry.id === 'openai' };
         }
         models.push(item);
+        headerSources.push(model.headers ?? {});
     }
     if (!models.length) throw new Error(`${entry.id}: empty model list`);
     if (!baseUrl) throw new Error(`${entry.id}: no base URL`);
@@ -166,9 +199,13 @@ for (const entry of PROVIDERS) {
         id: entry.id,
         label: entry.label,
         wire: entry.wire,
-        baseUrl,
-        models: models.sort((a, b) => a.name.localeCompare(b.name))
+        baseUrl
     };
+    const headers = commonHeaders(headerSources);
+    validateHeaders(entry.id, headers);
+    if (Object.keys(headers).length) provider.headers = headers;
+    if (entry.sessionHeader) provider.sessionHeader = entry.sessionHeader;
+    provider.models = models.sort((a, b) => a.name.localeCompare(b.name));
     if (entry.docs) provider.docs = entry.docs;
     providers.push(provider);
 }
