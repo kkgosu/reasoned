@@ -255,20 +255,20 @@ internal class KnowledgeExtraction(
             if (history.toString()
                     .toByteArray(Charsets.UTF_8).size > 120_000
             ) throw ProviderFailure("context_limit")
-        val request = JSONObject().put("model", session.model).put("instructions", instructions)
-            .put("input", history).put("tools", tools)
-            .put("stream", true)
-            .put("parallel_tool_calls", false).put("store", false)
-            .put("include", JSONArray().put("reasoning.encrypted_content"))
-        // The ChatGPT plan drops API payload fields; never mix the two billing shapes.
-        if (!Connections.isPlan(session.connection)) {
-            request.put("max_output_tokens", 8192)
-        }
-        if (session.effort.isNotEmpty()) request.put(
-            "reasoning",
-            JSONObject().put("effort", session.effort)
-        )
-        val response = providerFor(session.connection).respond(request) { }
+            val request = JSONObject().put("model", session.model).put("instructions", instructions)
+                .put("input", history).put("tools", tools)
+                .put("stream", true)
+                .put("parallel_tool_calls", false).put("store", false)
+                .put("include", JSONArray().put("reasoning.encrypted_content"))
+            // The ChatGPT plan drops API payload fields; never mix the two billing shapes.
+            if (!Connections.isPlan(session.connection)) {
+                request.put("max_output_tokens", 8192)
+            }
+            if (session.effort.isNotEmpty()) request.put(
+                "reasoning",
+                JSONObject().put("effort", session.effort)
+            )
+            val response = providerFor(session.connection).respond(request, { }, session.id)
             store.recordExtraction(UUID.randomUUID().toString(), session, role, response)
             val validated =
                 RuntimeTools.validate(response, session.copy(protocol = history.toString()), tools)

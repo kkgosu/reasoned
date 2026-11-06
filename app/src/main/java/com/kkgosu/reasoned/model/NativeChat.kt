@@ -195,7 +195,10 @@ internal class NativeChat private constructor(val raw: String, val id: String) {
             val version = record.opt("version")
             require(version == null || (version is Number && version.toDouble() == 1.0)) { "Unsupported native chat version" }
             val id = record.get("id") as? String
-            require(id != null && id.isNotBlank() && id.length <= 200) { "Invalid native chat identity" }
+            // The identity is also a header value and a store key; keep it a bounded visible-ASCII token.
+            require(id != null && id.isNotBlank() && id.length <= 200 && id.all { it in ' '..'~' }) {
+                "Invalid native chat identity"
+            }
             val messages = record.getJSONArray("messages")
             require(messages.length() <= 10_000) { "Native message limit" }
             val ids = mutableSetOf<String>()

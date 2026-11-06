@@ -107,7 +107,7 @@ internal class VisualMaker(
                 "reasoning",
                 JSONObject().put("effort", session.effort)
             )
-            val response = provider.respond(request) { }
+            val response = provider.respond(request, { }, session.id)
             val validated =
                 RuntimeTools.validate(response, session.copy(protocol = input.toString()), tools)
             response.optJSONObject("usage")

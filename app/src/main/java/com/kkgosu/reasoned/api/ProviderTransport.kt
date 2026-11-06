@@ -1,5 +1,6 @@
 package com.kkgosu.reasoned.api
 
+import com.kkgosu.reasoned.BuildConfig
 import com.kkgosu.reasoned.utils.objects
 import com.kkgosu.reasoned.utils.strictString
 import kotlinx.coroutines.Dispatchers
@@ -23,7 +24,11 @@ internal class WireProvider(
     private val token: suspend () -> String,
     private val client: OkHttpClient = openAiHttpClient(),
 ) : ModelProvider {
-    override suspend fun respond(request: JSONObject, delta: suspend (String) -> Unit): JSONObject {
+    override suspend fun respond(
+        request: JSONObject,
+        delta: suspend (String) -> Unit,
+        sessionId: String?,
+    ): JSONObject {
         val modelId = request.optString("model")
         if (!modelId.matches(MODEL_ID)) throw ProviderFailure("model_id_invalid")
         val model = provider.model(modelId) ?: ProviderModel(modelId, modelId, 0, 0, emptyList())
@@ -36,8 +41,8 @@ internal class WireProvider(
         val key = authKey()
         val call = client.newCall(
             Request.Builder().url(url(modelId))
+                .apply { headers(key, sessionId).forEach { (name, value) -> header(name, value) } }
                 .header("Accept", "text/event-stream")
-                .apply { headers(key).forEach { (name, value) -> header(name, value) } }
                 .post(payload.toString().toRequestBody("application/json; charset=utf-8".toMediaType()))
                 .build()
         )
@@ -70,11 +75,14 @@ internal class WireProvider(
         }
     }
 
+    override suspend fun respond(request: JSONObject, delta: suspend (String) -> Unit): JSONObject =
+        respond(request, delta, null)
+
     suspend fun models(): List<Pair<String, String>> {
         val key = authKey()
         val call = client.newCall(
             Request.Builder().url(modelsUrl())
-                .apply { headers(key).forEach { (name, value) -> header(name, value) } }
+                .apply { headers(key, null).forEach { (name, value) -> header(name, value) } }
                 .get().build()
         )
         return coroutineScope {
@@ -116,14 +124,28 @@ internal class WireProvider(
         return token().takeIf { it.isNotBlank() } ?: throw ProviderFailure("key_missing")
     }
 
-    private fun headers(key: String?): Map<String, String> = when (provider.wire) {
-        Wire.ANTHROPIC -> buildMap {
-            key?.let { put("x-api-key", it) }
-            put("anthropic-version", "2023-06-01")
-        }
+    /**
+     * Upstream headers first, then this client's identity, then the credential the transport owns,
+     * then the conversation id. A provider entry can never replace the credential header derived
+     * from the saved key, and the SSE `Accept` is applied after all of them.
+     */
+    private fun headers(key: String?, sessionId: String?): Map<String, String> = buildMap {
+        putAll(provider.headers)
+        put("User-Agent", USER_AGENT)
+        CLIENT_HEADERS[provider.id]?.let { name -> put(name, CLIENT_NAME) }
+        when (provider.wire) {
+            Wire.ANTHROPIC -> {
+                key?.let { put("x-api-key", it) }
+                put("anthropic-version", "2023-06-01")
+            }
 
-        Wire.GEMINI -> key?.let { mapOf("x-goog-api-key" to it) } ?: emptyMap()
-        else -> key?.let { mapOf("Authorization" to "Bearer $it") } ?: emptyMap()
+            Wire.GEMINI -> key?.let { put("x-goog-api-key", it) }
+            else -> key?.let { put("Authorization", "Bearer $it") }
+        }
+        provider.sessionHeader?.let { name ->
+            // An imported lesson id is peer data; never pass a non-ASCII byte to OkHttp's header.
+            sessionId?.takeIf { it.isNotBlank() && it.matches(SESSION_ID) }?.let { put(name, it) }
+        }
     }
 
     private fun url(modelId: String) = when (provider.wire) {
@@ -154,6 +176,20 @@ internal class WireProvider(
 
     companion object {
         val MODEL_ID = Regex("[A-Za-z0-9][A-Za-z0-9._:/@~-]{0,99}")
+
+        /** A session header value must stay visible ASCII; the same bound as an imported chat id. */
+        private val SESSION_ID = Regex("[\\x20-\\x7E]{1,200}")
+
+        /** The client name pi-ai reports upstream, reused for endpoints that require attribution. */
+        private const val CLIENT_NAME = "Reasoned"
+        private val USER_AGENT = "Reasoned/${BuildConfig.VERSION_NAME} (Android)"
+
+        /** Client identity header each endpoint expects; everything else needs none. */
+        private val CLIENT_HEADERS = mapOf(
+            "opencode" to "x-opencode-client",
+            "opencode-go" to "x-opencode-client",
+            "nvidia" to "X-BILLING-INVOKE-ORIGIN",
+        )
     }
 }
 

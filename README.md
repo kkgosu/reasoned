@@ -62,13 +62,16 @@ in [docs/PROVIDERS.md](docs/PROVIDERS.md).
 
 Request translation and stream parsing are covered by JVM tests. `ProviderWireTest` runs 24 tests
 over the Chat, Anthropic and Gemini wires, inline images, native thinking signatures, the provider
-registry and the connection ids, and all 24 pass. `ProviderKeylessTest` adds six tests for the
-keyless transport rules and verbatim custom endpoint URLs. That is offline verification of the translation layer only. No live API
-call has been made to any API-key provider, so account eligibility, model availability,
+registry and the connection ids, and all 24 pass. `ProviderEndpointTest` drives the real transport
+for all 33 providers against a mock HTTP client and checks each URL, credential header, session
+header and provider header. `ProviderKeylessTest` adds six tests for the keyless transport rules and
+verbatim custom endpoint URLs. The app's exact request shape was also sent once to each live endpoint
+with a fake key; all 33 reached an auth or model gate after the OpenCode Go, Mistral and Vercel
+fixes. No authenticated API-key call was made, so account eligibility, model availability,
 tool-calling quality and live image acceptance are unverified for each of the 33. The ChatGPT plan
-connection was exercised on a device, and the custom
-endpoint path was exercised on an API 36 emulator against the local stub at
-`scripts/local-provider-stub.mjs`, while every live vendor provider remains unverified.
+connection was exercised on a device, and the custom endpoint path was exercised on an API 36
+emulator against the local stub at `scripts/local-provider-stub.mjs`, while every live vendor
+provider remains unverified.
 
 Lessons, graph extraction, figures, research and context summaries consume model allowance or API
 credit. ChatGPT usage and API billing are separate; the app never silently switches connections.
