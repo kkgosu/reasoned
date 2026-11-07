@@ -14,6 +14,8 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import androidx.core.content.FileProvider
+import androidx.core.content.pm.PackageInfoCompat
 import com.kkgosu.reasoned.BuildConfig
 import com.kkgosu.reasoned.R
 import com.kkgosu.reasoned.api.AppUpdates
@@ -88,45 +90,64 @@ class SettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
                 }
 
             "about" -> {
-                views.findViewById<Button>(R.id.about_version).apply {
-                    text = context.getString(R.string.about_version, BuildConfig.VERSION_NAME)
-                    contentDescription =
-                        context.getString(R.string.about_version_releases, BuildConfig.VERSION_NAME)
-                    setOnClickListener {
-                        try {
-                            views.context.startActivity(
-                                Intent(
-                                    Intent.ACTION_VIEW,
-                                    Uri.parse(AppUpdates.RELEASES_URL)
-                                )
-                            )
-                        } catch (_: ActivityNotFoundException) {
-                            views.findViewById<TextView>(R.id.about_update_status)
-                                .setText(R.string.about_browser_missing)
-                        }
-                    }
-                }
-                views.findViewById<Button>(R.id.about_check_updates).setOnClickListener { button ->
+                var availableUpdate: AppUpdates.Release? = null
+                views.findViewById<TextView>(R.id.about_version).text =
+                    views.context.getString(R.string.about_version, BuildConfig.VERSION_NAME)
+                val button = views.findViewById<Button>(R.id.about_check_updates)
+                button.setOnClickListener {
                     val activeScope = scope ?: return@setOnClickListener
                     val status = views.findViewById<TextView>(R.id.about_update_status)
                     button.isEnabled = false
                     status.setText(R.string.about_update_checking)
                     activeScope.launch {
                         try {
-                            val latest = AppUpdates.latestVersion()
-                            status.text = when {
-                                latest == null -> views.context.getString(R.string.about_update_no_releases)
-                                AppUpdates.isNewer(latest, BuildConfig.VERSION_NAME) ->
-                                    views.context.getString(R.string.about_update_available, latest)
-
-                                else -> views.context.getString(R.string.about_update_current)
+                            val release = availableUpdate ?: AppUpdates.latestRelease()
+                            if (release == null) {
+                                status.setText(R.string.about_update_no_releases)
+                                return@launch
                             }
+                            if (!AppUpdates.isNewer(release.version, BuildConfig.VERSION_NAME)) {
+                                status.setText(R.string.about_update_current)
+                                return@launch
+                            }
+                            availableUpdate = release
+                            status.text = views.context.getString(R.string.about_update_downloading, 0)
+                            val apk = AppUpdates.download(release, File(views.context.cacheDir, "updates")) { percent ->
+                                withContext(Dispatchers.Main.immediate) {
+                                    status.text = views.context.getString(R.string.about_update_downloading, percent)
+                                }
+                            }
+                            val archive = withContext(Dispatchers.IO) {
+                                views.context.packageManager.getPackageArchiveInfo(apk.absolutePath, 0)
+                            }
+                            val version = archive?.versionName
+                            check(
+                                archive != null && archive.packageName == views.context.packageName &&
+                                        PackageInfoCompat.getLongVersionCode(archive) > BuildConfig.VERSION_CODE &&
+                                        version != null && !AppUpdates.isNewer(version, release.version) &&
+                                        !AppUpdates.isNewer(release.version, version)
+                            ) { "Not an update for this installation" }
+                            val uri = FileProvider.getUriForFile(
+                                views.context, "${views.context.packageName}.updates", apk
+                            )
+                            status.setText(R.string.about_update_installing)
+                            // Android verifies the signing certificate and handles unknown-source approval.
+                            views.context.startActivity(
+                                Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
+                                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            )
                         } catch (cancelled: CancellationException) {
                             status.text = ""
                             throw cancelled
+                        } catch (_: ActivityNotFoundException) {
+                            status.setText(R.string.about_installer_missing)
                         } catch (_: Exception) {
                             status.setText(R.string.about_update_failed)
                         } finally {
+                            button.setText(
+                                if (availableUpdate == null) R.string.about_check_updates
+                                else R.string.about_install_update
+                            )
                             button.isEnabled = true
                         }
                     }

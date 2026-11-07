@@ -39,10 +39,12 @@ sanitized transcript. Pending lesson ZIPs remain app-private but are not encrypt
   for retry. QR/connection strings contain a short-lived pairing secret: do not share them. Neither
   pairing nor receiving/opening starts model requests. File export remains independent, including
   manual storage through a chosen document provider such as Google Drive; its policies apply.
-- **GitHub update checks:** pressing **Check for updates** in About requests this repository’s
-  latest stable release from the public GitHub API. GitHub receives your network address and
-  ordinary request metadata, not app credentials or learning data. There are no background checks;
-  opening the releases link uses your browser.
+- **GitHub updates:** pressing Check for updates in About checks this repository’s latest stable
+  release and downloads a newer APK from GitHub and its HTTPS asset CDN. These services receive your
+  network address and ordinary request metadata, not app credentials or learning data. There are no
+  automatic/background checks. Downloading stops when you leave the screen or background the app;
+  a completed, verified APK stays in private cache for installation retries. Android handles
+  permission to install from Reasoned, verifies update signing and asks you to confirm installation.
 - **Authentication:** browser-based OpenAI authorization, OAuth registration/discovery, token
   exchange/refresh and account-scoped model discovery. Signing out clears local tokens; a failed
   remote revocation can leave a grant that must be disconnected at the provider.

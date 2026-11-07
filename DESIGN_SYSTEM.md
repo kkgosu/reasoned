@@ -232,7 +232,12 @@ The real-session renderer reuses the established document rows, font roles and p
 dock. It does not introduce chat bubbles, a new component system or web-based document UI. The
 hamburger opens a native modal drawer with New session, Knowledge graph, recent saved sessions and a
 pinned Settings entry. Settings presents three categories opening focused pages: Providers & models,
-Learning preferences, and About & privacy. New session holds the goal, connection summary and a
+Learning preferences, and About & privacy. About shows the installed version as a separate text line
+below the logo/name, with one plain Check for updates / Install update button. Tapping checks the
+latest stable GitHub release, downloads a newer APK with percentage progress, then opens Android's
+installer without a browser. Installation/unknown-source confirmation stays native. Downloads cancel
+when the page leaves the foreground; completed verified APKs are reused on retry. New session holds
+the goal, connection summary and a
 single Start session action, not account configuration or a second start/preview gate. The
 disclosure states that this action sends the goal/preferences using the selected billing. Reopening
 a saved session never starts generation. The Providers & models window blocks screenshots/recents

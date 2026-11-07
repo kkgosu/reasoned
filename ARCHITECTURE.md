@@ -244,7 +244,16 @@ Validation: APK/test-APK compilation and lint, pinned-source hashes and an offli
 credential store. The graph/mock screens do not initialize the runtime or send requests. A native
 DrawerLayout wraps AppKit's existing stack/inset owner, with New session, Knowledge graph, recent
 sessions and a pinned Settings entry; the library handles drawer scrim, gestures and back. Settings
-opens focused Providers & models, Learning preferences and About & privacy pages. New session
+opens focused Providers & models, Learning preferences and About & privacy pages. About's single
+update button explicitly checks GitHub and downloads a newer signed `app-release.apk` via OkHttp.
+Release metadata and APK size are bounded; only this repository's exact HTTPS asset URL is accepted.
+HTTPS CDN redirects are allowed without HTTP downgrade. SHA-256 is checked against GitHub metadata
+before a private-cache FileProvider grants read-only APK access to Android's installer. Package
+name,
+release version and increasing version code are checked before handoff; Android enforces signing-key
+compatibility and user/unknown-source approval. Checks/downloads share the page's foreground scope;
+partial files are removed on cancellation/failure and a verified APK is cached for explicit retries.
+New session
 collects the goal; the explicitly disclosed Start session action creates its local checkpoint and
 requests the first teaching step in one tap. An argument consumed before loading triggers that first
 request only after the checkpoint opens successfully; saved-session navigation and activity

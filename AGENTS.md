@@ -170,8 +170,11 @@ About reads the installed version from `BuildConfig.VERSION_NAME`. Update `versi
 increment `versionCode` in `app/build.gradle` for each release. Publish a stable GitHub release in
 `kkgosu/reasoned` with a matching numeric tag, preferably `vMAJOR.MINOR.PATCH` (for example
 `v1.1.0`). Drafts and prereleases are not update candidates. About uses GitHub’s latest stable
-release endpoint; keep its latest-release designation correct. The app opens GitHub Releases in the
-browser and does not download or install updates itself.
+release endpoint; keep its latest-release designation correct. Publish the signed `app-release.apk`
+asset with each release. The update button checks, downloads and opens Android's installer without
+using a browser. APKs must match GitHub's size/SHA-256 metadata and the installed package, have a
+higher version code, and use the existing signing key. Android requires installation confirmation;
+there are no silent updates or background checks.
 
 ## Documentation and PRs
 
