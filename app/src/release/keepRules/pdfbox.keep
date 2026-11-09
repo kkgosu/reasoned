@@ -1,0 +1,2 @@
+# PDFBox guards its optional JPX decoder; page rendering uses Android PdfRenderer.
+-dontwarn com.gemalto.jp2.JP2Decoder

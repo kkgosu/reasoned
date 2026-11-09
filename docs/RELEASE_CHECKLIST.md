@@ -1,5 +1,21 @@
 # Public-release preparation
 
+## PDFBox release shrinker fix (2026-11-09)
+
+- Hosted [PR checks run 42648420967](https://github.com/kkgosu/reasoned/actions/runs/42648420967)
+  failed in `:app:minifyReleaseWithR8`: PDFBox references the absent optional JPEG2000 decoder
+  `com.gemalto.jp2.JP2Decoder`. Debug assembly, both lint variants and the JVM test step passed;
+  the release sample check was skipped after the build failure.
+- Added only `-dontwarn com.gemalto.jp2.JP2Decoder` in
+  `app/src/release/keepRules/pdfbox.keep`, using AGP 9.3's keep-rules source set. PDFBox checks for
+  this optional decoder with `Class.forName` and reports its absence; the app uses PDFBox for text
+  extraction and Android `PdfRenderer` for page images. No decoder dependency, broad warning
+  suppression or disabled optimization was added.
+- After the fix, offline `:app:assembleRelease :app:lintRelease` passed locally, the merged R8
+  configuration contains the exact rule, and `scripts/check-release-samples.py` passed with
+  debug samples present and removed from release. The updated hosted run is not yet verified.
+  The release APK remains unsigned; no signing or publication was performed.
+
 ## Attachment/composer review fixes (2026-11-09, not release acceptance)
 
 - Native source-image appends now check the UTF-8 archive budget and retain 1 MiB for a
