@@ -1,6 +1,11 @@
 package com.kkgosu.reasoned.fragments
 
 import android.app.AlertDialog
+import android.content.Intent
+import com.kkgosu.reasoned.model.LessonFile
+import com.kkgosu.reasoned.ui.LessonFilePicker
+import org.json.JSONArray
+import java.util.UUID
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -22,6 +27,7 @@ import com.kkgosu.reasoned.ui.text.runtimeError
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -36,8 +42,14 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     private val preferences get() = app.getSharedPreferences("provider", 0)
     private var connection = Connections.key("openai")
     private var model = ""
+    private var connectionReady = false
     private val targets = linkedSetOf<String>()
     private var dialog: AlertDialog? = null
+    private var filePicker: LessonFilePicker? = null
+    private val attachmentBack = Runnable { filePicker?.closeMenu() }
+    private var fileOwner = UUID.randomUUID().toString()
+    private var files = emptyList<LessonFile>()
+    private var creation: Job? = null
 
     override fun wantsCustomNavigationIcon() = true
     override fun getNavigationIconDrawableResource() = R.drawable.ic_menu
@@ -49,11 +61,14 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         savedInstanceState: Bundle?
     ): View {
         setTitle(R.string.new_session)
+        savedInstanceState?.getString("fileOwner")?.let { fileOwner = it }
+        savedInstanceState?.getString("files")?.let { files = LessonFile.parse(JSONArray(it)) }
         val views = inflater.inflate(R.layout.fragment_new_session, container, false)
         pageView = views
         val goal = views.findViewById<EditText>(R.id.runtime_goal)
         val start = views.findViewById<Button>(R.id.runtime_start)
         val status = views.findViewById<TextView>(R.id.session_create_status)
+        bindFiles(views)
         val destination = app.providerLabel(app.savedConnection())
         views.findViewById<TextView>(R.id.session_local_notice)
             .text = views.context.getString(R.string.new_session_local, destination)
@@ -123,24 +138,29 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         views.findViewById<Button>(R.id.session_settings)
             .setOnClickListener { Nav.go(activity, ProviderSettingsFragment::class.java, null) }
         start.setOnClickListener {
+            if (!connectionReady || filePicker?.busy == true || creation?.isActive == true) return@setOnClickListener
             val text = goal.text.toString().trim()
             if (text.isBlank()) {
                 goal.error = goal.context.getString(R.string.runtime_goal_invalid); return@setOnClickListener
             }
             start.isEnabled = false
+            filePicker?.render(false)
             scope?.launch {
                 try {
-                    app.runtime.create(
+                    creation = app.runtime.create(
                         text,
                         model,
                         connection,
                         practice = mode.checkedRadioButtonId == R.id.session_practice,
                         targets = if (mode.checkedRadioButtonId == R.id.session_practice) targets.toList() else emptyList(),
                         researchAllowed = views.findViewById<CheckBox>(R.id.session_research).isChecked,
-                        mechanic = if (mechanic.checkedRadioButtonId == R.id.mechanic_recall) "recall" else "choice"
-                    ).join()
+                        mechanic = if (mechanic.checkedRadioButtonId == R.id.mechanic_recall) "recall" else "choice",
+                        files = files, id = fileOwner
+                    )
+                    creation!!.join()
                     if (app.runtime.failure.value.isEmpty()) app.runtime.state.value?.let {
                         preferences.edit().putString("mechanic", it.mechanic).apply()
+                        fileOwner = UUID.randomUUID().toString(); files = emptyList(); bindFiles(views)
                         (activity as MainActivity).openSession(
                             it.id,
                             start = true
@@ -153,7 +173,8 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                     status.text =
                         status.context.runtimeError((error as? ProviderFailure)?.reason ?: "storage")
                 } finally {
-                    start.isEnabled = model.isNotBlank()
+                    filePicker?.render(creation?.isActive != true)
+                    start.isEnabled = connectionReady && filePicker?.busy != true && creation?.isActive != true
                 }
             }
         }
@@ -165,18 +186,25 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         toolbar.navigationContentDescription = toolbar.context.getString(R.string.navigation_open)
         val views = pageView ?: return
         val start = views.findViewById<Button>(R.id.runtime_start)
+        connectionReady = false; start.isEnabled = false
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
         scope?.launch {
             try {
+                creation?.join()
+                if (withContext(Dispatchers.IO) { app.sessions.load(fileOwner) != null }) {
+                    fileOwner = UUID.randomUUID().toString(); files = emptyList(); bindFiles(views)
+                }
+                filePicker?.render(true)
+                filePicker?.onShown()
                 val usePlan = Connections.isPlan(app.savedConnection())
                 if (usePlan) app.chatGpt.reload()
                 connection = app.savedConnection()
                 model = app.savedModel(connection)
                 val account = app.chatGpt.state.value.accounts.find { it.id == connection }
-                val ready =
+                connectionReady =
                     WireProvider.MODEL_ID.matches(model) && !model.startsWith("sk-") &&
                             (!usePlan || account?.let { it.connected && it.plan } == true)
-                views.findViewById<TextView>(R.id.session_connection).text = if (ready) views.context.getString(
+                views.findViewById<TextView>(R.id.session_connection).text = if (connectionReady) views.context.getString(
                     R.string.new_session_connection,
                     if (usePlan) account!!.label else app.providerLabel(connection), model
                 ) else views.context.getString(R.string.new_session_configure)
@@ -187,7 +215,7 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                     .text = views.context.getString(R.string.new_session_local, destination)
                 views.findViewById<TextView>(R.id.session_research_notice)
                     .text = views.context.getString(R.string.new_session_research_notice, destination)
-                start.isEnabled = ready
+                start.isEnabled = connectionReady && filePicker?.busy != true && creation?.isActive != true
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
@@ -198,7 +226,22 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         }
     }
 
+    private fun bindFiles(views: View) {
+        filePicker = LessonFilePicker(this, views as ViewGroup, fileOwner,
+            { scope }, { files }, { if (creation?.isActive == true) false else { files = it; true } }, {
+                removeBackCallback(attachmentBack)
+                if (filePicker?.menuOpen == true) addBackCallback(attachmentBack)
+                views.findViewById<Button>(R.id.runtime_start).isEnabled = connectionReady && filePicker?.busy != true && creation?.isActive != true
+            }).also { it.render(creation?.isActive != true) }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (filePicker?.onActivityResult(requestCode, resultCode, data) != true) super.onActivityResult(requestCode, resultCode, data)
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString("fileOwner", fileOwner)
+        outState.putString("files", JSONArray(files.map { it.json() }).toString())
         super.onSaveInstanceState(outState); outState.putStringArrayList(
             "targets",
             ArrayList(targets)
@@ -206,12 +249,18 @@ class NewSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     }
 
     override fun onHidden() {
+        connectionReady = false
+        pageView?.findViewById<Button>(R.id.runtime_start)?.isEnabled = false
+        filePicker?.closeMenu()
         dialog?.dismiss(); dialog = null
         scope?.cancel(); scope = null; super.onHidden()
     }
 
     override fun onDestroyView() {
+        connectionReady = false
+        filePicker?.closeMenu()
+        removeBackCallback(attachmentBack)
         dialog?.dismiss(); dialog = null
-        scope?.cancel(); scope = null; pageView = null; super.onDestroyView()
+        scope?.cancel(); scope = null; pageView = null; filePicker = null; super.onDestroyView()
     }
 }

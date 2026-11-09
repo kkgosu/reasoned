@@ -121,7 +121,11 @@ internal object NativeCompaction {
                 }
                 "toolResult" -> {
                     val text = (content as JSONArray).objects().joinToString("\n") {
-                        if (it.optString("type") == "text") it.getString("text") else it.toString()
+                        when (it.optString("type")) {
+                            "text" -> it.getString("text")
+                            "image" -> "[Source image omitted; reread the cited attachment page if needed.]"
+                            else -> it.toString()
+                        }
                     }
                     lines += "[RESULT for ${message.getString("toolName")}${if (message.optBoolean("isError")) " (error)" else ""}] " +
                         if (text.length > 2000) text.take(2000) + "…[truncated]" else text

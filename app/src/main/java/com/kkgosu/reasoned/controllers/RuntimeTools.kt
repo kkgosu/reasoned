@@ -8,6 +8,7 @@ import com.kkgosu.reasoned.model.NativeQuestion
 import com.kkgosu.reasoned.model.NativePractice
 import com.kkgosu.reasoned.model.ProbeAssessment
 import com.kkgosu.reasoned.model.RuntimeSession
+import com.kkgosu.reasoned.storage.LessonDocuments
 import com.kkgosu.reasoned.model.StudyPlan
 import com.kkgosu.reasoned.utils.objects
 import com.kkgosu.reasoned.utils.strictString
@@ -33,7 +34,7 @@ internal object RuntimeTools {
         tools: JSONArray = ToolSchemas.schemas(
             session.phase,
             session.researchAllowed,
-            session.mechanic
+            session.mechanic, attachments = session.files.isNotEmpty()
         ),
         allowRepair: Boolean = false,
         nativeTargets: Set<String> = emptySet(),
@@ -150,6 +151,7 @@ internal object RuntimeTools {
                             if (!expected.containsAll(keys) || !keys.containsAll(required)) throw ProviderFailure("invalid_tool_arguments")
                         } else if (keys != expected) throw ProviderFailure("invalid_tool_arguments")
                         when (name) {
+                            "read_attachment" -> LessonDocuments.validate(session.files, args)
                             "list_propositions" -> args.strictString("session", 200)
                             "research" -> {
                                 if (!session.researchAllowed || session.research.size >= 4) throw ProviderFailure(

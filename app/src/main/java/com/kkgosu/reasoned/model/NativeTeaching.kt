@@ -13,9 +13,9 @@ import java.util.UUID
 
 /** Native lesson/practice projections and local tool events, not a migration or another archive. */
 internal object NativeTeaching {
-    const val VERSION = "learnharness-native-3dd52110-v3"
-    // Replay-only historical graph reads. This does not expose or execute these tools on Android.
-    private val HISTORICAL_GRAPH_READS = setOf("list_sessions", "list_propositions", "find")
+    const val VERSION = "learnharness-native-3dd52110-v4"
+    // Source reads stay in model history but are never projected as learner evidence.
+    private val SOURCE_READS = setOf("list_sessions", "list_propositions", "find", "read_attachment")
 
     fun project(session: RuntimeSession): RuntimeSession = try {
         val chat = requireNotNull(session.nativeRecord)
@@ -101,7 +101,7 @@ internal object NativeTeaching {
                             row(message, i, block.getString("thinking"), Role.THINKING)
                         "toolCall" -> {
                             val tool = block.getString("name")
-                            if (tool in HISTORICAL_GRAPH_READS) {
+                            if (tool in SOURCE_READS) {
                                 if (!failed) {
                                     val result = results[block.getString("id")]?.singleOrNull() ?: unavailable()
                                     if (result.index <= messageIndex || result.value.optString("toolName") != tool) unavailable()
@@ -141,13 +141,14 @@ internal object NativeTeaching {
                     }
                 }
                 "toolResult" -> {
-                    if (message.getJSONArray("content").objects().any { it.optString("type") != "text" }) unavailable()
+                    if (message.getJSONArray("content").objects().any { it.optString("type") != "text" &&
+                        !(message.optString("toolName") == "read_attachment" && it.optString("type") == "image") }) unavailable()
                     val historicalRead = calls[message.optString("toolCallId")]?.first?.tool
-                    if (historicalRead in HISTORICAL_GRAPH_READS) {
+                    if (historicalRead in SOURCE_READS) {
                         if (message.optString("toolName") != historicalRead) unavailable()
                         return@record // Read results are model history, not teacher prose or learner evidence.
                     }
-                    if (message.optString("toolName") in HISTORICAL_GRAPH_READS) unavailable()
+                    if (message.optString("toolName") in SOURCE_READS) unavailable()
                     val details = message.optJSONObject("details")
                     if (details?.has("result") == true) unavailable() // Native artifact/report projection is still gated.
                     if (message.optString("toolName") == "probe_done" && message.optString("toolCallId") in probeCalls &&

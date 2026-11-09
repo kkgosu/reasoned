@@ -17,7 +17,17 @@ internal object NativeResponses {
     fun append(chat: NativeChat, message: JSONObject, now: Long): NativeChat {
         val record = chat.snapshot()
         record.getJSONArray("messages").put(message)
-        return NativeChat.parse(record.put("updatedAt", nativeTime(now)).put("version", 1).toString())
+        val raw = record.put("updatedAt", nativeTime(now)).put("version", 1).toString()
+        // Leave room for the next bounded response, a failure receipt and final usage accounting.
+        if (message.optString("role") == "toolResult" && message.optString("toolName") == "read_attachment" &&
+            message.getJSONArray("content").objects().any { it.optString("type") == "image" } &&
+            raw.toByteArray(Charsets.UTF_8).size > NativeChat.MAX_BYTES - 1_048_576) {
+            val error = JSONObject().put("error", "attachment_limit").put("notice",
+                "No source image delivered: the lesson history is near its size limit. Try text mode or ask the learner; do not invent source contents.")
+            return append(chat, JSONObject(message.toString()).put("isError", true).put("content", JSONArray()
+                .put(JSONObject().put("type", "text").put("text", error.toString()))), now)
+        }
+        return NativeChat.parse(raw)
     }
 
     fun user(text: String, now: Long) = JSONObject().put("id", id(now)).put("role", "user")
@@ -130,6 +140,10 @@ internal object NativeResponses {
             if (text.isNotEmpty()) put(JSONObject().put("type", "text").put("text", text))
         }), response)
 
+    private fun imageInput(block: JSONObject) = JSONObject().put("type", "input_image")
+        .put("image_url", "data:${block.getString("mimeType")};base64,${block.getString("data")}")
+        .also { it.inlineImage() }
+
     fun input(chat: NativeChat, model: String, connection: String, retry: Boolean = false): JSONArray = try {
         val drops = if (retry) chat.state().retryDrops else emptySet()
         val source = if (drops.isEmpty()) chat else NativeChat.parse(chat.snapshot().apply {
@@ -195,9 +209,13 @@ internal object NativeResponses {
                 }
                 "toolResult" -> {
                     val content = message.getJSONArray("content").objects()
-                    if (content.any { it.optString("type") != "text" }) throw ProviderFailure("native_runtime_unavailable")
-                    val text = content.joinToString("\n") { it.getString("text") }.ifBlank { "(no tool output)" }
+                    if (content.any { it.optString("type") !in setOf("text", "image") }) throw ProviderFailure("native_runtime_unavailable")
+                    val text = content.filter { it.optString("type") == "text" }.joinToString("\n") { it.getString("text") }.ifBlank { "(no tool output)" }
                     out.put(toolResult(message.getString("toolCallId").substringBefore('|'), text))
+                    val images = content.filter { it.optString("type") == "image" }
+                    if (images.isNotEmpty()) out.put(JSONObject().put("role", "user").put("content", JSONArray()
+                        .put(JSONObject().put("type", "input_text").put("text", "Source tool image, not a learner statement.\n$text"))
+                        .apply { images.forEach { put(imageInput(it)) } }))
                 }
             }
         }

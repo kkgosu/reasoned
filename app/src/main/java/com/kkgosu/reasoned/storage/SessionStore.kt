@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.kkgosu.reasoned.api.NativeResponses
 import com.kkgosu.reasoned.controllers.QuestionContract
+import com.kkgosu.reasoned.model.LessonFile
 import com.kkgosu.reasoned.model.ContextSummary
 import com.kkgosu.reasoned.model.LessonDisplayItem.Role
 import com.kkgosu.reasoned.model.LessonDisplayItem.TextDisplayItem
@@ -203,7 +204,8 @@ internal class SessionStore(context: Context, name: String? = "sessions.db") :
             nativeRecord = native,
             nativeDisplayIds = nativeIds(readableDatabase, id),
             nativeTurn = json.optJSONObject("nativeTurn")?.toString().orEmpty(),
-            nativeSteers = json.optJSONArray("nativeSteers")?.toString() ?: "[]"
+            nativeSteers = json.optJSONArray("nativeSteers")?.toString() ?: "[]",
+            files = LessonFile.parse(json.optJSONArray("files"))
         )
     }
 

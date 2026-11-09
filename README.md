@@ -83,8 +83,16 @@ pages. Credentials use Keystore-backed encryption; the local database is not enc
 
 Export/import and device sync are temporarily hidden from release builds while the upstream
 LearnHarness integration is under review; they remain available in debug builds. App backup is
-disabled. **Uninstalling or clearing app storage deletes local data.** PDF import and background
-agents are not supported.
+disabled. **Uninstalling or clearing app storage deletes local data.** Background agents are not supported.
+
+Attach PDF or UTF-8 text files, or a folder of them, using the system picker in New session or a
+lesson. Chosen files are copied into private storage. PDF pages can be previewed locally with zoom;
+the model can read page text or request a page image for scans, formulas and diagrams, citing the
+filename and page. Image reading needs an image-capable session model; there is no automatic model
+switch or local OCR. Limits: 32 files, 25 MiB each, 64 MiB per lesson; text files up to 2 MiB.
+Selecting/viewing files makes no model request. Continuing a lesson may send chosen source content
+to its model. Folder imports are snapshots, not watched folders. Local source files are not included
+in experimental lesson transfer archives; previously read excerpts/images remain in history.
 
 [Privacy](PRIVACY.md) · [Security](SECURITY.md)
 

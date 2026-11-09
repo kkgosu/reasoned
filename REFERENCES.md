@@ -1,6 +1,6 @@
 # Reference and licensing ledger
 
-Research baseline: 2026-10-25. Scope: phases 0–7 (PDF pending; phase 7 build-only). **Reasoned** is
+Research baseline: 2026-10-25. Scope: phases 0–7, with local lesson PDF/text attachments added later. **Reasoned** is
 an independent
 prototype name, not an official LearnHarness client. Reference checkouts were inspected outside this
 repository. Selected LearnHarness sources are now vendored, and the search transition adapts
@@ -16,6 +16,22 @@ Links below use immutable revisions. Source descriptions apply to these revision
 | [LiteX](https://github.com/grishka/LiteX/tree/1cc74ad2b2c30e2cce6441212b5ed373c7ecb8ab) | `1cc74ad2b2c30e2cce6441212b5ed373c7ecb8ab` | Lightweight Android libraries; Apache-2.0, `LICENSE.txt` |
 | [AppKit](https://github.com/grishka/appkit/tree/2f69cf481eaf398327e0c3e5dbbffd74314b0f63) | `2f69cf481eaf398327e0c3e5dbbffd74314b0f63` | Native fragment stack and widgets; published 1.5.3 POM declares The Unlicense |
 | [Mastodon Android](https://github.com/mastodon/mastodon-android/tree/24e8cdbc1f2bc9a4164d911f2a20894f39e6268b) | `24e8cdbc1f2bc9a4164d911f2a20894f39e6268b` | Engineering patterns/search-transition adaptation; GPL-3.0 license text in `LICENSE` |
+
+## Current LearnHarness product reference
+
+The latest product comparison uses upstream `main` at
+[`da08cb5f7d098598ba963c6689b22054c9f2a5a3`](https://github.com/amosblomqvist/learnharness/tree/da08cb5f7d098598ba963c6689b22054c9f2a5a3)
+(package version **0.5.0**), inspected in a separate checkout. This does not update the bundled
+`0795ef197cca` sources, projected runtime prompts or their hash inventory.
+
+Compared `README.md`, `docs/getting-started.md`, `docs/architecture.md`,
+`src/agent/tools/{graph,jobs}.ts` and `components/settings/agent-section.tsx` with Reasoned's
+current tools, controllers and UI. Lesson PDF/text/folder attachments now use native pickers and
+bounded local reads. Remaining product gaps include standalone notes/PDF extraction into the graph,
+learner-image display/annotation, interactive demos,
+durable asynchronous workers, separate Strong/Cheap/Vision model slots and built-in dictation.
+Research and static figures already exist in Reasoned, but run in the foreground using the
+session's selected model. This is a source comparison, not live-provider or end-to-end acceptance.
 
 ## Phase-5 reference checks
 
@@ -37,7 +53,13 @@ Mermaid 11.17.0 is a bundled unmodified MIT browser asset; source hash is in
 `assets/diagrams/NOTICE.md`, full license and inclusive dependency notices are under
 `assets/licenses/mermaid*.txt`. Its version matches the reference lockfile. The Visual Maker prompt
 is projected verbatim from preserved upstream bytes, with a separate Android capability note and
-AGPL provenance. Device/live acceptance and PDF remain pending.
+AGPL provenance. Live visual acceptance remains separate from offline local-PDF checks.
+
+Local lesson sources use platform SAF/`PdfRenderer` and PDFBox-Android 2.0.27.0 for text extraction
+on API 26+. Source: [tag v2.0.27.0](https://github.com/TomRoush/PdfBox-Android/tree/45da92629dad5b3c9887eceefecc89a1423f5457).
+The upstream Apache-2.0 license, included third-party terms and notice are copied to
+`assets/licenses/pdfbox-android-{license,notice}.txt` and ship in the APK. No LearnHarness vendored
+bytes or hash inventory were changed for this feature.
 
 ## Phase-7 practice/research references
 

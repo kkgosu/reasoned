@@ -75,7 +75,7 @@
     <string name="runtime_tokens_reported">Recorded usage: %1$d input · %2$d output tokens. Interrupted calls may be missing.</string>
     <string name="runtime_models_note">Session only. Connection unchanged.</string>
     <string name="runtime_context">Context window</string>
-    <string name="runtime_context_accessibility">Context: %1$s. Tap for reported usage and limits.</string>
+    <string name="runtime_context_menu">Context window: %1$s</string>
     <string name="runtime_context_unknown">Unknown</string>
     <string name="runtime_context_percent">%1$d%%</string>
     <string name="runtime_context_reported">Last request: %1$d input tokens (not a live count)</string>

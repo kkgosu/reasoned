@@ -293,7 +293,7 @@ class ProviderSetupTest {
         val oldModel = preferences.getString("model:key:deepseek", null)
         try {
             preferences.edit().putString("connection", Connections.key("deepseek"))
-                .putString("model:key:deepseek", "deepseek-flash").commit()
+                .putString("model:key:deepseek", "sk-not-a-model").commit()
             ActivityScenario.launch(MainActivity::class.java).use { scenario ->
                 scenario.onActivity { it.showFragmentClearingBackStack(NewSessionFragment()) }
                 settle()
@@ -306,6 +306,20 @@ class ProviderSetupTest {
                         activity.findViewById<TextView>(R.id.session_research_notice)
                             .text.toString().contains("DeepSeek")
                     )
+                    val start = activity.findViewById<Button>(R.id.runtime_start)
+                    assertFalse(start.isEnabled)
+                    activity.findViewById<View>(R.id.attachment_add).performClick()
+                    assertFalse("Attachments must not bypass connection setup", start.isEnabled)
+                    activity.findViewById<View>(R.id.attachment_add).performClick()
+                    assertFalse(start.isEnabled)
+                }
+                preferences.edit().putString("model:key:deepseek", "deepseek-flash").commit()
+                scenario.recreate(); settle()
+                scenario.onActivity { activity ->
+                    val start = activity.findViewById<Button>(R.id.runtime_start)
+                    assertTrue(start.isEnabled)
+                    activity.findViewById<View>(R.id.attachment_add).performClick()
+                    assertTrue(start.isEnabled)
                 }
             }
         } finally {

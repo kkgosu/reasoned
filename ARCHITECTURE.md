@@ -12,7 +12,7 @@ after graph refinements clears the prior visual-review gate for this implementat
 smoke testing remains opt-in and was not performed.
 
 Phase 7 implements knowledge-aware Practice and an isolated foreground Researcher with opt-in
-Brave/public-page tools; phase-6 PDF remains deferred. Release preparation previously passed a
+Brave/public-page tools. PDF/text attachments now use local SAF snapshots and bounded source reads. Release preparation previously passed a
 76-test offline suite on API 36. The package-refactor run executes 77 tests: 74 pass and three
 pre-existing prompt-projection/code-inset failures also reproduce on unmodified `eee613a`
 (see `docs/RELEASE_CHECKLIST.md`). Shared native styles
@@ -751,7 +751,7 @@ The fixture deliberately uses a fixed six-cluster arrangement, radial tints, lin
 
 ## Rich content: phases 6, 8
 
-Phase 6 Mermaid/SVG slice is implemented, build-only acceptance pending; PDF remains unimplemented.
+Phase 6 Mermaid/SVG slice is implemented. Local PDF/text attachments are described below.
 Native Markwon document spans now recognize `mermaid` and `svg` fences. `DiagramPlugin` displays
 tappable static images with descriptive labels, a shared bounded 24 MiB bitmap/source-key cache and
 attachment-aware cancellation. Inline and fullscreen views use the same 2048px-long-edge bitmap;
@@ -804,7 +804,31 @@ vision acceptance remain unverified.
 - Formulas/Markdown: native Markwon/math spans, not a whole-screen WebView; genuinely wide math
   retains horizontal overflow.
 - Mermaid: offline specialized rasterizer only; no interactive bindings or generated-JS execution.
-- PDF: Storage Access Framework import to app-private storage; evaluate `PdfRenderer` for bounded page bitmaps and PDFBox-Android for searchable text/license/dependency cost. Search/extract selected pages, cite page indices explicitly and cap bitmap/cache memory. Avoid loading an entire large document by default.
+- Attachments: `LessonDocuments` copies SAF file/tree selections into private, session-owned snapshots
+  (32 files, 25 MiB/file, 64 MiB/session; UTF-8 text up to 2 MiB). Tree traversal is bounded and skips
+  unsupported files. The file picker filters PDF, `text/*` and Android MIME mappings for the supported
+  text extensions; folder selection has no MIME filter. Import still validates the actual content.
+  A failed/cancelled import rolls back that batch. Unsubmitted drafts use private
+  cache; committing a lesson/source change promotes its snapshot to durable private files. Checkpoints store opaque IDs,
+  display names, sizes and PDF page counts, not provider URIs or persistent grants. Explicit source
+  removal/deleting a lesson deletes copies after the checkpoint/database change; old read history remains.
+- PDF: platform `PdfRenderer` previews one bounded 2048px page using the existing zoom/pan canvas.
+  PDFBox-Android 2.0.27.0 (Apache-2.0) extracts selected-page text on API 26+, with bounded scratch
+  storage and output. `read_attachment` validates session-owned IDs, 1-based PDF page/0 for text,
+  chunk offsets and image mode. Text chunks are at most 12,000 characters; page images are bounded
+  1536px JPEGs (at most 700,000 JPEG bytes). Native image results reserve 1 MiB below the
+  16,000,000-byte archive ceiling for a response/failure receipt and final usage accounting;
+  a result that exceeds this budget becomes an `attachment_limit` tool error without an image,
+  preserving earlier history. Scans require image reading, not local OCR. Source results carry
+  filename/page citations and untrusted-data labels; native tool images project to model input,
+  never learner evidence.
+  Nothing is read by a model on selection or preview. Source reads share the explicit foreground
+  turn, model, connection and limits; unsupported vision fails without model/billing fallback.
+  Full local source files are not included in the experimental lesson transfer format.
+  Offline checks: 17 focused JVM tests and three API-36 instrumentation tests passed, covering
+  authored file/tree snapshots, PDF/text reading, preview/restoration/removal and native fake-provider
+  continuation without automatic requests. Manual system-picker and authenticated vision acceptance
+  remain unverified.
 - SVG: source/notes/model-review status are persisted; bitmap previews are bounded ephemeral caches.
   Model review is never presented as an objective correctness guarantee.
 - Generated HTML/JS: **disabled until isolation is demonstrated**. No privileged `addJavascriptInterface`, credentials, app file access or unrestricted networking. WebView flags alone are not proof of an adequate sandbox; build a threat model and malicious fixtures before enabling execution. Respect the specification's fail-closed requirement.
@@ -812,7 +836,8 @@ vision acceptance remain unverified.
 
 ## Validation and independence
 
-Kotlin instrumentation checks the shell, mock classroom and graph: navigation, font roles, drafts/choices/confidence, parcelled partial-stream recovery, stable IDs/payloads, retry limits, reading position, real keyboard geometry, deterministic graph layout, camera/inverse-picking math, actual native pan/pinch events, parcelled camera/selection, search/browse and detail navigation. Screenshot generation was removed at the owner's request; older capture links in DESIGN_SYSTEM are historical. These tests do not imply an implemented agent, persistent knowledge store, PDF parser or secure demo runtime.
+Kotlin instrumentation checks the shell, mock classroom and graph: navigation, font roles, drafts/choices/confidence, parcelled partial-stream recovery, stable IDs/payloads, retry limits, reading position, real keyboard geometry, deterministic graph layout, camera/inverse-picking math, actual native pan/pinch events, parcelled camera/selection, search/browse and detail navigation. Screenshot generation was removed at the owner's request; older capture links in DESIGN_SYSTEM are historical. These historical checks do not imply a secure demo runtime. Attachment checks use authored local
+PDF/text sources and fake providers; live model image acceptance is separate.
 
 Later milestones add fake-provider/domain tests, persistent graph integrity, parsing and security fixtures at the point their code exists. Real-model smoke tests remain opt-in and separate. Measure scrolling/layout/rendering before performance abstractions; use Profiler/Perfetto when warranted.
 

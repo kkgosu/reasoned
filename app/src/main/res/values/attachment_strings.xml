@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="attachment_add">Attach files</string>
+    <string name="attachment_close">Close attachments</string>
+    <string name="attachment_files">Files</string>
+    <string name="attachment_folder">Folder</string>
+    <string name="attachment_remove">Remove %1$s</string>
+    <string name="attachment_loading">Reading files…</string>
+    <string name="attachment_notice">Read content is sent to the selected model when you continue.</string>
+    <string name="attachment_limit">32 files max, 25 MiB each, 64 MiB total. Text files: 2 MiB max.</string>
+    <string name="attachment_read_error">Could not read the file.</string>
+    <string name="attachment_empty">No supported, nonempty files found.</string>
+    <string name="attachment_type">Choose PDF or UTF-8 text files.</string>
+    <string name="attachment_locked">This PDF is protected or cannot be opened.</string>
+    <string name="attachment_previous">Previous</string>
+    <string name="attachment_next">Next</string>
+    <string name="attachment_page">Page %1$d of %2$d</string>
+    <string name="attachment_part">Part %1$d of %2$d</string>
+</resources>

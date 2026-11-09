@@ -174,6 +174,8 @@
         android:orientation="vertical"
         android:padding="@dimen/space_8">
 
+        <include layout="@layout/view_lesson_files" />
+
         <EditText
             android:id="@+id/question_reading_thinking"
             style="@style/Widget.Harness.Input"
@@ -203,7 +205,7 @@
             android:gravity="top|start"
             android:hint="@string/runtime_answer_hint"
             android:maxLines="4"
-            android:minLines="1"
+            android:minLines="2"
             android:visibility="gone" />
 
         <EditText
@@ -215,7 +217,7 @@
             android:gravity="top|start"
             android:hint="@string/runtime_composer_hint"
             android:maxLines="4"
-            android:minLines="1" />
+            android:minLines="2" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -241,6 +243,7 @@
                         style="@style/Widget.Harness.Button.Composer"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_marginEnd="@dimen/space_8"
                         android:ellipsize="end"
                         android:maxWidth="180dp"
                         android:maxLines="1"
@@ -256,35 +259,15 @@
                 </LinearLayout>
             </HorizontalScrollView>
 
-            <FrameLayout
+            <ImageButton
+                android:id="@+id/attachment_add"
+                style="@style/Widget.Harness.IconButton"
                 android:layout_width="@dimen/touch_target"
-                android:layout_height="@dimen/touch_target">
-
-                <ProgressBar
-                    android:id="@+id/context_progress"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_gravity="center"
-                    android:importantForAccessibility="no"
-                    android:indeterminate="false"
-                    android:max="100"
-                    android:progressDrawable="@drawable/context_progress"
-                    android:rotation="-90" />
-
-                <Button
-                    android:id="@+id/session_context"
-                    style="@style/Widget.Harness.Button.Icon"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:contentDescription="@string/runtime_context"
-                    android:paddingStart="0dp"
-                    android:paddingEnd="0dp"
-                    android:paddingTop="0dp"
-                    android:paddingBottom="0dp"
-                    android:text="?"
-                    android:textSize="@dimen/text_11" />
-            </FrameLayout>
+                android:layout_height="@dimen/touch_target"
+                android:layout_marginStart="@dimen/space_8"
+                android:contentDescription="@string/attachment_add"
+                android:tooltipText="@string/attachment_add"
+                android:src="@drawable/ic_add" />
 
             <Button
                 android:id="@+id/composer_action"
@@ -296,4 +279,10 @@
                 android:text="@string/runtime_send" />
         </LinearLayout>
     </LinearLayout>
+
+    <include
+        layout="@layout/view_lesson_file_actions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/space_16" />
 </com.kkgosu.reasoned.ui.views.RuntimeSessionLayout>

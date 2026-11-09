@@ -3,6 +3,7 @@ package com.kkgosu.reasoned.controllers
 import android.app.Application
 import com.kkgosu.reasoned.ReasonedApplication
 import com.kkgosu.reasoned.api.ProviderFailure
+import com.kkgosu.reasoned.storage.LessonDocuments
 import com.kkgosu.reasoned.model.RuntimeSession
 import org.json.JSONArray
 import org.json.JSONObject
@@ -10,7 +11,7 @@ import org.json.JSONObject
 internal fun sessionInstructions(application: Application, s: RuntimeSession) =
     AgentInstructions.compose(application.assets, s.phase) +
             (if (s.phase == "practice" && !s.practiceReady) "\nDo not pose a new problem: wait for the explicit Next problem button. Current problem may be discussed/concluded. Active problem: ${s.activeProblem?.id ?: "none"}." else "") +
-            (if (s.planPending) "\n\nThe learner has NOT approved the dependency plan. Discuss or revise it with plan_init according to their latest message. Do not teach, ask learning questions, make figures or finish the lesson until explicit approval." else "")
+            (if (s.planPending) "\n\nThe learner has NOT approved the dependency plan. Discuss or revise it with plan_init according to their latest message. Do not teach, ask learning questions, make figures or finish the lesson until explicit approval." else "") + LessonDocuments.instructions(s.files)
 
 /**
  * The vendor-neutral request every transport and sub-agent shares. Provider-specific fields

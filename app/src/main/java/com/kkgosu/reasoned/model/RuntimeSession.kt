@@ -39,6 +39,7 @@ internal data class RuntimeSession(
     val problems: List<PracticeProblem> = emptyList(),
     val research: List<ResearchReport> = emptyList(),
     val researchAllowed: Boolean = false,
+    val files: List<LessonFile> = emptyList(),
     val practiceReady: Boolean = true,
     val readingThinking: String = "",
     val dontKnow: Boolean = false,
@@ -80,7 +81,7 @@ internal data class RuntimeSession(
             .put("planPending", planPending).put("practiceMaterial", practiceMaterial)
             .put("problems", JSONArray(problems.map { it.json() }))
             .put("research", JSONArray(research.map { it.json() }))
-            .put("researchAllowed", researchAllowed).put("practiceReady", practiceReady)
+            .put("researchAllowed", researchAllowed).put("files", JSONArray(files.map { it.json() })).put("practiceReady", practiceReady)
             .put("readingThinking", readingThinking).put("dontKnow", dontKnow)
             .put("assessment", assessment?.json()).put("planApproved", planApproved)
             .put("mechanic", mechanic).put("compaction", compaction?.json())

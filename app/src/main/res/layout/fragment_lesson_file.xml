@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background">
+    <TextView
+        android:id="@+id/attachment_status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/space_16"
+        android:accessibilityLiveRegion="polite"
+        android:textAppearance="@style/TextAppearance.Harness.Meta" />
+    <FrameLayout
+        android:id="@+id/attachment_preview"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+        <ScrollView
+            android:id="@+id/attachment_text_scroll"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <TextView
+                android:id="@+id/attachment_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/space_24"
+                android:textAppearance="@style/TextAppearance.Harness.Prose"
+                android:textIsSelectable="true" />
+        </ScrollView>
+    </FrameLayout>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="@dimen/space_8">
+        <Button
+            android:id="@+id/attachment_previous"
+            style="@style/Widget.Harness.Button.Secondary"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/attachment_previous" />
+        <TextView
+            android:id="@+id/attachment_page"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textAppearance="@style/TextAppearance.Harness.Meta"
+            android:accessibilityLiveRegion="polite" />
+        <Button
+            android:id="@+id/attachment_next"
+            style="@style/Widget.Harness.Button.Secondary"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/attachment_next" />
+    </LinearLayout>
+</LinearLayout>

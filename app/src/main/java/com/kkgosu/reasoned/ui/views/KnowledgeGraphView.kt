@@ -128,7 +128,8 @@ class KnowledgeGraphView @JvmOverloads constructor(context: Context, attrs: Attr
             R.color.graph_region_3, R.color.graph_region_4, R.color.graph_region_5
         )
         regionPaints = value.regions.mapIndexed { index, region ->
-            Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            // Dither low-alpha gradients to avoid visible color bands on dark backgrounds.
+            Paint(Paint.ANTI_ALIAS_FLAG or Paint.DITHER_FLAG).apply {
                 shader = RadialGradient(
                     region.x,
                     region.y,

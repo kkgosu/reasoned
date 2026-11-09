@@ -14,8 +14,10 @@ drawer = "1.2.0"
 markwon = "4.6.2"
 jsoup = "1.21.2"
 zxing = "4.3.0"
+pdfbox = "2.0.27.0"
 
 [libraries]
+pdfbox = { module = "com.tom-roush:pdfbox-android", version.ref = "pdfbox" }
 appkit = { module = "me.grishka.appkit:appkit", version.ref = "appkit" }
 litex-recyclerview = { module = "me.grishka.litex:recyclerview", version.ref = "litexRecyclerView" }
 coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }

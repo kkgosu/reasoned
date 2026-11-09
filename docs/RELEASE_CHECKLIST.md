@@ -1,5 +1,43 @@
 # Public-release preparation
 
+## Attachment/composer review fixes (2026-11-09, not release acceptance)
+
+- Native source-image appends now check the UTF-8 archive budget and retain 1 MiB for a
+  response/failure receipt and final usage. An oversized image returns `attachment_limit`
+  without dropping existing history. A JVM regression covers non-ASCII retained data, image
+  rejection, immutable inputs and subsequent failure/usage persistence.
+- New-session Start now consistently uses the validated connection readiness, including attachment
+  callbacks and creation cleanup. Loading/hidden screens cannot start a lesson.
+- Three attachment checks and the provider-notice/setup journey passed on the disposable offline
+  API 36 emulator (**4/4**). The attachment journey now pauses the Activity, delivers the picker
+  result before foreground restoration, verifies deferred persistence, resumes, previews/restores
+  and removes the PDF without starting learning. The setup journey verifies invalid nonempty
+  model settings remain blocked when attachments change and valid settings enable Start.
+- Focused attachment, native Responses and compaction JVM checks passed. Both updated APKs were
+  produced and installed successfully; the combined assembly/lint command exceeded the 30-second
+  shell limit, so current debug lint completion is **not verified**.
+- Removed the unused context-ring drawable and accessibility string. No full instrumentation suite,
+  real system-picker selection, authenticated provider calls, signing or publication was performed.
+
+## Local composer refresh (2026-11-09, not release acceptance)
+
+- Debug/Android-test assembly and debug lint passed offline. The composer keeps Model/Thinking
+  selectors, adds an inline Files/Folder panel, centers icon-only actions and moves context details
+  to the lesson toolbar menu. Native picker results wait for the resumed foreground scope.
+- Three attachment checks passed on the disposable offline API 36 emulator. The UI journey now
+  exercises opening/closing the panel, Back preserving the draft, an intercepted native document
+  picker result, PDF preview/restoration and source removal without starting learning.
+- Manually inspected the composer/arrow with the keyboard and attachment panel on API 36 using
+  authored fixture data. The real system folder picker opened and cancelled without losing the draft.
+- Follow-up: `LessonTest#sampleUsesRealChatControlsScrollButtonAndRestoresAnswerDraft` and
+  `LessonTest#keyboardKeepsSharedTranscriptVisibleAndSubmitReachable` passed together on API 36
+  (**2/2**). The keyboard wait now includes the submit button reaching its usable position above
+  the IME: visibility/final insets can arrive before the composer animation finishes. The final
+  assertions and five-second timeout remain unchanged. Temporary diagnostic markers were removed.
+  The earlier sample-controls timeout did not reproduce; its original cause is unconfirmed.
+  The sample menu expectation was updated for the intentionally relocated Context window action.
+- No full instrumentation suite, authenticated provider calls, signing or publication was performed.
+
 ## 1.2.0 preparation (not published)
 
 - Version name **1.2.0**, version code **3**. Export/import is hidden from release Settings;

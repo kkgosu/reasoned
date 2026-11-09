@@ -133,7 +133,9 @@ internal object ContextCompaction {
                         val content = item.opt("content")
                         val value = if (content is JSONArray) content.objects()
                             .joinToString("") { it.optString("text") } else content as? String ?: ""
-                        append("[${if (item.optString("role") == "user") "LEARNER" else "TUTOR"}] $value\n\n")
+                        val role = if (value.startsWith("[ATTACHMENT SOURCE IMAGE")) "SOURCE"
+                            else if (item.optString("role") == "user") "LEARNER" else "TUTOR"
+                        append("[$role] $value\n\n")
                     }
                 }
             }

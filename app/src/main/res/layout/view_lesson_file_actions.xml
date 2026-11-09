@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/attachment_actions"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:baselineAligned="false"
+    android:orientation="horizontal"
+    android:paddingVertical="@dimen/space_16"
+    android:visibility="gone">
+
+    <Button
+        android:id="@+id/attachment_files"
+        style="@style/Widget.Harness.Button.Secondary"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginEnd="@dimen/space_8"
+        android:background="@drawable/button_composer"
+        android:drawableTop="@drawable/ic_attach"
+        android:drawablePadding="@dimen/space_8"
+        android:paddingVertical="@dimen/space_24"
+        android:text="@string/attachment_files" />
+
+    <Button
+        android:id="@+id/attachment_folder"
+        style="@style/Widget.Harness.Button.Secondary"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:background="@drawable/button_composer"
+        android:drawableTop="@drawable/ic_folder"
+        android:drawablePadding="@dimen/space_8"
+        android:paddingVertical="@dimen/space_24"
+        android:text="@string/attachment_folder" />
+</LinearLayout>

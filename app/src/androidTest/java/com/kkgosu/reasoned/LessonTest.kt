@@ -154,7 +154,7 @@ class LessonTest {
                 assertEquals(View.INVISIBLE, button.visibility)
                 val fragment = activity.fragmentManager.fragments.filterIsInstance<RuntimeSessionFragment>().single()
                 val toolbar = fragment.view!!.findViewById<android.widget.Toolbar>(me.grishka.appkit.R.id.toolbar)
-                assertEquals(1, toolbar.menu.size())
+                assertNotNull(toolbar.menu.findItem(R.id.session_context))
                 assertNotNull(toolbar.menu.findItem(R.id.session_plan))
                 assertFalse(activity.findViewById<Button>(R.id.session_model).isEnabled)
                 assertFalse(activity.findViewById<Button>(R.id.session_thinking).isEnabled)
@@ -292,8 +292,12 @@ class LessonTest {
                 while (!visible) {
                     scenario.onActivity { activity ->
                         val insets = activity.window.decorView.rootWindowInsets
-                        visible = insets.isVisible(WindowInsets.Type.ime()) &&
-                            !activity.findViewById<View>(R.id.composer_action).isLayoutRequested
+                        val submit = activity.findViewById<View>(R.id.composer_action)
+                        val location = IntArray(2)
+                        submit.getLocationOnScreen(location)
+                        // Final IME insets arrive before the animation finishes moving the composer.
+                        visible = insets.isVisible(WindowInsets.Type.ime()) && !submit.isLayoutRequested &&
+                            location[1] + submit.height <= activity.window.decorView.height - insets.getInsets(WindowInsets.Type.ime()).bottom
                     }
                     if (!visible) kotlinx.coroutines.delay(20)
                 }

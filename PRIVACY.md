@@ -8,6 +8,8 @@ contact the selected third-party services directly. Their policies and retention
 - Chats, drafts, submitted answers, confidence reports, learning plans, graph propositions/chains
   and available source-message links.
 - Practice problems, hidden model-committed solutions, attempts and model verdicts.
+- Private copies of chosen lesson PDF/text files and folder contents; source names, page counts and
+  read excerpts/page images in session history. Folder imports do not retain access to future changes.
 - Research reports, read URLs, retrieval metadata and bounded page excerpts; diagram source and
   learning preferences.
 - Provider/account settings and credentials; optional paired-computer identity and pending transfer metadata.
@@ -19,7 +21,10 @@ protect data on an unlocked, compromised or rooted device.
 
 Long-pressing a drawer chat allows renaming or deletion. Deletion removes its chat/history and
 original source links while intentionally retaining extracted graph knowledge and its grouping
-title; propositions can still contain information derived from that chat. This is not secure erasure
+title; propositions can still contain information derived from that chat. Deleting a lesson also
+removes its local source-file copies. Removing an attachment revokes future reads and deletes that
+copy, not excerpts/images already saved in history. Original files at the chosen document provider
+are never deleted. This is not secure erasure
 of filesystem remnants. Uninstalling or clearing app storage removes local app data. Experimental
 file Import/Export and paired-LAN exchange can create copies outside this app; deleting here does not
 delete those copies. Native ZIP/JSON includes private history and hidden model commitments, not a
@@ -27,11 +32,14 @@ sanitized transcript. Pending lesson ZIPs remain app-private but are not encrypt
 
 ## Data sent when using network features
 
-- **OpenAI / ChatGPT:** goals, preferences, answers and relevant session context for
+- **Selected model provider / ChatGPT:** goals, preferences, answers and relevant session context for
   teaching/practice; bounded teacher passages and graph context for extraction/auditing; earlier
   context for compaction. Figure creation sends a brief and locally rendered PNGs for model
   inspection. Research sends its self-contained question and retrieved excerpts to the session's
-  model. These features can incur extra requests on the selected billing connection.
+  model. Attachment names are included in lesson requests; requested text chunks and selected PDF
+  page images are sent to that same model/connection. Selecting or previewing files is local and
+  starts no model request. A system document provider (including cloud storage) may download the
+  chosen originals under its own policies. These features can incur extra requests on the selected billing connection.
 - **Paired LearnHarness computer (experimental):** explicit send/receive exchanges selected native
   lessons and their graph over certificate-pinned HTTPS. Pairing shares a device label and creates a
   local access token, not a provider account. The computer stores token hashes and committed transfer

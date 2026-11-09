@@ -3,6 +3,8 @@ package com.kkgosu.reasoned.fragments
 import android.animation.ValueAnimator
 import android.app.AlertDialog
 import android.app.Dialog
+import android.content.Intent
+import com.kkgosu.reasoned.ui.LessonFilePicker
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
@@ -26,7 +28,6 @@ import android.widget.CheckBox
 import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.LinearLayout
-import android.widget.ProgressBar
 import android.widget.RadioButton
 import android.widget.ScrollView
 import android.widget.SeekBar
@@ -85,12 +86,12 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         val collapseQuestion: Button = root.findViewById(R.id.collapse_question)
         val sessionModel: Button = root.findViewById(R.id.session_model)
         val sessionThinking: Button = root.findViewById(R.id.session_thinking)
-        val sessionContext: Button = root.findViewById(R.id.session_context)
-        val contextProgress: ProgressBar = root.findViewById(R.id.context_progress)
         val scrollButton: View = root.findViewById(R.id.scroll_to_bottom)
     }
 
     private var pageViews: SessionViews? = null
+    private var filePicker: LessonFilePicker? = null
+    private val attachmentBack = Runnable { filePicker?.closeMenu() }
     private var adapter = LessonAdapter()
     private var scope: CoroutineScope? = null
     private var dialog: Dialog? = null
@@ -111,12 +112,19 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
         if (sample) {
+            menu.add(Menu.NONE, R.id.session_context, Menu.NONE, R.string.runtime_context)
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
             menu.add(Menu.NONE, R.id.session_plan, Menu.NONE, R.string.learning_plan)
                 .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
             return
         }
         inflater.inflate(R.menu.runtime_session, menu)
         val state = runtime.state.value?.takeIf { it.id == sessionId }
+        val capacity = state?.let { app.modelCatalog.model(it.connection, it.model)?.window } ?: 0
+        val percent = if (state != null && state.contextTokens > 0 && capacity > 0)
+            ((state.contextTokens.toDouble() / capacity) * 100).toInt().coerceIn(0, 100) else null
+        menu.findItem(R.id.session_context).title = getString(R.string.runtime_context_menu,
+            percent?.let { getString(R.string.runtime_context_percent, it) } ?: getString(R.string.runtime_context_unknown))
         menu.findItem(R.id.session_steer).apply {
             isVisible = state?.nativeRecord != null && state.status == "running" && !state.compacting
             isEnabled = state?.nativeTurn?.isNotEmpty() == true
@@ -145,6 +153,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean = when (item.itemId) {
+        R.id.session_context -> { showContext(); true }
         R.id.session_mechanic -> {
             val state = runtime.state.value?.takeIf {
                 it.id == sessionId && it.status !in setOf(
@@ -332,8 +341,19 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         views.collapseQuestion.setOnClickListener { dismissKeyboard(); expand(false) }
         views.sessionModel.setOnClickListener { chooseModel() }
         views.sessionThinking.setOnClickListener { chooseThinking() }
-        views.sessionContext.setOnClickListener { showContext() }
+        if (!sample) filePicker = LessonFilePicker(this, views.root as ViewGroup, sessionId,
+            { scope }, { runtime.state.value?.takeIf { it.id == sessionId }?.files.orEmpty() },
+            { runtime.setFiles(sessionId, it) }, {
+                removeBackCallback(attachmentBack)
+                if (filePicker?.menuOpen == true) addBackCallback(attachmentBack)
+                runtime.state.value?.takeIf { it.id == sessionId }?.let { render(views, it) }
+            })
+        else {
+            views.root.findViewById<View>(R.id.lesson_files).visibility = View.GONE
+            views.root.findViewById<View>(R.id.attachment_add).visibility = View.GONE
+        }
         views.composerAction.setOnClickListener {
+            if (filePicker?.busy == true) return@setOnClickListener
             dismissKeyboard()
             when (runtime.state.value?.status) {
                 "running" -> runtime.stop()
@@ -348,6 +368,10 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             }
         }
         return views.root
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (filePicker?.onActivityResult(requestCode, resultCode, data) != true) super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun onApplyWindowInsets(insets: WindowInsets) {
@@ -401,11 +425,12 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate).also { visible ->
             visible.launch {
                 opened.join()
+                filePicker?.onShown()
                 var menuStatus: String? = null
                 runtime.state.collect {
                     if (it?.id == sessionId) {
                         render(views, it)
-                        val menuKey = "${it.status}:${it.researchAllowed}:${it.activeProblem?.id}:${it.compacting}:${it.nativeTurn.isNotEmpty()}"
+                        val menuKey = "${it.status}:${it.researchAllowed}:${it.activeProblem?.id}:${it.compacting}:${it.nativeTurn.isNotEmpty()}:${it.contextTokens}:${it.model}"
                         if (menuStatus != menuKey) {
                             menuStatus = menuKey; invalidateOptionsMenu()
                         }
@@ -444,6 +469,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     }
 
     override fun onHidden() {
+        filePicker?.closeMenu()
         (dialog as? ChoiceBottomSheet)?.dismissWithoutAnimation() ?: dialog?.dismiss()
         dialog = null
         runtime.stop()
@@ -453,6 +479,8 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
     }
 
     override fun onDestroyView() {
+        filePicker?.closeMenu()
+        removeBackCallback(attachmentBack)
         scope?.cancel(); scope = null
         (dialog as? ChoiceBottomSheet)?.dismissWithoutAnimation() ?: dialog?.dismiss()
         dialog = null
@@ -464,6 +492,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             it.lessonList.adapter = null
         }
         pageViews = null
+        filePicker = null
         adapter = LessonAdapter()
         markdown = null
         super.onDestroyView()
@@ -685,8 +714,14 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 else -> 0
             }
             composerAction.setBackgroundResource(if (icon == 0) R.drawable.button_primary else R.drawable.button_icon_primary)
-            val horizontal = resources.getDimensionPixelSize(if (icon == 0) R.dimen.space_16 else R.dimen.space_12)
-            val vertical = resources.getDimensionPixelSize(if (icon == 0) R.dimen.space_8 else R.dimen.space_12)
+            composerAction.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0)
+            // A start drawable stays padding-aligned even when the Button text is empty.
+            val buttonSize = resources.getDimensionPixelSize(R.dimen.touch_target)
+            val drawable = composerAction.compoundDrawablesRelative[0]
+            val horizontal = if (drawable == null) resources.getDimensionPixelSize(R.dimen.space_16)
+                else (buttonSize - drawable.intrinsicWidth) / 2
+            val vertical = if (drawable == null) resources.getDimensionPixelSize(R.dimen.space_8)
+                else (buttonSize - drawable.intrinsicHeight) / 2
             composerAction.setPaddingRelative(horizontal, vertical, horizontal, vertical)
             val actionSize = if (icon == 0) ViewGroup.LayoutParams.WRAP_CONTENT
                 else resources.getDimensionPixelSize(R.dimen.touch_target)
@@ -698,8 +733,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
             }
             composerAction.text = if (icon == 0) context.getString(action) else ""
             composerAction.contentDescription = context.getString(action)
-            composerAction.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, 0, 0, 0)
-            composerAction.isEnabled = (!sampleLimit || state.status == "running") &&
+            composerAction.isEnabled = filePicker?.busy != true && (!sampleLimit || state.status == "running") &&
                 !(state.nativeRecord != null && state.status == "interrupted" && state.draft.isBlank() &&
                         !state.nativeRecord.state().continuation && state.nativeRecord.state().retryDrops.isEmpty()) &&
                 state.status != "complete" && !(state.phase == "practice" && state.activeProblem != null && state.status == "idle" && state.draft.isBlank()) && (question == null || question.canAnswer(
@@ -708,6 +742,7 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                     state.dontKnow
                 ))
             val editable = state.status != "running" && state.status != "complete"
+            filePicker?.render(editable)
             views.sessionModel.apply {
                 text =
                     if (loadingModels) context.getString(R.string.runtime_models_loading) else app.modelCatalog.model(state.connection, state.model)?.name
@@ -719,18 +754,6 @@ class RuntimeSessionFragment : ToolbarFragment(R.layout.fragment_shell) {
                 text = effortLabel(state.effort)
                 contentDescription = context.getString(R.string.runtime_thinking_selected, text)
                 isEnabled = !sample && editable
-            }
-            val capacity = app.modelCatalog.model(state.connection, state.model)?.window ?: 0
-            val percent =
-                if (state.contextTokens > 0 && capacity > 0) ((state.contextTokens.toDouble() / capacity) * 100).toInt()
-                    .coerceIn(0, 100) else null
-            views.contextProgress.progress = percent ?: 0
-            views.sessionContext.apply {
-                text = percent?.toString() ?: "?"
-                contentDescription = context.getString(
-                    R.string.runtime_context_accessibility,
-                    percent?.let { context.getString(R.string.runtime_context_percent, it) }
-                        ?: context.getString(R.string.runtime_context_unknown))
             }
         } finally {
             rendering = false

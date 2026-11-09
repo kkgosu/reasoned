@@ -127,6 +127,29 @@
             android:maxLines="6"
             android:minLines="3" />
 
+        <ImageButton
+            android:id="@+id/attachment_add"
+            style="@style/Widget.Harness.IconButton"
+            android:layout_width="@dimen/touch_target"
+            android:layout_height="@dimen/touch_target"
+            android:layout_marginStart="@dimen/space_24"
+            android:src="@drawable/ic_add"
+            android:contentDescription="@string/attachment_add"
+            android:tooltipText="@string/attachment_add" />
+
+        <include
+            layout="@layout/view_lesson_files"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24"
+            android:layout_marginTop="@dimen/space_8" />
+
+        <include
+            layout="@layout/view_lesson_file_actions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="@dimen/space_24" />
+
         <CheckBox
             android:id="@+id/session_research"
             style="@style/Widget.Harness.CheckRow"
