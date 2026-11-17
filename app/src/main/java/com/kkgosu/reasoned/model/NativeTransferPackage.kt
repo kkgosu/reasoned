@@ -14,7 +14,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
-/** Native v1 payloads plus transfer bookkeeping, never an installer or permission to continue.
+/** Native v2 chat payloads plus transfer bookkeeping, never an installer or permission to continue.
  * Callers must capture stopped, coherent snapshots. No paths are resolved, files extracted,
  * jobs resumed or providers called. Unknown native data stays inside its original record.
  */
@@ -43,7 +43,10 @@ internal object NativeTransferPackage {
 
     fun write(chats: List<NativeChat>, nodes: String = "", chains: String = "", graphFormat: String? = null): ByteArray {
         require(chats.size in 1..100 && chats.sumOf { it.raw.length.toLong() } <= MAX_BYTES) { "Transfer chat limit" }
-        chats.forEach { boundedJson(it.raw) }
+        chats.forEach {
+            boundedJson(it.raw)
+            require(it.snapshot().optInt("version") == NativeChat.VERSION) { "Unsupported transfer chat version" }
+        }
         val selection = NativeGraphSelection.select(chats, boundedJson(nodes), boundedJson(chains), graphFormat?.let(::boundedJson))
         val files = linkedMapOf<String, ByteArray>()
         chats.forEach { chat ->
@@ -58,7 +61,7 @@ internal object NativeTransferPackage {
         require(files.values.sumOf { it.size.toLong() } <= MAX_BYTES - MANIFEST_LIMIT) { "Transfer payload limit" }
         files.forEach { (name, bytes) -> validateText(name, bytes) }
         val manifest = utf8(JSONObject().put("format", FORMAT).put("version", 1)
-            .put("nativeChatVersion", 1).put("nativeGraphVersion", 1)
+            .put("nativeChatVersion", NativeChat.VERSION).put("nativeGraphVersion", 1)
             .put("chats", JSONArray(chats.map { it.id }))
             .put("files", JSONArray(files.map { (name, bytes) -> JSONObject().put("path", name)
                 .put("bytes", bytes.size).put("sha256", sha256(bytes)) }))
@@ -104,10 +107,10 @@ internal object NativeTransferPackage {
             }
         }
         val manifest = JSONObject(validateText("manifest.json", files.remove("manifest.json") ?: error("Missing manifest")))
-        require(manifest.get("format") == FORMAT && listOf("version", "nativeChatVersion", "nativeGraphVersion").all { key ->
+        require(manifest.get("format") == FORMAT && listOf("version", "nativeGraphVersion").all { key ->
             val version = manifest.get(key)
             version is Number && version.toDouble() == 1.0
-        }) { "Unsupported transfer format" }
+        } && manifest.get("nativeChatVersion").let { it is Number && it.toDouble() == NativeChat.VERSION.toDouble() }) { "Unsupported transfer format" }
         val ids = manifest.getJSONArray("chats")
         require(ids.length() in 1..100) { "Transfer chat count" }
         val chatIds = (0 until ids.length()).map { ids.get(it) as? String ?: error("Invalid transfer chat identity") }
@@ -128,6 +131,7 @@ internal object NativeTransferPackage {
         val text = files.mapValues { (name, data) -> validateText(name, data) }
         val chats = chatIds.map { id -> NativeChat.parse(text.getValue("chats/$id.json")).also {
             require(it.id == id) { "Transfer chat identity mismatch" }
+            require(it.snapshot().optInt("version") == NativeChat.VERSION) { "Unsupported transfer chat version" }
         } }
         val nodes = text.getValue("graph/nodes.jsonl")
         val chains = text.getValue("graph/chains.jsonl")

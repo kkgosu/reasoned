@@ -21,7 +21,7 @@ const originalFetch = globalThis.fetch;
 let outbound = 0;
 globalThis.fetch = async () => { outbound++; throw new Error("Provider/public fetch forbidden in LAN fixture"); };
 const { createLessonLan } = await import(pathToFileURL(path.resolve(desktop, "src/server/lesson-lan.ts")).href);
-const record = { version: 1, id: "chat_lan_desktop", title: "Authored desktop LAN fixture", createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z", opaque: "PRESERVE_LAN", messages: [{ id: "desktop_u", role: "user", content: "Synthetic desktop lesson", timestamp: 1 }] };
+const record = { version: 2, id: "chat_lan_desktop", title: "Authored desktop LAN fixture", createdAt: "2026-01-01T00:00:00Z", updatedAt: "2026-01-01T00:00:00Z", opaque: "PRESERVE_LAN", messages: [{ id: "desktop_u", role: "user", content: "Synthetic desktop lesson", timestamp: 1 }] };
 fs.mkdirSync(path.join(root, "chats")); fs.mkdirSync(path.join(root, "graph"));
 const raw = JSON.stringify(record, null, "\t") + "\n";
 fs.writeFileSync(path.join(root, "chats/chat_lan_desktop.json"), raw);

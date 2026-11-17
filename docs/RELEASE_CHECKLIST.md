@@ -1,5 +1,24 @@
 # Public-release preparation
 
+## Native transfer v2 compatibility (2026-11-17, not release acceptance)
+
+- Updated Android transfer for LearnHarness PR #393 updated by merging upstream `cb25c8e`
+  (0.6.1). Transfer ZIP remains v1, but native chat payloads/manifests must explicitly declare v2;
+  native graph schema remains v1. Older/unstamped/future chat payloads are refused, never relabeled.
+- Local v1 histories remain readable without rewriting on open. Native answer, practice, teaching,
+  response/usage and compaction writes now stamp v2 while preserving unrelated original fields.
+  Pinned upstream assets and frozen v1 fold fixtures were not rewritten.
+- Offline debug/Android-test assembly and debug lint passed. JVM results: **95 passed, 1 skipped,
+  0 failures** (96 total); all nine native transfer package checks ran, including the opt-in
+  synthetic desktop-producer/JVM-reader/re-export check.
+- The updated desktop receiver verified/installed/reimported the returned v2 ZIP, checked exact
+  image/side-thread/opaque message data and graph bytes, folded the graph, preserved the explicit-input
+  pause and re-exported original payloads with zero provider requests. This is JVM/store evidence,
+  not Android SQLite, UI, real LAN or physical-device acceptance; no emulator was connected.
+- No full instrumentation suite, authenticated provider calls, signed release or publication was
+  performed. Transfer continues to enforce existing unsupported-projection/dependency blockers;
+  adding v2 transport support does not add the desktop plugin runtime or side-thread/image UI.
+
 ## PDFBox release shrinker fix (2026-11-09)
 
 - Hosted [PR checks run 42648420967](https://github.com/kkgosu/reasoned/actions/runs/42648420967)

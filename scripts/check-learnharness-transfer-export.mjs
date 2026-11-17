@@ -24,8 +24,15 @@ const root = process.env.LH_DATA_DIR;
 fs.mkdirSync(path.join(root, "chats"), { recursive: true });
 fs.mkdirSync(path.join(root, "graph"), { recursive: true });
 if (phase === "prepare") {
-	const raw = JSON.stringify({ version: 1, id: "chat_transfer_fixture", title: "Authored transfer check", createdAt: "2026-10-30T00:00:00Z", updatedAt: "2026-10-30T00:00:00Z",
-		messages: [{ id: "u_fixture", role: "user", content: "Authored offline transfer test, not learner evidence.", timestamp: 1 }], opaque: { preserve: "Копия 🧪" } }, null, "\t") + "\n";
+	const image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
+	const imageId = createHash("sha256").update(Buffer.from(image, "base64")).digest("hex");
+	const raw = JSON.stringify({ version: 2, id: "chat_transfer_fixture", title: "Authored transfer check", createdAt: "2026-10-30T00:00:00Z", updatedAt: "2026-10-30T00:00:00Z",
+		messages: [{ id: "u_fixture", role: "user", content: "Authored offline transfer test, not learner evidence.", timestamp: 1 },
+			{ id: "a_fixture", role: "assistant", content: [{ type: "text", text: "Authored offline explanation." }], timestamp: 2, stopReason: "stop", opaquePluginData: { preserve: "synthetic" } }],
+		imageSnapshots: { [imageId]: { mimeType: "image/png", data: image, width: 1, height: 1 } },
+		sideChats: [{ id: "side_fixture", anchor: { messageId: "a_fixture", partId: "a_fixture-t0", blockIndex: 0, blockText: "Authored offline explanation." },
+			open: false, createdAt: "2026-10-30T00:00:00Z", messages: [{ id: "side_user", role: "user", text: "Authored clarification.", at: "2026-10-30T00:00:01Z" }] }],
+		opaque: { preserve: "Копия 🧪" } }, null, "\t") + "\n";
 	const node = id => ({ id, name: id, statement: id, aliases: [], createdAt: "2026-10-30", provenance: [{ chatId: "chat_transfer_fixture", messageId: "u_fixture" }], opaque: true });
 	const nodes = [node("n_fixture_1"), node("n_fixture_2")].map(n => JSON.stringify(n)).join("\n") + "\n";
 	const chains = JSON.stringify({ id: "c_fixture", premises: ["n_fixture_1"], conclusion: "n_fixture_2", createdAt: "2026-10-30", provenance: [{ chatId: "chat_transfer_fixture", messageId: "u_fixture" }] }) + "\n";
@@ -58,7 +65,7 @@ if (phase === "prepare") {
 	} });
 	assert.equal(members, 4);
 	const manifest = JSON.parse(Buffer.from(files["manifest.json"]).toString("utf8"));
-	assert.equal(manifest.format, "learnharness-transfer"); assert.equal(manifest.nativeChatVersion, 1); assert.equal(manifest.nativeGraphVersion, 1);
+	assert.equal(manifest.format, "learnharness-transfer"); assert.equal(manifest.nativeChatVersion, 2); assert.equal(manifest.nativeGraphVersion, 1);
 	assert.deepEqual(manifest.chats, ["chat_transfer_fixture"]); assert.equal(manifest.report.continuationAuthorized, false);
 	assert.equal(manifest.files.length, expected.size);
 	for (const [name, original] of expected) {

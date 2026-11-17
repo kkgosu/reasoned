@@ -33,7 +33,7 @@ import java.util.UUID
 class NativeTransferImportTest {
     private val app get() = ApplicationProvider.getApplicationContext<ReasonedApplication>()
     private fun chat(text: String = "Authored native import", id: String = "chat_import") = NativeChat.parse(
-        JSONObject().put("id", id).put("title", "Authored import sample").put("opaque", "PRESERVE")
+        JSONObject().put("id", id).put("version", NativeChat.VERSION).put("title", "Authored import sample").put("opaque", "PRESERVE")
             .put("messages", JSONArray().put(JSONObject().put("id", "m_import").put("role", "user")
                 .put("timestamp", 1).put("content", text))).toString())
     private fun node(statement: String = "Authored proposition", id: String = "n_import", chat: String = "chat_import") =

@@ -18,9 +18,10 @@ import java.util.zip.ZipOutputStream
 class NativeTransferPackageTest {
     private val fixtures = sequenceOf(File("../fixtures/learnharness/v1"), File("fixtures/learnharness/v1"))
         .first { it.isDirectory }
-    private fun chat(name: String) = NativeChat.parse(File(fixtures, "data/chats/$name.json").readText())
+    private fun chat(name: String) = NativeChat.parse(JSONObject(File(fixtures, "data/chats/$name.json").readText())
+        .put("version", NativeChat.VERSION).toString())
     private fun graph(name: String) = File(fixtures, "data/graph/$name").readText()
-    private fun simple(id: String = "chat_package") = NativeChat.parse("{\"id\":\"$id\",\"messages\":[],\"opaque\":\"Сохранить 🧪\"}\n")
+    private fun simple(id: String = "chat_package") = NativeChat.parse("{\"version\":2,\"id\":\"$id\",\"messages\":[],\"opaque\":\"Сохранить 🧪\"}\n")
     private fun members(bytes: ByteArray): LinkedHashMap<String, ByteArray> = linkedMapOf<String, ByteArray>().apply {
         ZipInputStream(ByteArrayInputStream(bytes)).use { zip ->
             while (true) { val entry = zip.nextEntry ?: break; put(entry.name, zip.readBytes()) }
@@ -73,7 +74,12 @@ class NativeTransferPackageTest {
         assertNull(contents.graphFormat)
         assertEquals(original.raw, NativeTransferPackage.read(NativeTransferPackage.write(contents.chats)).chats.single().raw)
         refused("{\"id\":\"../unsafe\",\"messages\":[]}".toByteArray())
-        refused("{\"id\":\"chat_new\",\"version\":2,\"messages\":[]}".toByteArray())
+        refused("{\"id\":\"chat_new\",\"version\":3,\"messages\":[]}".toByteArray())
+        for (legacy in listOf("{\"id\":\"chat_old\",\"messages\":[]}", "{\"version\":1,\"id\":\"chat_old\",\"messages\":[]}")) {
+            val stored = NativeChat.parse(legacy) // Local legacy history remains readable.
+            refused(legacy.toByteArray())
+            assertThrows(IllegalArgumentException::class.java) { NativeTransferPackage.write(listOf(stored)) }
+        }
         refused(byteArrayOf(0xc3.toByte(), 0x28))
         refused(("[".repeat(65) + "0" + "]".repeat(65)).toByteArray())
         refused(ByteArray(NativeChat.MAX_BYTES + 1) { 32 })
@@ -102,11 +108,13 @@ class NativeTransferPackageTest {
         assertEquals(nodes, graph("nodes.jsonl")); assertEquals(chains, graph("chains.jsonl"))
     }
 
-    @Test fun lazyVersionsWhitespaceUnicodeAndGraphFormatMetadataAreNotRewritten() {
+    @Test fun explicitVersionsWhitespaceUnicodeAndGraphFormatMetadataAreNotRewritten() {
         val chat = simple()
         val contents = NativeTransferPackage.read(NativeTransferPackage.write(listOf(chat)))
         assertEquals(chat.raw, contents.chats.single().raw)
-        assertFalse(contents.chats.single().snapshot().has("version"))
+        assertEquals(NativeChat.VERSION, contents.chats.single().snapshot().getInt("version"))
+        assertEquals(NativeChat.VERSION, JSONObject(members(NativeTransferPackage.write(listOf(chat)))
+            .getValue("manifest.json").toString(Charsets.UTF_8)).getInt("nativeChatVersion"))
         assertNull(contents.graphFormat)
         assertTrue(contents.report.issues.isEmpty())
         val node = " \t{\"id\":\"n\",\"provenance\":[{\"chatId\":\"${chat.id}\",\"messageId\":\"\"}],\"opaque\":\"x\"}\r"
@@ -114,6 +122,28 @@ class NativeTransferPackageTest {
         val withGraph = NativeTransferPackage.read(NativeTransferPackage.write(listOf(chat), node, graphFormat = format))
         assertEquals(node + "\n", withGraph.nodes)
         assertEquals(format, withGraph.graphFormat)
+    }
+
+    @Test fun v2SnapshotsSideThreadsAndOpaqueMessageDataSurviveWithoutExecution() {
+        val image = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+        val imageId = MessageDigest.getInstance("SHA-256").digest(java.util.Base64.getDecoder().decode(image))
+            .joinToString("") { "%02x".format(it) }
+        val root = simple().snapshot().put("imageSnapshots", JSONObject().put(imageId, JSONObject()
+            .put("mimeType", "image/png").put("data", image).put("width", 1).put("height", 1)))
+            .put("sideChats", JSONArray().put(JSONObject().put("id", "side_fixture").put("open", false)
+                .put("createdAt", "2026-10-30T00:00:00Z").put("anchor", JSONObject()
+                    .put("messageId", "tutor").put("partId", "tutor-t0").put("blockIndex", 0).put("blockText", "Authored explanation"))
+                .put("messages", JSONArray().put(JSONObject().put("id", "side_user").put("role", "user")
+                    .put("text", "Authored clarification").put("at", "2026-10-30T00:00:01Z")))))
+        root.getJSONArray("messages").put(JSONObject().put("id", "tutor").put("role", "assistant").put("timestamp", 1)
+            .put("stopReason", "stop").put("content", JSONArray().put(JSONObject().put("type", "text").put("text", "Authored explanation")))
+            .put("opaquePluginData", JSONObject().put("keep", "synthetic")))
+        val original = NativeChat.parse(" \n" + root.toString(2) + "\n")
+        for (bytes in listOf(original.raw.toByteArray(), NativeTransferPackage.write(listOf(original)))) {
+            val imported = NativeTransferPackage.read(bytes).chats.single()
+            assertEquals(original.raw, imported.raw)
+            assertEquals(original.raw, NativeTransferPackage.read(NativeTransferPackage.write(listOf(imported))).chats.single().raw)
+        }
     }
 
     @Test fun artifactsAndImagesStayInlineWhileMissingSourcesAndJobsAreReportedWithoutExecution() {
@@ -167,7 +197,7 @@ class NativeTransferPackageTest {
             NativeTransferPackage.read(unrelated)
         }.message)
         refused(changed(bytes) { files ->
-            files["chats/chat_package.json"] = simple().snapshot().put("version", 2).toString().toByteArray(); reseal(files)
+            files["chats/chat_package.json"] = simple().snapshot().put("version", 1).toString().toByteArray(); reseal(files)
         })
         val deep = "{\"id\":\"n\",\"provenance\":[],\"opaque\":" + "[".repeat(65) + "0" + "]".repeat(65) + "}"
         assertEquals("Transfer JSON structure limit", assertThrows(Exception::class.java) {
@@ -185,7 +215,7 @@ class NativeTransferPackageTest {
             refused(changed(bytes) { files -> manifest(files) { it.put("version", version) } })
         }
         for (key in listOf("nativeChatVersion", "nativeGraphVersion")) {
-            refused(changed(bytes) { files -> manifest(files) { it.put(key, 2) } })
+            refused(changed(bytes) { files -> manifest(files) { it.put(key, if (key == "nativeChatVersion") 1 else 2) } })
             refused(changed(bytes) { files -> manifest(files) { it.put(key, "1") } })
         }
         refused(changed(bytes) { files -> manifest(files) { it.put("chats", JSONArray().put("chat_package").put("chat_package")) } })
@@ -197,9 +227,9 @@ class NativeTransferPackageTest {
         assertThrows(Exception::class.java) { NativeTransferPackage.write(emptyList()) }
         assertThrows(Exception::class.java) { NativeTransferPackage.write(listOf(simple(), simple())) }
         assertThrows(Exception::class.java) { NativeTransferPackage.write(listOf(simple("../unsafe"))) }
-        val deep = NativeChat.parse("{\"id\":\"deep\",\"messages\":[],\"opaque\":" + "[".repeat(65) + "0" + "]".repeat(65) + "}")
+        val deep = NativeChat.parse("{\"version\":2,\"id\":\"deep\",\"messages\":[],\"opaque\":" + "[".repeat(65) + "0" + "]".repeat(65) + "}")
         assertThrows(Exception::class.java) { NativeTransferPackage.write(listOf(deep)) }
-        val surrogate = NativeChat.parse("{\"id\":\"surrogate\",\"messages\":[],\"opaque\":\"\uD800\"}")
+        val surrogate = NativeChat.parse("{\"version\":2,\"id\":\"surrogate\",\"messages\":[],\"opaque\":\"\uD800\"}")
         assertThrows(Exception::class.java) { NativeTransferPackage.write(listOf(surrogate)) }
     }
 }

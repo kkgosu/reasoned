@@ -170,7 +170,7 @@ internal object NativeCompaction {
             .put("details", JSONObject().put("firstKeptMessageId", messages.getJSONObject(cut).getString("id"))
                 .put("tokensBefore", before).put("model", qualified).put("at", at))
             .put("reasonedResponses", JSONObject(response.toString())))
-        return NativeResponses.appendTurn(NativeChat.parse(root.put("version", 1).put("updatedAt", at).toString()),
+        return NativeResponses.appendTurn(NativeChat.parse(root.put("version", NativeChat.VERSION).put("updatedAt", at).toString()),
             NativeResponses.turn(turnId, id, JSONArray().put(step), model, connection, now)
                 .put("reasonedPurpose", "compaction").put("reasonedStatus", "completed"))
     }

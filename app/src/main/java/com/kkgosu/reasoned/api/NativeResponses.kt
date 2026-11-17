@@ -17,7 +17,7 @@ internal object NativeResponses {
     fun append(chat: NativeChat, message: JSONObject, now: Long): NativeChat {
         val record = chat.snapshot()
         record.getJSONArray("messages").put(message)
-        val raw = record.put("updatedAt", nativeTime(now)).put("version", 1).toString()
+        val raw = record.put("updatedAt", nativeTime(now)).put("version", NativeChat.VERSION).toString()
         // Leave room for the next bounded response, a failure receipt and final usage accounting.
         if (message.optString("role") == "toolResult" && message.optString("toolName") == "read_attachment" &&
             message.getJSONArray("content").objects().any { it.optString("type") == "image" } &&
@@ -118,7 +118,7 @@ internal object NativeResponses {
         val turns = root.optJSONArray("turns") ?: JSONArray().also { root.put("turns", it) }
         if (turns.objects().any { it.optString("id") == entry.getString("id") }) return chat
         turns.put(entry)
-        return NativeChat.parse(root.put("version", 1).toString())
+        return NativeChat.parse(root.put("version", NativeChat.VERSION).toString())
     }
 
     /** Retain bounded terminal data only in the archive, never in error messages/UI or wire replay. */

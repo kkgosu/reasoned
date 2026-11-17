@@ -144,7 +144,7 @@ internal class NativeChat private constructor(val raw: String, val id: String) {
             .put("role", "toolResult").put("toolCallId", callId).put("toolName", tool)
             .put("content", JSONArray().put(JSONObject().put("type", "text").put("text", compactAnswer(answer).toString())))
             .put("details", answer).put("isError", false).put("timestamp", now))
-        return parse(record.put("updatedAt", nativeTime(now)).put("version", 1).toString())
+        return parse(record.put("updatedAt", nativeTime(now)).put("version", VERSION).toString())
     }
 
     /** Native pi-message projection only, NOT a Responses API payload. Never executes imported data. */
@@ -185,6 +185,7 @@ internal class NativeChat private constructor(val raw: String, val id: String) {
     }
 
     companion object {
+        const val VERSION = 2
         const val MAX_BYTES = 16_000_000
         val QUESTION_TOOLS = setOf("probe", "quiz", "recall", "explain", "ask_user_question")
         const val INTERRUPTED_TEXT = "The question was interrupted — the learner never answered; continue without holding a result for it."
@@ -193,7 +194,8 @@ internal class NativeChat private constructor(val raw: String, val id: String) {
             require(raw.length <= MAX_BYTES && raw.toByteArray(Charsets.UTF_8).size <= MAX_BYTES) { "Native archive too large" }
             val record = JSONObject(raw)
             val version = record.opt("version")
-            require(version == null || (version is Number && version.toDouble() == 1.0)) { "Unsupported native chat version" }
+            // Keep legacy local sessions readable; transfer accepts only the current explicit version.
+            require(version == null || (version is Number && (version.toDouble() == 1.0 || version.toDouble() == VERSION.toDouble()))) { "Unsupported native chat version" }
             val id = record.get("id") as? String
             // The identity is also a header value and a store key; keep it a bounded visible-ASCII token.
             require(id != null && id.isNotBlank() && id.length <= 200 && id.all { it in ' '..'~' }) {

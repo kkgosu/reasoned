@@ -262,7 +262,7 @@ class ProviderWireTest {
         val thoughts = assistant.getJSONArray("content").objects().filter { it.getString("type") == "thinking" }
         assertEquals(listOf("c2lnLTE=", "cmVkYWN0ZWQ=", "c2lnLTI="), thoughts.map { it.getString("thinkingSignature") })
         assertTrue(thoughts[1].getBoolean("redacted"))
-        val chat = NativeChat.parse(JSONObject().put("id", "chat_anthropic_fixture").put("messages", JSONArray()
+        val chat = NativeChat.parse(JSONObject().put("id", "chat_anthropic_fixture").put("version", NativeChat.VERSION).put("messages", JSONArray()
             .put(NativeResponses.user("Explain", 0L)).put(assistant)).toString())
         val imported = NativeTransferPackage.read(NativeTransferPackage.write(listOf(chat))).chats.single()
         assertEquals(chat.raw, imported.raw)

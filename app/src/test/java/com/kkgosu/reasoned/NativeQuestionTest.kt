@@ -94,7 +94,7 @@ class NativeQuestionTest {
             assertTrue(result.getString("id").startsWith("msg_"))
             assertNull(next.state().pending)
             assertTrue(next.state().continuation)
-            assertEquals(1, next.snapshot().getInt("version"))
+            assertEquals(NativeChat.VERSION, next.snapshot().getInt("version"))
             assertEquals("2026-10-01T00:00:02.000Z", next.snapshot().getString("updatedAt"))
             same(source.snapshot().getJSONObject("opaque"), next.snapshot().getJSONObject("opaque"))
             assertEquals(original, source.raw)

@@ -80,7 +80,7 @@ internal class MockLesson(private val app: ReasonedApplication, saved: Bundle? =
         // Keep each authored Markdown specimen in its own real transcript row.
         first.put("output", JSONArray((listOf(intro) + RENDERING_SAMPLES).map(::message) + first.getJSONArray("output").objects()))
         val now = System.currentTimeMillis()
-        return NativeChat.parse(JSONObject().put("id", sessionId).put("version", 1).put("kind", "teach")
+        return NativeChat.parse(JSONObject().put("id", sessionId).put("version", NativeChat.VERSION).put("kind", "teach")
             .put("messages", JSONArray().put(NativeResponses.assistant(first, MODEL, "api", now))).toString())
     }
 

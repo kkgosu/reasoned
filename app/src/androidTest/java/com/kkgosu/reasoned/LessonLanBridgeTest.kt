@@ -52,7 +52,7 @@ class LessonLanBridgeTest {
                     val receiptKey = TransferReceiptKey(UUID.randomUUID().toString(), connection.fingerprint)
                     assertEquals(listOf("chat_lan_desktop"), runtime.installTransfer(bytes, store.previewTransfer(bytes), emptySet(), receiptKey))
                     assertEquals(listOf("chat_lan_desktop"), store.transferReceipt(receiptKey)!!.second)
-                    val phone = NativeChat.parse(JSONObject().put("id", "chat_lan_phone").put("title", "Authored phone LAN fixture")
+                    val phone = NativeChat.parse(JSONObject().put("id", "chat_lan_phone").put("version", NativeChat.VERSION).put("title", "Authored phone LAN fixture")
                         .put("createdAt", "2026-01-01T00:00:00Z").put("updatedAt", "2026-01-01T00:00:00Z").put("opaque", "PHONE_PRESERVE")
                         .put("messages", JSONArray().put(JSONObject().put("id", "phone_u").put("role", "user").put("content", "Synthetic phone lesson").put("timestamp", 1))).toString())
                     store.saveNative(RuntimeSession(id = phone.id, goal = "Authored phone LAN fixture", model = "", connection = "imported", nativeRecord = phone))

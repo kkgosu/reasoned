@@ -312,7 +312,7 @@ internal object NativeTeaching {
                 .put("customType", "probe-handoff").put("content", HANDOFF).put("display", true)
                 .put("details", JSONObject().put("chatId", chat.id)).put("timestamp", now))
         }
-        return NativeChat.parse(root.put("updatedAt", nativeTime(now)).put("version", 1).toString())
+        return NativeChat.parse(root.put("updatedAt", nativeTime(now)).put("version", NativeChat.VERSION).toString())
     }
 
     // Pinned core/contracts/probe.ts, chat.ts and agent/tools/plan.ts; details never enter model content.

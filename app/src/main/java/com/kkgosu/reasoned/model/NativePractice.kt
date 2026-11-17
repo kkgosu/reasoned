@@ -118,5 +118,5 @@ internal object NativePractice {
     private fun result(id: String, tool: String, now: Long) = message("toolResult", now).put("toolCallId", id).put("toolName", tool)
         .put("isError", false).put("details", JSONObject.NULL)
         .put("content", JSONArray().put(JSONObject().put("type", "text").put("text", if (tool == "problem") POSE_ACK else CONCLUDE_ACK)))
-    private fun finish(root: JSONObject, now: Long) = NativeChat.parse(root.put("version", 1).put("updatedAt", nativeTime(now)).toString())
+    private fun finish(root: JSONObject, now: Long) = NativeChat.parse(root.put("version", NativeChat.VERSION).put("updatedAt", nativeTime(now)).toString())
 }

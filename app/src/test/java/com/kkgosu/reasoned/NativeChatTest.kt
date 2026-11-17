@@ -139,11 +139,13 @@ class NativeChatTest {
     @Test
     fun unsafeIdentityAndFutureVersionAreRefusedWithoutNormalizingLegacyRecords() {
         val original = chat("chat_contract_teach").snapshot()
-        for (version in listOf<Any>(2, 0, "1", JSONObject.NULL)) {
+        for (version in listOf<Any>(3, 0, "1", JSONObject.NULL)) {
             assertThrows(IllegalArgumentException::class.java) {
                 NativeChat.parse(JSONObject(original.toString()).put("version", version).toString())
             }
         }
+        val current = JSONObject(original.toString()).put("version", NativeChat.VERSION).toString()
+        assertEquals(current, NativeChat.parse(current).raw)
         val system = JSONObject(original.toString()).apply {
             getJSONArray("messages").getJSONObject(0).put("role", "system")
         }

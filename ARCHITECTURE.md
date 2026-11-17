@@ -594,8 +594,13 @@ chain expansion. Four JVM tests and a shared pinned-native fold vector pass (87 
 six saved Android snapshots). `NativeTransferPackage` now wraps selected original native records and
 that subgraph in a bounded ZIP with `manifest.json`, sizes and SHA-256; its stream reader checks
 member integrity/identities and recomputes a partial dependency/projection report. The manifest is
-platform-neutral (`learnharness-transfer`, native chat/graph schema v1), not a pinned-commit permission.
-Seven package JVM checks and four graph-selection checks pass, including an explicit synthetic
+platform-neutral (`learnharness-transfer` v1, native chat schema v2, native graph schema v1), not a
+pinned-commit permission. Transfer requires explicit chat v2 and refuses v1, unstamped and future
+records without migration. Local legacy v1 records remain readable without changing their bytes on
+open; native mutations now stamp v2. Image snapshots, side conversations and opaque message metadata
+remain in original JSON, not a promise of plugin/UI support. Existing projection/dependency blockers
+still apply. Frozen v1 fold fixtures remain reference-only and byte-preserved.
+Package and graph-selection JVM checks include an explicit synthetic
 real-desktop-producer → Android reader/re-export → real-desktop-reader/graph-fold cycle. Native
 payloads remain inert, source paths are not resolved, and sender claims never authorize continuation.
 The desktop fork has general Markdown/TXT/native JSON and ZIP export. Both transfer screens now
