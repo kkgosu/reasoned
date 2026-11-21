@@ -119,8 +119,10 @@ class ProviderSettingsFragment : ToolbarFragment(R.layout.fragment_shell) {
             if (value.isEmpty() && provider.id != Connections.CUSTOM) {
                 key.error = key.context.getString(R.string.runtime_key_invalid); return@setOnClickListener
             }
-            if (value.isNotEmpty() && (value.length !in 16..512 || value.any { it.code !in 33..126 })) {
-                key.error = key.context.getString(R.string.runtime_key_invalid); return@setOnClickListener
+            val minimum = if (provider.id == Connections.CUSTOM) 1 else 16
+            if (value.isNotEmpty() && (value.length !in minimum..512 || value.any { it.code !in 33..126 })) {
+                key.error = key.context.getString(if (provider.id == Connections.CUSTOM) R.string.runtime_custom_key_invalid else R.string.runtime_key_invalid)
+                return@setOnClickListener
             }
             action {
                 app.extraction.stop()?.join()

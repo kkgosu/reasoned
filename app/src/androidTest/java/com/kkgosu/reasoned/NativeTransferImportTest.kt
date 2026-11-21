@@ -225,11 +225,11 @@ class NativeTransferImportTest {
 
     @Test fun conflictsKeepBothVersionsAndStalePreviewCannotOverwrite() {
         SessionStore(app, null).use { store ->
-            install(store, zip())
+            install(store, zip(nodes = ""))
             val original = store.load("chat_import")!!
             store.save(original.copy(draft = "Unsent local draft"))
             val replacement = chat("Different authored version")
-            val bytes = zip(replacement)
+            val bytes = zip(replacement, nodes = "")
             val preview = store.previewTransfer(bytes)
             assertEquals("conflict", preview.lessons.single().kind)
             assertTrue(preview.blockers.toString(), preview.blockers.isEmpty())
@@ -247,6 +247,38 @@ class NativeTransferImportTest {
             store.readableDatabase.rawQuery("SELECT checkpoint FROM native_transfer_versions WHERE checkpoint<>''", null).use { row ->
                 assertTrue(row.moveToFirst()); assertEquals("Unsent local draft", JSONObject(row.getString(0)).getString("draft"))
             }
+        }
+    }
+
+    @Test fun installedNativeGraphProtectsCitedMessagesButAllowsAppendOnlyContinuation() {
+        SessionStore(app, null).use { store ->
+            install(store, zip())
+            val original = store.load("chat_import")!!
+            val graph = store.importedGraph()
+            val versions = store.transferVersions()
+            val renamed = chat().snapshot().apply { getJSONArray("messages").getJSONObject(0).put("id", "m_replaced") }
+            val removed = chat().snapshot().put("messages", JSONArray())
+            for (replacement in listOf(chat("Changed cited text"), NativeChat.parse(renamed.toString()), NativeChat.parse(removed.toString()))) {
+                val bytes = zip(replacement, nodes = "")
+                val preview = store.previewTransfer(bytes)
+                assertTrue(preview.blockers.toString(), preview.blockers.any { it.contains("saved native graph evidence") })
+                try { store.installTransfer(bytes, preview, setOf(original.id)); fail("Replaced a cited message") } catch (_: IllegalStateException) { }
+                assertEquals(original.nativeRecord!!.raw, store.load(original.id)!!.nativeRecord!!.raw)
+                assertEquals(graph, store.importedGraph())
+                assertEquals(versions, store.transferVersions())
+            }
+            val snapshot = chat().snapshot()
+            snapshot.getJSONArray("messages").put(JSONObject().put("id", "m_later").put("role", "user")
+                .put("timestamp", 2).put("content", "Authored continuation"))
+            val extended = NativeChat.parse(snapshot.toString())
+            val bytes = zip(extended)
+            val preview = store.previewTransfer(bytes)
+            assertTrue(preview.blockers.toString(), preview.blockers.isEmpty())
+            store.installTransfer(bytes, preview, setOf(original.id))
+            val exported = NativeTransferPackage.read(store.exportTransfer(listOf(original.id)))
+            assertEquals(extended.raw, exported.chats.single().raw)
+            assertEquals(node(), exported.nodes)
+            assertTrue(store.transferVersions().any { (id, sha) -> store.transferVersion(id, sha) == original.nativeRecord!!.raw })
         }
     }
 

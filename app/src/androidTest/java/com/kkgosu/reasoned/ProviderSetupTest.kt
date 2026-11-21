@@ -134,7 +134,7 @@ class ProviderSetupTest {
                 settle()
                 scenario.onActivity { activity ->
                     activity.findViewById<EditText>(R.id.runtime_key)
-                        .setText("test-only-custom-endpoint-key-123")
+                        .setText("test-key")
                     activity.findViewById<EditText>(R.id.runtime_custom_url).setText(url)
                     activity.findViewById<Button>(R.id.runtime_custom_save).performClick()
                 }
@@ -148,9 +148,16 @@ class ProviderSetupTest {
                 settle()
                 scenario.onActivity { activity ->
                     assertEquals(
-                        "test-only-custom-endpoint-key-123",
+                        "test-key",
                         activity.findViewById<EditText>(R.id.runtime_key).text.toString()
                     )
+                    activity.findViewById<Button>(R.id.runtime_save_key).performClick()
+                }
+                runBlocking {
+                    withTimeout(5000) {
+                        val credentials = app.credentialStore(requireNotNull(app.providerConfig(connection)).credentialId)
+                        while (credentials.read() != "test-key") kotlinx.coroutines.delay(20)
+                    }
                 }
             }
         } finally {

@@ -20,7 +20,7 @@ class CredentialStore(context: Context, name: String = "openai", private val max
 
     @Synchronized
     fun save(value: String) {
-        require(value.toByteArray(Charsets.UTF_8).size in 16..maxBytes)
+        require(value.toByteArray(Charsets.UTF_8).size in 1..maxBytes)
         val key = keyStore().getKey(alias, null) as? SecretKey ?: KeyGenerator.getInstance(
             "AES",
             "AndroidKeyStore"

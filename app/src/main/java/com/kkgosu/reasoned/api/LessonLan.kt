@@ -94,6 +94,7 @@ internal class LessonLan(context: Context, name: String = "lesson-lan") {
     val online = onlineState.asStateFlow()
     private var presenceWork: Job? = null
     private var foreground = false
+    private var cachedClient: Pair<LanConnection, OkHttpClient>? = null
 
     @Synchronized fun setForeground(value: Boolean) {
         if (foreground == value) return
@@ -121,7 +122,7 @@ internal class LessonLan(context: Context, name: String = "lesson-lan") {
     }
 
     fun connection(): LanConnection? = credentials.read()?.let { LanConnection.parse(lanJson(it.toByteArray(Charsets.UTF_8))) }
-    fun forget() { credentials.forget(); pendingPair.forget(); restartPresence() }
+    @Synchronized fun forget() { credentials.forget(); pendingPair.forget(); clearClient(); restartPresence() }
     suspend fun status(connection: LanConnection) {
         val result = lanJson(request(connection, "GET", "/v1/status", limit = 1024))
         check(result.getString("id") == connection.id)
@@ -147,7 +148,21 @@ internal class LessonLan(context: Context, name: String = "lesson-lan") {
         require(operation.matches(Regex("[a-f0-9-]{36}")))
         return try { lanJson(request(connection, "GET", "/v1/receipts/$operation")) } catch (e: LanHttpFailure) { if (e.status == 404) null else throw e }
     }
-    private suspend fun request(connection: LanConnection, method: String, path: String, bytes: ByteArray? = null, type: String = "application/json", headers: Map<String, String> = emptyMap(), limit: Int = 1024 * 1024): ByteArray {
+    @Synchronized private fun clearClient() {
+        cachedClient?.second?.let { client ->
+            client.dispatcher.cancelAll()
+            client.connectionPool.evictAll()
+            client.dispatcher.executorService.shutdown()
+        }
+        cachedClient = null
+    }
+
+    @Synchronized private fun clientFor(connection: LanConnection): OkHttpClient {
+        cachedClient?.let { (peer, client) ->
+            if (peer.host == connection.host && peer.port == connection.port && peer.fingerprint == connection.fingerprint) return client
+        }
+        val builder = cachedClient?.second?.newBuilder() ?: OkHttpClient.Builder()
+        cachedClient?.second?.connectionPool?.evictAll()
         val trust = object : X509TrustManager {
             override fun getAcceptedIssuers() = emptyArray<X509Certificate>()
             override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) = throw java.security.cert.CertificateException()
@@ -157,39 +172,44 @@ internal class LessonLan(context: Context, name: String = "lesson-lan") {
             }
         }
         val ssl = SSLContext.getInstance("TLS").apply { init(null, arrayOf(trust), null) }
-        val client = OkHttpClient.Builder().sslSocketFactory(ssl.socketFactory, trust)
+        val client = builder.sslSocketFactory(ssl.socketFactory, trust)
             // The QR fingerprint authenticates this exact identity, not the certificate's DNS SAN.
             .hostnameVerifier { host, session -> host == connection.host && (session.peerCertificates.firstOrNull() as? X509Certificate)?.let { lanDigest(it.encoded) == connection.fingerprint } == true }
             .proxy(Proxy.NO_PROXY).followRedirects(false).followSslRedirects(false).retryOnConnectionFailure(false)
             .connectTimeout(10, TimeUnit.SECONDS).readTimeout(30, TimeUnit.SECONDS).callTimeout(60, TimeUnit.SECONDS).build()
+        cachedClient = connection to client
+        return client
+    }
+
+    private suspend fun request(connection: LanConnection, method: String, path: String, bytes: ByteArray? = null, type: String = "application/json", headers: Map<String, String> = emptyMap(), limit: Int = 1024 * 1024): ByteArray {
         val request = Request.Builder().url("https://${connection.host}:${connection.port}$path").header("Authorization", "Bearer ${connection.token}")
         headers.forEach { (key, value) -> request.header(key, value) }
         request.method(method, bytes?.toRequestBody(type.toMediaType()))
         return suspendCancellableCoroutine { continuation ->
-            val call = client.newCall(request.build())
-            continuation.invokeOnCancellation { call.cancel() }
-            call.enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown()
-                    if (continuation.isActive) continuation.resumeWithException(IOException("LAN connection failed", e))
-                }
-                override fun onResponse(call: Call, response: Response) {
-                    try {
-                        val result = response.use { value ->
-                            if (!value.isSuccessful) throw LanHttpFailure(value.code)
-                            require(value.body.contentLength() <= limit)
-                            val output = ByteArrayOutputStream()
-                            value.body.byteStream().use { input ->
-                                val buffer = ByteArray(8192)
-                                while (true) { val count = input.read(buffer); if (count < 0) break; require(output.size().toLong() + count <= limit); output.write(buffer, 0, count) }
+            synchronized(this@LessonLan) {
+                val call = clientFor(connection).newCall(request.build())
+                continuation.invokeOnCancellation { call.cancel() }
+                call.enqueue(object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        if (continuation.isActive) continuation.resumeWithException(IOException("LAN connection failed", e))
+                    }
+                    override fun onResponse(call: Call, response: Response) {
+                        try {
+                            val result = response.use { value ->
+                                if (!value.isSuccessful) throw LanHttpFailure(value.code)
+                                require(value.body.contentLength() <= limit)
+                                val output = ByteArrayOutputStream()
+                                value.body.byteStream().use { input ->
+                                    val buffer = ByteArray(8192)
+                                    while (true) { val count = input.read(buffer); if (count < 0) break; require(output.size().toLong() + count <= limit); output.write(buffer, 0, count) }
+                                }
+                                output.toByteArray()
                             }
-                            output.toByteArray()
-                        }
-                        if (continuation.isActive) continuation.resume(result)
-                    } catch (e: Exception) { if (continuation.isActive) continuation.resumeWithException(if (e is LanHttpFailure) e else IOException("LAN response rejected")) }
-                    finally { client.connectionPool.evictAll(); client.dispatcher.executorService.shutdown() }
-                }
-            })
+                            if (continuation.isActive) continuation.resume(result)
+                        } catch (e: Exception) { if (continuation.isActive) continuation.resumeWithException(if (e is LanHttpFailure) e else IOException("LAN response rejected")) }
+                    }
+                })
+            }
         }
     }
 }

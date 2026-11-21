@@ -231,9 +231,9 @@ internal object ChatWire {
                     val function = call.optJSONObject("function")
                     response.call(
                         key = "call-${call.optInt("index", 0)}",
-                        id = call.optString("id").takeIf { it.isNotEmpty() },
-                        name = function?.optString("name")?.takeIf { it.isNotEmpty() },
-                        arguments = function?.optString("arguments"),
+                        id = call.opt("id") as? String,
+                        name = function?.opt("name") as? String,
+                        arguments = function?.opt("arguments") as? String,
                     )
                 }
             }

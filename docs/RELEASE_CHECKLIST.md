@@ -1,5 +1,26 @@
 # Public-release preparation
 
+## Audit fixes (2026-11-21, host-only checks)
+
+- Native transfer refuses replacements that change/remove messages cited by installed native graphs;
+  append-only continuation stays exportable. Existing alternate-version preservation is unchanged.
+- Pending native steers use sliced checkpoint reads, including Unicode checkpoints over 2 MiB.
+- Streamed tool IDs may arrive late; conflicting supplied IDs still fail, missing IDs get stable
+  completion-time fallbacks, and JSON-null Chat fragments are not appended as text.
+- Custom endpoint key entry accepts 1–512 printable ASCII characters. The encrypted store keeps
+  nonempty/byte-size bounds; registry-provider and Brave entry keep their existing minimum.
+- Both legacy migration fixtures remove the v6 receipts table before simulating old databases and
+  expect the current schema version. No production schema/version change was needed.
+- Graph references share immutable source values per `(session,message)` within one snapshot.
+- LAN requests reuse the client for the same host/port/certificate pin. Changed peers get fresh TLS
+  factories, with resources shared only inside LAN; Forget cancels calls and closes the cached client.
+- Offline `:app:testDebugUnitTest` and `:app:compileDebugAndroidTestKotlin` passed. JVM results:
+  **97 passed, 2 skipped, 0 failures** (99 total). Android regressions were compiled, not executed.
+- `gw … ./gradlew --offline --console=plain :app:lintDebug` exceeded the 30-second shell limit after
+  reporting only build startup. Lint completion is **not verified**; it was not retried.
+- No app launch, instrumentation run, device performance measurement, real provider/OAuth/LAN call,
+  signing or publication was performed. Previously inconsistent imports were not automatically rewritten.
+
 ## Native transfer v2 compatibility (2026-11-17, not release acceptance)
 
 - Updated Android transfer for LearnHarness PR #393 updated by merging upstream `cb25c8e`

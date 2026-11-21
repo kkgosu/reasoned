@@ -32,6 +32,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -350,6 +352,9 @@ class KnowledgeTest {
                 )
                 assertEquals(2L, graph.sources.getValue(graph.nodes.first().id).single().message)
                 assertEquals(2L, graph.sources.getValue(graph.chains.single().id).single().message)
+                val sources = graph.sources.values.flatten()
+                assertEquals(3, sources.size)
+                sources.forEach { assertSame(sources.first(), it) }
                 store.save(first.copy(draft = "A later edit must not delete source rows"))
                 assertEquals(graph, store.knowledge())
                 val second = session("Another account of A and B."); store.save(second)
@@ -390,7 +395,10 @@ class KnowledgeTest {
                     )
                 )
                 assertEquals(a.name, store.knowledge().nodes.first { it.id == a.id }.name)
-                assertEquals(2, store.knowledge().sources.getValue(a.id).size)
+                val shared = store.knowledge().sources.getValue(a.id)
+                assertEquals(listOf(first.id, second.id), shared.map { it.session })
+                assertEquals(listOf(first.items[1].text, second.items[1].text), shared.map { it.text })
+                assertNotSame(shared[0], shared[1])
                 store.readableDatabase.rawQuery("PRAGMA foreign_key_check", null)
                     .use { assertFalse(it.moveToFirst()) }
                 SessionStore(app, name).use { reopened ->
@@ -425,6 +433,7 @@ class KnowledgeTest {
                     "native_transfer_graphs",
                     "native_transfer_versions",
                     "native_transfer_packages",
+                    "native_transfer_receipts",
                     "native_display_ids"
                 )) db.execSQL("DROP TABLE $table")
                 db.execSQL("CREATE TABLE sessions_v1(id TEXT PRIMARY KEY, goal TEXT NOT NULL, model TEXT NOT NULL, checkpoint TEXT NOT NULL, updated INTEGER NOT NULL)")
@@ -435,7 +444,7 @@ class KnowledgeTest {
             }
             SessionStore(app, name).use { migrated ->
                 assertEquals(saved, migrated.load(saved.id))
-                assertEquals(5, migrated.readableDatabase.version)
+                assertEquals(6, migrated.readableDatabase.version)
                 assertTrue(migrated.knowledge().nodes.isEmpty())
             }
         } finally {

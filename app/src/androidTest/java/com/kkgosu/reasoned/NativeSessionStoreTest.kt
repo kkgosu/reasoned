@@ -9,6 +9,7 @@ import com.kkgosu.reasoned.api.NativeResponses
 import com.kkgosu.reasoned.controllers.SessionRuntime
 import com.kkgosu.reasoned.model.LessonDisplayItem.TextDisplayItem
 import com.kkgosu.reasoned.model.NativeChat
+import com.kkgosu.reasoned.model.PracticeProblem
 import com.kkgosu.reasoned.model.RuntimeQuestion
 import com.kkgosu.reasoned.model.RuntimeSession
 import com.kkgosu.reasoned.storage.SessionStore
@@ -222,6 +223,32 @@ class NativeSessionStoreTest {
     }
 
     @Test
+    fun largeUnicodeCheckpointPreservesQueuedSteersAcrossSavesAndReopen() {
+        val name = "native-large-checkpoint-${UUID.randomUUID()}.db"
+        try {
+            val base = RuntimeSession(goal = "Authored checkpoint fixture", model = "fixture")
+            val queued = message("queued_steer", "Authored queued learner input")
+            val original = base.copy(nativeRecord = native(base.id), nativeSteers = JSONArray().put(queued).toString(),
+                problems = List(20) { index -> PracticeProblem("problem_$index", "Authored problem", "Authored solution", "practice", emptyList(),
+                    attempts = List(40) { "🙂".repeat(1000) }, outcome = "done") })
+            assertTrue(original.checkpoint().toByteArray(Charsets.UTF_8).size > 2 * 1024 * 1024)
+            SessionStore(app, name).use { it.save(original) }
+            SessionStore(app, name).use { store ->
+                val loaded = store.load(original.id)!!
+                assertEquals(original.problems, loaded.problems)
+                store.save(loaded.copy(draft = "Later draft", nativeSteers = "[]"))
+                val saved = store.load(original.id)!!
+                assertEquals("Later draft", saved.draft)
+                assertEquals(original.nativeSteers, saved.nativeSteers)
+                val consumed = store.saveNative(saved.copy(nativeSteers = "[]"), consumeSteers = true)
+                assertEquals("[]", consumed.nativeSteers)
+                assertEquals("queued_steer", consumed.nativeRecord!!.snapshot().getJSONArray("messages").getJSONObject(1).getString("id"))
+                assertEquals(consumed.nativeRecord.raw, store.load(original.id)!!.nativeRecord!!.raw)
+            }
+        } finally { app.deleteDatabase(name) }
+    }
+
+    @Test
     fun legacyMigrationsDoNotInventNativeEventsOrChangeCheckpointEvidence() {
         for (version in 1..3) {
             val name = "native-v$version-${UUID.randomUUID()}.db"
@@ -229,7 +256,7 @@ class NativeSessionStoreTest {
                 val original = session().copy(draft = "Unsubmitted fixture draft")
                 SessionStore(app, name).use { it.save(original) }
                 SQLiteDatabase.openDatabase(app.getDatabasePath(name).path, null, SQLiteDatabase.OPEN_READWRITE).use { db ->
-                    for (table in listOf("native_transfer_graphs", "native_transfer_versions", "native_transfer_packages", "native_display_ids"))
+                    for (table in listOf("native_transfer_graphs", "native_transfer_versions", "native_transfer_packages", "native_transfer_receipts", "native_display_ids"))
                         db.execSQL("DROP TABLE $table")
                     if (version == 1) for (table in listOf("knowledge_runs", "knowledge_coverage", "knowledge_sources", "knowledge_chains", "knowledge_nodes"))
                         db.execSQL("DROP TABLE $table")
@@ -246,7 +273,7 @@ class NativeSessionStoreTest {
                     assertEquals(original, restored)
                     assertNull(restored.nativeRecord)
                     assertTrue(restored.nativeDisplayIds.isEmpty())
-                    assertEquals(5, store.readableDatabase.version)
+                    assertEquals(6, store.readableDatabase.version)
                     assertNotNull(store.list().single())
                     store.readableDatabase.rawQuery("SELECT checkpoint FROM sessions WHERE id=?", arrayOf(original.id)).use {
                         assertTrue(it.moveToFirst()); assertEquals(original.checkpoint(), it.getString(0))

@@ -61,8 +61,12 @@ internal fun SessionStore.knowledge(): KnowledgeSnapshot = synchronized(this) {
         null
     ).use { c ->
         val result = linkedMapOf<String, MutableList<KnowledgeSource>>()
-        while (c.moveToNext()) result.getOrPut(c.getString(0)) { mutableListOf() }
-            .add(KnowledgeSource(c.getString(1), c.getLong(2), c.getString(3), c.getString(4)))
+        val passages = mutableMapOf<Pair<String, Long>, KnowledgeSource>()
+        while (c.moveToNext()) {
+            val key = c.getString(1) to c.getLong(2)
+            val source = passages.getOrPut(key) { KnowledgeSource(key.first, key.second, c.getString(3), c.getString(4)) }
+            result.getOrPut(c.getString(0)) { mutableListOf() }.add(source)
+        }
         result
     }
     val titles = readableDatabase.rawQuery(

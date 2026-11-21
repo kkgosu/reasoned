@@ -771,8 +771,14 @@ class RuntimeTest {
         val credentials = CredentialStore(app, name)
         val fake = "test-only-not-a-live-api-key-123456789"
         try {
-            credentials.save(fake)
-            assertEquals(fake, credentials.read())
+            for (value in listOf("x", "test-key", fake)) {
+                credentials.save(value)
+                assertEquals(value, credentials.read())
+            }
+            for (invalid in listOf("", "x".repeat(513), "界".repeat(171))) {
+                try { credentials.save(invalid); fail("Invalid credential size accepted") } catch (_: IllegalArgumentException) { }
+                assertEquals(fake, credentials.read())
+            }
             assertFalse(
                 File(app.noBackupFilesDir, "$name.credential").readBytes()
                     .toString(Charsets.ISO_8859_1).contains(fake)

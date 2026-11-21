@@ -338,9 +338,9 @@ internal class SessionStore(context: Context, name: String? = "sessions.db") :
     }
 
     private fun pendingNativeSteers(db: SQLiteDatabase, id: String): List<JSONObject> = db.rawQuery(
-        "SELECT checkpoint FROM sessions WHERE id=? AND deleted=0", arrayOf(id)
+        "SELECT 1 FROM sessions WHERE id=? AND deleted=0", arrayOf(id)
     ).use { row ->
-        if (row.moveToFirst()) JSONObject(row.getString(0)).optJSONArray("nativeSteers")?.objects().orEmpty()
+        if (row.moveToFirst()) JSONObject(readText(db, id, "checkpoint")!!).optJSONArray("nativeSteers")?.objects().orEmpty()
         else emptyList()
     }
 

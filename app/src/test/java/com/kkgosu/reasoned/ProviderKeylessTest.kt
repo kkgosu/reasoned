@@ -80,6 +80,14 @@ class ProviderKeylessTest {
         assertTrue(captured.isEmpty())
     }
 
+    @Test fun customShortKeyIsSentForModelsAndGeneration() = runBlocking {
+        val wire = transport(provider(Connections.CUSTOM, keyless = false), "test-key")
+        wire.models()
+        wire.respond(chatRequest()) { }
+        assertEquals(2, captured.size)
+        assertTrue(captured.all { it.header("Authorization") == "Bearer test-key" })
+    }
+
     @Test fun aRegistryProviderIsNeverKeyless() = runBlocking {
         transport(provider("deepseek", keyless = true), "sk-saved").models()
         assertEquals("Bearer sk-saved", captured.single().header("Authorization"))

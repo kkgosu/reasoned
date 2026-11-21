@@ -2,6 +2,7 @@ package com.kkgosu.reasoned
 
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.kkgosu.reasoned.api.LanConnection
 import com.kkgosu.reasoned.api.LanPairing
 import com.kkgosu.reasoned.api.LessonLan
 import com.kkgosu.reasoned.api.ModelProvider
@@ -17,6 +18,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
+import okhttp3.OkHttpClient
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.*
@@ -26,9 +28,37 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.util.UUID
 
-/** Opt-in loopback-host fixture only. Never points at an installed desktop library or a model. */
+/** Local client checks and an opt-in HTTPS fixture; never an installed desktop library or model. */
 @RunWith(AndroidJUnit4::class)
 class LessonLanBridgeTest {
+    @Test fun pinnedClientsAreReusedAndRetiredWithoutNetwork() {
+        val app = ApplicationProvider.getApplicationContext<ReasonedApplication>()
+        val api = LessonLan(app, "lan-client-${UUID.randomUUID()}")
+        val method = LessonLan::class.java.getDeclaredMethod("clientFor", LanConnection::class.java).apply { isAccessible = true }
+        fun client(peer: LanConnection) = method.invoke(api, peer) as OkHttpClient
+        val peer = LanConnection("192.168.1.2", 42000, "a".repeat(64), "A".repeat(43))
+        try {
+            var previous = client(peer)
+            assertSame(previous, client(LanConnection.parse(peer.json())))
+            assertSame(previous, client(LanConnection(peer.host, peer.port, peer.fingerprint, "B".repeat(43))))
+            val peers = listOf(
+                LanConnection(peer.host, peer.port, "b".repeat(64), peer.token),
+                LanConnection("192.168.1.3", peer.port, "b".repeat(64), peer.token),
+                LanConnection("192.168.1.3", 42001, "b".repeat(64), peer.token))
+            for (next in peers) {
+                val current = client(next)
+                assertNotSame(previous, current)
+                assertNotSame(previous.sslSocketFactory, current.sslSocketFactory)
+                assertSame(previous.dispatcher, current.dispatcher)
+                assertFalse(current.dispatcher.executorService.isShutdown)
+                previous = current
+            }
+            api.forget()
+            assertTrue(previous.dispatcher.executorService.isShutdown)
+            assertNotSame(previous, client(peers.last()))
+        } finally { api.forget() }
+    }
+
     @Test fun actualPinnedHttpsTransfersBothWaysThroughRuntimeAndReconcilesReceipt() = runBlocking {
         val app = ApplicationProvider.getApplicationContext<ReasonedApplication>()
         val fixture = File(app.filesDir, "lesson-lan-fixture.json")

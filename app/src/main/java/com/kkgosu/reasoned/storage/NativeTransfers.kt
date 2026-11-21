@@ -6,6 +6,7 @@ import com.kkgosu.reasoned.model.NativeChat
 import com.kkgosu.reasoned.model.NativeGraphSelection
 import com.kkgosu.reasoned.model.NativeTransferPackage
 import com.kkgosu.reasoned.model.RuntimeSession
+import com.kkgosu.reasoned.utils.objects
 import org.json.JSONArray
 import org.json.JSONObject
 import java.security.MessageDigest
@@ -107,6 +108,11 @@ private fun graphConflicts(graphs: List<Graph>): List<String> {
 internal fun SessionStore.previewTransfer(bytes: ByteArray): TransferPreview = synchronized(this) {
     val contents = NativeTransferPackage.read(bytes)
     val graph = graphs()
+    val citedMessages = contents.chats.associate { it.id to mutableSetOf<String>() }
+    for (snapshot in graph) for (line in lines(snapshot.nodes) + lines(snapshot.chains)) {
+        for (point in JSONObject(line).getJSONArray("provenance").objects())
+            citedMessages[point.getString("chatId")]?.add(point.getString("messageId"))
+    }
     val blockers = mutableListOf<String>()
     val revision = JSONArray()
     val lessons = contents.chats.map { chat ->
@@ -127,6 +133,12 @@ internal fun SessionStore.previewTransfer(bytes: ByteArray): TransferPreview = s
         if (kind == "conflict" && listOf("knowledge_sources", "knowledge_coverage").any { table ->
                 readableDatabase.rawQuery("SELECT 1 FROM $table WHERE session=? LIMIT 1", arrayOf(chat.id)).use { it.moveToFirst() }
             }) blockers += "Lesson has saved graph evidence; replacement is unsupported: ${chat.id}"
+        if (kind == "conflict" && !citedMessages[chat.id].isNullOrEmpty()) {
+            val previous = NativeChat.parse(raw!!).snapshot().getJSONArray("messages").objects().associateBy { it.getString("id") }
+            val replacement = chat.snapshot().getJSONArray("messages").objects().associateBy { it.getString("id") }
+            if (citedMessages.getValue(chat.id).any { replacement[it] == null || canonical(previous[it]) != canonical(replacement[it]) })
+                blockers += "Lesson has saved native graph evidence; cited messages cannot be replaced: ${chat.id}"
+        }
         if (checkpoint?.takeIf { it.isNotEmpty() }?.let(::JSONObject)?.let {
                 it.optString("status") == "running" || it.has("nativeTurn") } == true)
             blockers += "Lesson has an active or unrecovered turn: ${chat.id}"

@@ -84,7 +84,7 @@ internal fun String.terminalReason(): String? = takeIf { it.isNotEmpty() && it !
  */
 internal class WireResponse {
     private data class Call(
-        val id: String,
+        val id: String?,
         val name: String,
         val arguments: StringBuilder,
         val signature: String = "",
@@ -145,19 +145,20 @@ internal class WireResponse {
         if (existing == null) {
             if (calls.size >= 16) throw ProviderFailure("invalid_output_item_index")
             calls[key] = Call(
-                id = id?.takeIf { it.isNotBlank() } ?: "call_${UUID.randomUUID().toString().take(12)}",
+                id = id?.takeIf { it.isNotBlank() },
                 name = name.orEmpty(),
                 arguments = StringBuilder().append(arguments.orEmpty()),
                 signature = signature.orEmpty(),
             )
         } else {
-            if (id != null && id.isNotBlank() && existing.id != id) throw ProviderFailure("invalid_output_item_index")
+            if (!id.isNullOrBlank() && existing.id != null && existing.id != id) throw ProviderFailure("invalid_output_item_index")
             if (!signature.isNullOrEmpty() && existing.signature.length + signature.length > 65_536) {
                 throw ProviderFailure("output_limit")
             }
             val signed = if (signature.isNullOrEmpty()) existing.signature
             else existing.signature + signature
             calls[key] = existing.copy(
+                id = existing.id ?: id?.takeIf { it.isNotBlank() },
                 name = if (existing.name.isEmpty() && !name.isNullOrBlank()) name else existing.name,
                 signature = signed,
             )
@@ -206,7 +207,9 @@ internal class WireResponse {
                 .put("status", "completed")
                 .put("content", JSONArray().put(JSONObject().put("type", "output_text").put("text", text.toString())))
         )
-        calls.values.forEach { call ->
+        calls.entries.forEach { (key, pending) ->
+            val call = pending.copy(id = pending.id ?: "call_${token()}")
+            calls[key] = call
             output.put(
                 JSONObject().put("type", "function_call").put("id", "fc_${token()}")
                     .put("call_id", call.id).put("name", call.name)

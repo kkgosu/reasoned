@@ -5,6 +5,7 @@
     <string name="runtime_key_saved">Key saved.</string>
     <string name="runtime_key_absent">No API key saved.</string>
     <string name="runtime_key_invalid">Use 16–512 printable characters.</string>
+    <string name="runtime_custom_key_invalid">Use 1–512 printable characters.</string>
     <string name="runtime_save_key">Save key</string>
     <string name="runtime_forget_key">Forget API key</string>
     <string name="runtime_model">Model</string>

@@ -189,6 +189,36 @@ class ProviderWireTest {
         assertEquals(7, response.getJSONObject("usage").getInt("output_tokens"))
     }
 
+    @Test fun chatStreamAcceptsDelayedToolIdsAndNullFragments() = runBlocking {
+        val chunks = sse(
+            """{"id":"chat_late","choices":[{"delta":{"tool_calls":[{"index":0,"id":null,"function":{"name":null,"arguments":"{\"q\":"}}]}}]}""",
+            """{"id":"chat_late","choices":[{"delta":{"tool_calls":[{"index":0,"id":"call_late","function":{"name":"probe","arguments":"2}"}}]}}]}""",
+            """{"id":"chat_late","choices":[{"delta":{"tool_calls":[{"index":0,"id":null,"function":{"name":null,"arguments":null}}]},"finish_reason":"tool_calls"}]}""",
+            "[DONE]"
+        )
+        val call = ChatWire.read(chunks) { }.getJSONArray("output").getJSONObject(0)
+        assertEquals("call_late", call.getString("call_id"))
+        assertEquals("probe", call.getString("name"))
+        assertEquals("{\"q\":2}", call.getString("arguments"))
+    }
+
+    @Test fun toolIdsCannotChangeAndMissingIdsGetDistinctStableFallbacks() {
+        val response = WireResponse()
+        response.call("known", "call_known", "probe", "{")
+        rejects("invalid_output_item_index") { response.call("known", "call_changed", null, "bad") }
+        response.call("known", null, null, "}")
+        response.call("missing_1", null, "probe", "{}")
+        response.call("missing_2", " ", "explain", "{}")
+        response.stop()
+        val output = response.complete().getJSONArray("output").objects()
+        val ids = output.map { it.getString("call_id") }
+        assertEquals("call_known", ids.first())
+        assertEquals("{}", output.first().getString("arguments"))
+        assertEquals(3, ids.toSet().size)
+        assertTrue(ids.all { it.isNotBlank() })
+        assertEquals(ids, response.complete().getJSONArray("output").objects().map { it.getString("call_id") })
+    }
+
     @Test fun chatStreamWithoutTerminalFinishIsIncomplete() = runBlocking {
         val body = sse("""{"id":"chat_1","choices":[{"index":0,"delta":{"content":"partial"}}]}""")
         rejects("incomplete") { runBlocking { ChatWire.read(body) { } } }

@@ -214,8 +214,9 @@ Only completed canonical assistant text is eligible. New checkpoints explicitly 
 The deterministic merger resolves only explicit audited identity links or exact statement equality,
 never fuzzy name similarity. First-created labels/statements remain unchanged; subsequent phrasings
 join aliases and provenance. Assertions retain exact `(session,message)` sources with SQLite foreign
-keys. Reasoning chains are the stored structure. A single-premise chain projects to a direct
-premise→conclusion edge; multi-premise chains retain invisible, unpickable implication junctions.
+keys. Within each loaded snapshot, references to the same `(session,message)` share one immutable
+source value and passage string; no source cache survives into the next snapshot. Reasoning chains
+are the stored structure. A single-premise chain projects to a direct premise→conclusion edge; multi-premise chains retain invisible, unpickable implication junctions.
 Junctions are excluded from search and summary navigation. Endpoints and post-identity DAGs are
 validated independently of model output. A single SQLite transaction writes nodes, aliases, chains,
 source anchors and all batch coverage; duplicate coverage is a no-op. Bounds are 32 new
@@ -616,8 +617,11 @@ or model overrides. Android binds an initially unbound `imported` connection loc
 request-free. Continue, learner text, answers and the existing practice actions explicitly start work.
 Missing/invalid settings use the provider setup flow instead of silently choosing an account. Source/attachment members,
 unsupported projections, known missing dependencies, ambiguous shared graph definitions, deleted-ID
-restoration and replacement of existing graph evidence remain blocked. The transfer screen also exports
-1–100 selected active native records to ZIP through the Android create-document picker, without an
+restoration and replacement of existing graph evidence remain blocked. Imported native graph citations
+also block changing/removing their source messages, while append-only continuation preserves those
+citations and remains transferable. Pending-steer reads use the same sliced checkpoint reader as
+restoration, including checkpoints larger than Android's database row buffer. The transfer screen also
+exports 1–100 selected active native records to ZIP through the Android create-document picker, without an
 extra preview dialog. Capture shares the runtime writer gate and a SQLite snapshot; unsettled,
 unexportable or deleted selections are refused. Native graph assertions are provenance-selected, including
 required endpoint definitions but excluding unrelated transcripts/assertions. Original contributing
@@ -652,7 +656,10 @@ LearnHarness exposes a separate, explicitly enabled HTTPS transfer listener, not
 QR pairing carries a five-minute single-use key and the exact TLS certificate fingerprint; Android uses
 ZXing scanning and a dedicated pinned OkHttp client, with manual connection input as a fallback.
 Only private IPv4 addresses are supported; proxies/redirects and public-web/provider trust reuse are
-forbidden. Credentials stay in Android Keystore-backed storage and the desktop's private identity file.
+forbidden. Requests to the same host, port and certificate fingerprint reuse a pinned client. A changed
+peer gets a fresh TLS factory while sharing only this LAN client's dispatcher/pool; Forget cancels LAN
+calls and releases those resources. Credentials stay in Android Keystore-backed storage and the
+desktop's private identity file.
 The phone initiates selected-lesson send/receive, using the existing ZIP preview/conflict/install gates.
 SQLite v6 adds atomic operation receipts; desktop receipts share its rollback journal. Pending Android
 ZIPs are app-private and operation credentials encrypted, enabling explicit Retry/Discard after loss of
@@ -685,7 +692,9 @@ existing session or reusing its key. The first custom-endpoint build stored one 
 startup pins that legacy endpoint once, and sessions that still hold `key:custom` keep using it.
 Chat-compatible base URLs are used verbatim: only `/models` or `/chat/completions` is appended,
 never an inferred `/v1` segment. Mistral and Vercel AI Gateway therefore carry `/v1` in their
-provider base URLs.
+provider base URLs. Custom endpoint keys accept 1–512 printable ASCII characters; saving an empty
+key field removes the key. Registry-provider and Brave key entry retain their 16-character minimum. The generic
+encrypted store accepts nonempty values up to its configured byte limit, not a provider-specific minimum.
 `max_output_tokens` stays out of ChatGPT-plan requests; the plan payload allowlist strips it even
 when a shared caller supplies it.
 
@@ -716,7 +725,9 @@ provider. Unknown vendor fields stay in `reasonedResponses`, and missing usage i
 Anthropic thinking blocks retain their individual raw `thinkingSignature` proofs and `redacted`
 flags, matching LearnHarness/pi-ai. Legacy Android Responses-JSON signatures remain readable;
 replay still requires the same provider, API and model. Aggregate reasoning/signature limits remain
-24,000/65,536 characters even across multiple blocks.
+24,000/65,536 characters even across multiple blocks. Tool IDs may arrive after argument fragments;
+only a conflicting supplied ID is rejected, and a missing ID gets a stable fallback at completion.
+JSON-null Chat tool fragments are absent values, not the literal text `null`.
 
 Per-model differences live in the asset as compatibility flags. The wire code branches on those
 flags, not on provider names. The examples are `thinkingFormat` and `thinkingMap` for the Chat wire,
